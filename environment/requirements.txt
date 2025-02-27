@@ -1,0 +1,10 @@
+spikeinterface==0.102.1
+pyvips==2.2.1
+torch==2.6.0
+pynwb==2.8.3
+hdbscan==0.8.40
+neuroconv==0.6.7
+wavpack-numcodecs==0.2.2
+hdmf-zarr==0.11.0
+aind-data-schema==1.3.0
+aind_metadata_upgrader==0.0.24

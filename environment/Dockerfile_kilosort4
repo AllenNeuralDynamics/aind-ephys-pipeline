@@ -2,6 +2,13 @@ FROM spikeinterface/kilosort4-base:4.0.18_cuda-12.0.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN pip install -U --no-cache-dir \
-    aind-data-schema==1.1.0 \
-    spikeinterface[full]==0.101.2
+# Copy requirements.txt into the container
+COPY requirements.txt .
+
+RUN pip install --upgrade pip && \
+    grep -E 'aind-data-schema' requirements.txt | xargs pip install
+
+# Extract the spikeinterface version and install with extras
+RUN pip install --upgrade pip && \
+    SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' requirements.txt | cut -d'=' -f3) && \
+    pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"

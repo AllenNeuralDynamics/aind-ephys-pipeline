@@ -2,6 +2,8 @@ FROM continuumio/miniconda3:23.9.0-0
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Copy requirements.txt into the container
+COPY requirements.txt .
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -20,16 +22,10 @@ RUN apt-get update \
 # install default fonts
 RUN apt-get install -y fonts-freefont-ttf
 
-# needed for motion estimation
-RUN pip install --no-cache-dir torch==2.2.0
+RUN pip install --upgrade pip && \
+    grep -E 'aind-data-schema|aind_metadata_upgrader|pyvips|wavpack-numcodecs|pynwb|hdmf-zarr' requirements.txt | xargs pip install
 
-RUN pip install --no-cache-dir \
-    aind-data-schema==1.1.0 \
-    backports-datetime-fromisoformat==2.0.2 \
-    pyvips==2.2.1 \
-    wavpack-numcodecs==0.2.1 \
-    pynwb==2.8.0 \
-    hdmf-zarr==0.8.0 \
-    spikeinterface[full,widgets]==0.101.2
-
-RUN pip install --no-cache-dir --no-deps aind-metadata-upgrader==0.0.22
+# Extract the spikeinterface version and install with extras
+RUN pip install --upgrade pip && \
+    SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' requirements.txt | cut -d'=' -f3) && \
+    pip install "spikeinterface[full,widgets]==${SPIKEINTERFACE_VERSION}"

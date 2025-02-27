@@ -2,8 +2,13 @@ FROM continuumio/miniconda3:23.9.0-0
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN pip install -U --no-cache-dir \
-    aind-data-schema==1.1.0 \
-    hdbscan==0.8.38.post1 \
-    spikeinterface[full]==0.101.2 \
-    torch==2.2.0
+# Copy requirements.txt into the container
+COPY requirements.txt .
+
+RUN pip install --upgrade pip && \
+    grep -E 'aind-data-schema|hdbscan|torch' requirements.txt | xargs pip install
+
+# Extract the spikeinterface version and install with extras
+RUN pip install --upgrade pip && \
+    SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' requirements.txt | cut -d'=' -f3) && \
+    pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"

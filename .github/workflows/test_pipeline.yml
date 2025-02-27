@@ -1,0 +1,38 @@
+name: Test Nextflow Pipeline
+
+on:
+  pull_request:
+      branches: [main]
+      types: [synchronize, opened, reopened]
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: "3.11"
+
+        - name: Install packages
+          run: |
+            python -m pip install --upgrade pip
+            pip install spikeinterface neuroconv pynwb
+
+        - name: Generate test NWB files
+          run: |
+            python sample_dataset/create_test_nwb.py
+        
+        - name: Set up Nextflow
+          uses: nf-core/setup-nextflow@v1
+          with:
+            version: "22.10.8"
+
+        - name: Run Nextflow pipeline
+          run: |
+            DATA_PATH="$(pwd)/sample_dataset/nwb" RESULTS_PATH="$(pwd)/sample_dataset/nwb/results" \
+            nextflow  -C pipeline/nextflow_test.config run pipeline/main_local.nf \
+            --sorter spykingcircus2 --job_dispatch_args "--input nwb"
