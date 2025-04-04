@@ -1,9 +1,15 @@
+# Data, builds, results, and work directories
 /data/
 /*data*/
 /work/
 /*work*/
+**/work/
 /results/
 /*results*/
 /pipeline/work/
 **/.nextflow*
 /docs/build/
+tests/.nfs*
+
+# User-specific files
+pipeline/nextflow_slurm_custom.config
