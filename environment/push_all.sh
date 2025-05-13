@@ -11,4 +11,3 @@ docker push --all-tags ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb
 docker push --all-tags ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort25
 docker push --all-tags ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort4
 docker push --all-tags ghcr.io/allenneuraldynamics/aind-ephys-spikesort-spykingcircus2
-docker push --all-tags ghcr.io/allenneuraldynamics/aind-ephys-unit-classifier

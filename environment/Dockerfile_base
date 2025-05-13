@@ -23,7 +23,7 @@ RUN apt-get update \
 RUN apt-get install -y fonts-freefont-ttf
 
 RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|aind_metadata_upgrader|pyvips|wavpack-numcodecs|pynwb|hdmf-zarr' requirements.txt | xargs pip install
+    grep -E 'aind-data-schema|aind_metadata_upgrader|pyvips|wavpack-numcodecs|pynwb|hdmf-zarr|torch' requirements.txt | xargs pip install
 
 # Extract the spikeinterface version and install with extras
 RUN pip install --upgrade pip && \

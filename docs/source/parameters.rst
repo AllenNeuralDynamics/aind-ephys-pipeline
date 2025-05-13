@@ -27,8 +27,8 @@ Job Dispatch Parameters
 .. code-block:: bash
 
    --job_dispatch_args "
-     --concatenate              # Whether to concatenate recordings
-     --split-groups            # Process different groups separately
+     --concatenate             # Whether to concatenate recordings
+     --no-split-groups         # Process different groups separately
      --debug                   # Run in DEBUG mode
      --debug-duration DURATION # Duration for debug mode (default: 30s)
      --input {aind,spikeglx,nwb,openephys}  # Input data type
