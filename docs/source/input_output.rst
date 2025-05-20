@@ -24,7 +24,7 @@ NWB
 AIND
 ~~~~
 * Used for AIND-specific data ingestion
-* Input folder structure:
+* Input folder structure (as defined in `aind-file-standards <https://github.com/AllenNeuralDynamics/aind-file-standards/blob/ce0aa517a40064d1ac9764d42c9efe4ae5c61f7b/file_formats/ecephys.md>`_):
    * ``ecephys/`` directory containing:
       * ``ecephys_clipped/`` (clipped Open Ephys folder)
       * ``ecephys_compressed/`` (compressed traces with Zarr)
@@ -35,8 +35,8 @@ Pipeline Output
 
 The pipeline output is organized in the ``RESULTS_PATH`` directory with the following structure:
 
-preprocessed/
-~~~~~~~~~~~~~
+``preprocessed/``
+~~~~~~~~~~~~~~~~~
 Contains preprocessing outputs:
 
 * Preprocessed JSON files for each stream
@@ -55,8 +55,8 @@ Contains preprocessing outputs:
    import spikeinterface.preprocessing as spre
    motion_info = spre.load_motion_info("path-to-motion-folder")
 
-spikesorted/
-~~~~~~~~~~~~
+``spikesorted/``
+~~~~~~~~~~~~~~~~
 Contains raw spike sorting output:
 
 * One folder per stream
@@ -67,24 +67,8 @@ Contains raw spike sorting output:
    import spikeinterface as si
    sorting_raw = si.load("path-to-spikesorted-folder")
 
-postprocessed/
-~~~~~~~~~~~~~~
-Contains postprocessing output in Zarr format:
-
-* One folder per stream
-* Load with SpikeInterface:
-
-.. code-block:: python
-
-   import spikeinterface as si
-   sorting_analyzer = si.load("path-to-postprocessed-folder.zarr")
-
-   # Access extensions
-   unit_locations = sorting_analyzer.get_extension("unit_locations").get_data()
-   qm = sorting_analyzer.get_extension("quality_metrics").get_data()
-
-curated/
-~~~~~~~~
+``curated/``
+~~~~~~~~~~~~
 Contains curated spike sorting outputs:
 
 * Includes unit deduplication and quality metric-based curation
@@ -100,8 +84,28 @@ Contains curated spike sorting outputs:
    default_qc = sorting_curated.get_property("default_qc")  # True/False for QC pass
    decoder_label = sorting_curated.get_property("decoder_label")  # noise/MUA/SUA
 
-nwb/
-~~~~
+``postprocessed/``
+~~~~~~~~~~~~~~~~~~
+Contains postprocessing output in Zarr format:
+
+* One folder per stream
+* Load with SpikeInterface as a ``SortingAnalyzer`` object:
+
+.. code-block:: python
+
+   import spikeinterface as si
+   sorting_analyzer = si.load("path-to-postprocessed-folder.zarr")
+
+   # Access extensions
+   unit_locations = sorting_analyzer.get_extension("unit_locations").get_data()
+   qm = sorting_analyzer.get_extension("quality_metrics").get_data()
+
+.. note::
+   The ``default_qc`` and ``decoder_label`` properties are also included in the ``SortingAnalyzer``!
+   You can access them using: ``sorting_analyzer.get_sorting_property("default_qc"/"decoder_label")``.
+
+``nwb/``
+~~~~~~~~
 Contains generated NWB files:
 
 * One NWB file per block/segment
@@ -112,8 +116,8 @@ Contains generated NWB files:
    * LFP signals (optional)
    * Units data
 
-visualization/
-~~~~~~~~~~~~~~
+``visualization/``
+~~~~~~~~~~~~~~~~~~
 Contains generated visualizations:
 
 * Drift maps

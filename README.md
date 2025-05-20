@@ -288,15 +288,15 @@ If you plan to use this service extensively, it is recommended to
 ### Run
 
 Clone this repo (`git clone https://github.com/AllenNeuralDynamics/aind-ephys-pipeline-kilosort25.git`) and go to the 
-`pipeline` folder. You will find a `main_local.nf`. This nextflow script is accompanied by the 
+`pipeline` folder. You will find a `main_multi_backend.nf`. This nextflow script is accompanied by the 
 `nextflow_local.config` and can run on local workstations/machines.
 
 To invoke the pipeline you can run the following command:
 
 ```bash
-NXF_VER=22.10.8 DATA_PATH=$PWD/../data RESULTS_PATH=$PWD/../results \
+DATA_PATH=$PWD/../data RESULTS_PATH=$PWD/../results \
     nextflow -C nextflow_local.config -log $RESULTS_PATH/nextflow/nextflow.log \
-    run main_local.nf \
+    run main_multi_backend.nf \
     --n_jobs 8 -resume
 ```
 
@@ -313,8 +313,8 @@ As an example, here is how to run the pipeline on a SpikeGLX dataset in debug mo
 on a 120-second snippet of the recording with 16 jobs:
 
 ```bash
-NXF_VER=22.10.8 DATA_PATH=path/to/data_spikeglx RESULTS_PATH=path/to/results_spikeglx \
-    nextflow -C nextflow_local.config run main_local.nf --n_jobs 16 \
+DATA_PATH=path/to/data_spikeglx RESULTS_PATH=path/to/results_spikeglx \
+    nextflow -C nextflow_local.config run main_multi_backend.nf --n_jobs 16 \
     --job_dispatch_args "--input spikeglx" --preprocessing_args "--debug --debug-duration 120"
 ```
 
@@ -355,10 +355,10 @@ DATA_PATH="path-to-data-folder"
 RESULTS_PATH="path-to-results-folder"
 WORKDIR="path-to-large-workdir"
 
-NXF_VER=22.10.8 DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
+DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
     -C $PIPELINE_PATH/pipeline/nextflow_slurm_custom.config \
     -log $RESULTS_PATH/nextflow/nextflow.log \
-    run $PIPELINE_PATH/pipeline/main_slurm.nf \
+    run $PIPELINE_PATH/pipeline/main_multi_backend.nf \
     -work-dir $WORKDIR \
     --job_dispatch_args "--debug --debug-duration 120" \ # additional parameters
     -resume
@@ -373,16 +373,6 @@ Then, you can submit the script to the cluster with:
 ```bash
 sbatch slurm_submit.sh
 ```
-
-## Creating a custom layer for data ingestion
-
-The default job-dispatch step only supports loading data 
-from SpikeGLX, Open Ephys, NWB, and AIND formats.
-
-To ingest other types of data, you can create a similar repo and modify the way that the job list is created 
-(see the [job dispatch README](https://github.com/AllenNeuralDynamics/aind-ephys-job-dispatch/blob/main/README.md) for more details).
-
-Then you can create a modified `main_local-slurm.nf`, where the `job_dispatch` process points to your custom job dispatch repo.
 
 ## Code Ocean (AIND)
 

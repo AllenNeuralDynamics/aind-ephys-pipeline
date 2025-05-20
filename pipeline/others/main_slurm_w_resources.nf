@@ -134,10 +134,6 @@ process job_dispatch {
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
     container container_name
 
-	cpus 4
-	memory '32 GB'
-	time '1h'
-
 	input:
 	path 'capsule/data/ecephys_session' from ecephys_to_job_dispatch.collect()
 
@@ -188,8 +184,6 @@ process preprocessing {
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
     container container_name
 
-	cpus 16
-	memory '64 GB'
 	// Allocate 4x recording duration
 	time { max_duration_min.value.toFloat()*4 + 'm' }
 
@@ -238,13 +232,7 @@ process spikesort_kilosort25 {
 	tag 'spikesort-kilosort25'
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort25:${params.container_tag}"
 	container container_name
-	containerOptions '--nv'
-	clusterOptions '--gres=gpu:1'
-	module 'cuda'
-	queue params.gpu_queue ?: params.default_queue
 
-	cpus 16
-	memory '64 GB'
 	// Allocate 4x recording duration
 	time { max_duration_min.value.toFloat()*4 + 'm' }
 
@@ -292,13 +280,7 @@ process spikesort_kilosort4 {
 	tag 'spikesort-kilosort4'
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort4:${params.container_tag}"
 	container container_name
-	containerOptions '--nv'
-	clusterOptions '--gres=gpu:1'
-	module 'cuda'
-	queue params.gpu_queue ?: params.default_queue
 
-	cpus 16
-	memory '64 GB'
 	// Allocate 4x recording duration
 	time { max_duration_min.value.toFloat()*4 + 'm' }
 
@@ -347,8 +329,6 @@ process spikesort_spykingcircus2 {
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-spykingcircus2:${params.container_tag}"
 	container container_name
 
-	cpus 16
-	memory '64 GB'
 	// Allocate 4x recording duration
 	time { max_duration_min.value.toFloat()*4 + 'm' }
 
@@ -398,8 +378,6 @@ process postprocessing {
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
 	container container_name
 
-	cpus 16
-	memory '64 GB'
 	// Allocate 4x recording duration
 	time { max_duration_min.value.toFloat()*4 + 'm' }
 
@@ -448,8 +426,6 @@ process curation {
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
 	container container_name
 
-	cpus 4
-	memory '32 GB'
 	// Allocate 10min per recording hour. Minimum 10m
 	time { max_duration_min.value.toFloat()/6 > 10 ? max_duration_min.value.toFloat()/6 + 'm' : '10m' }
 
@@ -495,8 +471,6 @@ process visualization {
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
 	container container_name
 
-	cpus 4
-	memory '32 GB'
 	// Allocate 2h per recording hour
 	time { max_duration_min.value.toFloat()*2 + 'm' }
 
@@ -547,8 +521,6 @@ process results_collector {
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
 	container container_name
 
-	cpus 4
-	memory '32 GB'
 	// Allocate 1x recording duration
 	time { max_duration_min.value.toFloat() > 10 ? max_duration_min.value.toFloat() + 'm' : '10m' }
 
@@ -596,14 +568,94 @@ process results_collector {
 	"""
 }
 
+// capsule - aind-ephys-processing-qc
+process quality_control {
+	tag 'quality-control'
+	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+	container container_name
+
+	// Allocate 10min per recording hour. Minimum 10m
+	time { max_duration_min.value.toFloat()/6 > 10 ? max_duration_min.value.toFloat()/6 + 'm' : '10m' }
+
+	input:
+	path 'capsule/data/' from job_dispatch_to_quality_control.flatten()
+	path 'capsule/data/' from results_to_quality_control.collect()
+	path 'capsule/data/ecephys_session' from ecephys_to_collect_results.collect()
+
+	output:
+	path 'capsule/results/*' into quality_control_to_quality_control_collector
+
+	script:
+	"""
+	#!/usr/bin/env bash
+	set -e
+
+	mkdir -p capsule
+	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
+	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
+	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
+
+	echo "[${task.tag}] cloning git repo..."
+	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-processing-qc.git" capsule-repo
+	mv capsule-repo/code capsule/code
+	rm -rf capsule-repo
+
+	echo "[${task.tag}] running capsule..."
+	cd capsule/code
+	chmod +x run
+	./run
+
+	echo "[${task.tag}] completed!"
+	"""
+}
+
+// capsule - aind-ephys-qc-collector
+process quality_control_collector {
+	tag 'qc-collector'
+	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+	container container_name
+
+	// Allocate 10min per recording hour. Minimum 10m
+	time { max_duration_min.value.toFloat()/6 > 10 ? max_duration_min.value.toFloat()/6 + 'm' : '10m' }
+
+	publishDir "$RESULTS_PATH", saveAs: { filename -> new File(filename).getName() }
+
+	input:
+	path 'capsule/data/' from quality_control_to_quality_control_collector.collect()
+
+	output:
+	path 'capsule/results/*'
+
+	script:
+	"""
+	#!/usr/bin/env bash
+	set -e
+
+	mkdir -p capsule
+	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
+	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
+	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
+
+	echo "[${task.tag}] cloning git repo..."
+	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-qc-collector.git" capsule-repo
+	mv capsule-repo/code capsule/code
+	rm -rf capsule-repo
+
+	echo "[${task.tag}] running capsule..."
+	cd capsule/code
+	chmod +x run
+	./run
+
+	echo "[${task.tag}] completed!"
+	"""
+}
+
 // capsule - aind-subject-nwb
 process nwb_subject {
 	tag 'nwb-subject'
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${params.container_tag}"
 	container container_name
 
-	cpus 4
-	memory '32 GB'
 	// Allocate 10min per recording hour. Minimum 10m
 	time { max_duration_min.value.toFloat()/6 > 10 ? max_duration_min.value.toFloat()/6 + 'm' : '10m' }
 
@@ -647,8 +699,6 @@ process nwb_ecephys {
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${params.container_tag}"
 	container container_name
 
-	cpus 16
-	memory '64 GB'
 	// Allocate 2x recording duration
 	time { max_duration_min.value.toFloat()*2 + 'm' }
 
@@ -695,8 +745,6 @@ process nwb_units {
 	def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${params.container_tag}"
 	container container_name
 
-	cpus 4
-	memory '32 GB'
 	// Allocate 2x recording duration
 	time { max_duration_min.value.toFloat()*2 + 'm' }
 

@@ -42,37 +42,45 @@ Each sorter can be selected based on your specific needs and data characteristic
 Postprocessing
 --------------
 
-The `postprocessing <https://github.com/AllenNeuralDynamics/aind-ephys-postprocessing/>`_ step performs extensive analysis:
+The `postprocessing <https://github.com/AllenNeuralDynamics/aind-ephys-postprocessing/>`_ step performs additional processing on the 
+combined preprocessed recording and sorted data:
 
-* Duplicate unit removal
-* Amplitude computations
-* Spike/unit location analysis
-* Principal Component Analysis (PCA)
-* Correlograms
-* Template similarity
-* Template metrics
-* Quality metrics calculation
+* Removal of duplicate units
+* Computations of *extensions*:
+
+   * Waveforms extraction
+   * Templates
+   * Spike amplitudes
+   * Unit locations
+   * Principal Component Analysis (PCA) projections
+   * Spike locations
+   * Correlograms
+   * Template similarity
+   * Template metrics
+   * Quality metrics
 
 Curation
 --------
 
-The `curation <https://github.com/AllenNeuralDynamics/aind-ephys-curation/>`_ step applies quality control:
+The `curation <https://github.com/AllenNeuralDynamics/aind-ephys-curation/>`_ step applies quality control by:
 
-* Quality metrics-based filtering:
+* Quality metrics-based filtering using thresholds on:
    * ISI violation ratio
    * Presence ratio
    * Amplitude cutoff
-* Unit classification as noise, MUA, or SUA using pretrained classifier (UnitRefine)
+* Unit classification as noise, MUA, or SUA using pretrained classifier (`UnitRefine <https://www.biorxiv.org/content/10.1101/2025.03.30.645770v1.full>`_)
+
+The *recipe* for quality metrics can be customized to suit your specific needs.
 
 Visualization
 -------------
 
-The `visualization <https://github.com/AllenNeuralDynamics/aind-ephys-visualization/>`_ step generates:
+The `visualization <https://github.com/AllenNeuralDynamics/aind-ephys-visualization/>`_ step generates static figures and interactive Figurl links for each probe:
 
-* Timeseries visualizations
-* Drift maps
-* Sorting output using `Figurl <https://github.com/flatironinstitute/figurl/>`_
-* Interactive plots for data exploration
+* *timeseries*: including snippets of raw data, drift map, and motion visualizations
+* *sorting_summary*: for spike sorting results inspection and curation
+
+Each plot of the *timeseries* is also saved as a static image in the ``visualization/`` folder.
 
 Result Collection
 -----------------
@@ -96,6 +104,3 @@ Features:
 
 * Supports multiple streams (e.g., probes) per file
 * Optional raw data and LFP data writing
-* Configurable data compression and chunking (?)
-
-Each step is containerized and can be deployed on various platforms while maintaining consistent processing standards.

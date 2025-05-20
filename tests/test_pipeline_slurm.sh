@@ -57,7 +57,7 @@ DATA_PATH="$SAMPLE_DATASET_PATH/nwb"
 RESULTS_PATH="$SAMPLE_DATASET_PATH/nwb/results"
 
 # run pipeline
-NXF_VER=22.10.8 DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
+DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
     -C $PIPELINE_PATH/pipeline/nextflow_slurm_custom.config \
     -log $RESULTS_PATH/nextflow/nextflow.log \
     run $PIPELINE_PATH/pipeline/main_slurm.nf \

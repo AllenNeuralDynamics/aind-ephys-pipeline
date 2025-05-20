@@ -1,0 +1,29 @@
+.. _1.0.0:
+
+1.0.0 - May 2025
+================
+
+Major release of the AIND Ephys Pipeline, which includes several new features and bug fixes.
+
+The main changes in this release are:
+
+* Update to DSL2 over DSL1 for nextflow scripts
+* Unification of pipeline script for multiple backends (``main_multi_backend.nf``)
+
+TODO:
+* Addition of ``spikeinterface`` input type (which supports any SpikeInterface-supported format)
+* Support for multi-session processing
+* Option to use a main ``parameters.json`` file for all pipeline parameters`
+
+Package versions
+----------------
+* ``spikeinterface`` version: 0.102.3
+* ``aind-data-schema`` version: 1.3.0
+
+Bug fixes
+---------
+* Additional fixes for NWB export with multi-shanks and multi-groups
+
+New features
+------------
+* Motion estimation: support for failed estimation and parameter tuning on probe span

@@ -42,37 +42,33 @@ Local Setup
 
 3. (Optional) Set up Figurl:
 
-   a. Install kachery-cloud:
+   a. Install kachery:
 
    .. code-block:: bash
 
-      pip install kachery-cloud
+      pip install kachery
 
-   b. Initialize kachery-cloud:
+   b. Initialize Kachery Client:
 
-   .. code-block:: bash
+      i. Register at `kachery.vercel.app <https://kachery.vercel.app/>`_ using your GitHub account.
+      ii. Go to settings and provide your name, an email address and a short description of your research purpose.
+      iii. Set the `KACHERY_API_KEY`` environment variable with your assigned API key.
 
-      kachery-cloud-init
-
-   c. Follow the printed URL and login with your GitHub account
-
-   d. Create a new Client:
+   c. Set credentials:
       
-      * Go to https://kachery-gateway.figurl.org/?zone=default
-      * Click on the "Client" tab
-      * Add a new client (any label)
-
-   e. Set credentials:
-      
-      * Click on the new client
+      * Click on settings and generate a new API key.
       * Set environment variables:
 
       .. code-block:: bash
 
-         export KACHERY_CLOUD_CLIENT_ID="your-client-id"
-         export KACHERY_CLOUD_PRIVATE_KEY="your-private-key"
+         export KACHERY_API_KEY="your-client-id"
          # Optional: Set custom Kachery zone
          export KACHERY_ZONE="your-zone"
+
+   d. (optional) Set up a custom kachery zone:
+
+      If you plan to use the Figurl service extensively, plese consider creating your own "zone".
+      Follow the instructions in the `Kachery documentation <https://github.com/magland/kachery>`_.
 
 SLURM Setup
 ~~~~~~~~~~~
@@ -87,6 +83,7 @@ SLURM Setup
       export NXF_SINGULARITY_CACHEDIR="/path/to/cache"
 
 4. (Optional) Follow the same Figurl setup steps as in the local deployment
+5. # ADD NUMBA CACHE SETUP
 
 Clone the Repository
 --------------------
