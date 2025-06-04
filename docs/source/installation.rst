@@ -59,9 +59,9 @@ Local Setup
          # Optional: Set custom Kachery zone
          export KACHERY_ZONE="your-zone"
 
-   d. (optional) Set up a custom kachery zone:
+   c. (optional) Set up a custom kachery zone:
 
-      If you plan to use the Figurl service extensively, plese consider creating your own "zone".
+      If you plan to use the Figurl service extensively, please consider creating your own "zone".
       Follow the instructions in the `Kachery documentation <https://github.com/magland/kachery>`_.
 
 SLURM Setup
