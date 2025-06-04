@@ -129,7 +129,7 @@ This folder contains figures for drift maps, motion, and sample traces for all s
 
 **`visualization_output.json`**
 
-This JSON file containes the generated Figurl links for each stream, including a `timeseries` and a `sorting_summary` 
+This JSON file contains the generated Figurl links for each stream, including a `timeseries` and a `sorting_summary` 
 view.
 
 **`processing.json`**
