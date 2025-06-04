@@ -16,6 +16,17 @@ jobs:
           uses: actions/setup-python@v5
           with:
             python-version: "3.11"
+        
+        - name: Free up disk space
+          run: |
+            echo "Before cleanup:"
+            df -h
+            sudo rm -rf /usr/local/lib/android
+            sudo rm -rf /opt/ghc
+            sudo rm -rf /usr/share/dotnet
+            sudo rm -rf /opt/hostedtoolcache
+            echo "After cleanup:"
+            df -h
 
         - name: Install packages
           run: |
@@ -29,10 +40,10 @@ jobs:
         - name: Set up Nextflow
           uses: nf-core/setup-nextflow@v1
           with:
-            version: "22.10.8"
+            version: latest-stable
 
         - name: Run Nextflow pipeline
           run: |
             DATA_PATH="$(pwd)/sample_dataset/nwb" RESULTS_PATH="$(pwd)/sample_dataset/nwb/results" \
-            nextflow  -C pipeline/nextflow_test.config run pipeline/main_local.nf \
-            --sorter spykingcircus2 --job_dispatch_args "--input nwb"
+            nextflow  -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main_multi_backend.nf \
+            --params_file "$(pwd)/.github/workflows/params_test.json"

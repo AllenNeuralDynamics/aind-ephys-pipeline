@@ -54,10 +54,10 @@ Configuration
    RESULTS_PATH="path-to-results-folder"
    WORKDIR="path-to-large-workdir"
 
-   NXF_VER=22.10.8 DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
+   DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
        -C $PIPELINE_PATH/pipeline/nextflow_slurm_custom.config \
        -log $RESULTS_PATH/nextflow/nextflow.log \
-       run $PIPELINE_PATH/pipeline/main_slurm.nf \
+       run $PIPELINE_PATH/pipeline/main_multi_backend.nf \
        -work-dir $WORKDIR \
        -resume
 
@@ -93,9 +93,9 @@ Running Locally
 
 .. code-block:: bash
 
-   NXF_VER=22.10.8 DATA_PATH=$PWD/../data RESULTS_PATH=$PWD/../results \
+   DATA_PATH=$PWD/../data RESULTS_PATH=$PWD/../results \
        nextflow -C nextflow_local.config -log $RESULTS_PATH/nextflow/nextflow.log \
-       run main_local.nf \
+       run main_multi_backend.nf \
        --n_jobs 8 -resume
 
 

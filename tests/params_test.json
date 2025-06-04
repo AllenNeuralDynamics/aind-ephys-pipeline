@@ -1,0 +1,403 @@
+{
+    "job_dispatch": {
+        "concatenate": false,
+        "split_groups": true,
+        "debug": false,
+        "debug_duration": 30,
+        "skip_timestamps_check": false,
+        "multi_session": false,
+        "input": "nwb"
+    },
+    "preprocessing": {
+        "job_kwargs": {
+            "chunk_duration": "1s",
+            "progress_bar": false
+        },
+        "denoising_strategy": "cmr",
+        "min_preprocessing_duration": 120,
+        "filter_type": "bandpass",
+        "highpass_filter": {
+            "freq_min": 300.0,
+            "margin_ms": 5.0
+        },
+        "bandpass_filter": {
+            "freq_min": 300.0,
+            "freq_max": 6000.0,
+            "margin_ms": 5.0
+        },
+        "phase_shift": {
+            "margin_ms": 100.0
+        },
+        "detect_bad_channels": {
+            "method": "coherence+psd",
+            "dead_channel_threshold": -0.5,
+            "noisy_channel_threshold": 1.0,
+            "outside_channel_threshold": -0.3,
+            "outside_channels_location": "top",
+            "n_neighbors": 11,
+            "seed": 0
+        },
+        "remove_out_channels": true,
+        "remove_bad_channels": true,
+        "max_bad_channel_fraction": 0.5,
+        "common_reference": {
+            "reference": "global",
+            "operator": "median"
+        },
+        "highpass_spatial_filter": {
+            "n_channel_pad": 60,
+            "n_channel_taper": null,
+            "direction": "y",
+            "apply_agc": true,
+            "agc_window_length_s": 0.01,
+            "highpass_butter_order": 3,
+            "highpass_butter_wn": 0.01
+        },
+        "motion_correction": {
+            "compute": true,
+            "apply": false,
+            "preset": "dredge_fast",
+            "detect_kwargs": {},
+            "select_kwargs": {},
+            "localize_peaks_kwargs": {},
+            "estimate_motion_kwargs": {
+                "win_step_norm": 0.1,
+                "win_scale_norm": 0.1
+            },
+            "interpolate_motion_kwargs": {}
+        }
+    },
+    "postprocessing": {
+        "job_kwargs": {
+            "chunk_duration": "1s",
+            "progress_bar": false
+        },
+        "use_motion_corrected": false,
+        "sparsity": {
+            "method": "radius",
+            "radius_um": 100
+        },
+        "duplicate_threshold": 0.9,
+        "return_scaled": true,
+        "random_spikes": {
+            "max_spikes_per_unit": 500,
+            "method": "uniform",
+            "margin_size": null,
+            "seed": null
+        },
+        "noise_levels": {
+            "num_chunks_per_segment": 20,
+            "chunk_size": 10000,
+            "seed": null
+        },
+        "waveforms": {
+            "ms_before": 3.0,
+            "ms_after": 4.0,
+            "dtype": null
+        },
+        "templates": {},
+        "spike_amplitudes": {
+            "peak_sign": "neg"
+        },
+        "template_similarity": {
+            "method": "cosine_similarity"
+        },
+        "correlograms": {
+            "window_ms": 50.0,
+            "bin_ms": 1.0
+        },
+        "isi_histograms": {
+            "window_ms": 100.0,
+            "bin_ms": 5.0
+        },
+        "unit_locations": {
+            "method": "monopolar_triangulation"
+        },
+        "spike_locations": {
+            "method": "grid_convolution"
+        },
+        "template_metrics": {
+            "upsampling_factor": 10,
+            "sparsity": null,
+            "include_multi_channel_metrics": true
+        },
+        "principal_components": {
+            "n_components": 5,
+            "mode": "by_channel_local",
+            "whiten": true
+        },
+        "quality_metrics_names": [
+            "num_spikes",
+            "firing_rate",
+            "presence_ratio",
+            "snr",
+            "isi_violation",
+            "rp_violation",
+            "sliding_rp_violation",
+            "amplitude_cutoff",
+            "amplitude_median",
+            "amplitude_cv",
+            "synchrony",
+            "firing_range",
+            "drift",
+            "isolation_distance",
+            "l_ratio",
+            "d_prime",
+            "nearest_neighbor",
+            "silhouette"
+        ],
+        "quality_metrics": {
+            "presence_ratio": {
+                "bin_duration_s": 60
+            },
+            "snr": {
+                "peak_sign": "neg", 
+                "peak_mode": "extremum"
+            },
+            "isi_violation": {
+                "isi_threshold_ms": 1.5, 
+                "min_isi_ms": 0
+            },
+            "rp_violation": {
+                "refractory_period_ms": 1, 
+                "censored_period_ms": 0.0
+            },
+            "sliding_rp_violation": {
+                "bin_size_ms": 0.25,
+                "window_size_s": 1,
+                "exclude_ref_period_below_ms": 0.5,
+                "max_ref_period_ms": 10,
+                "contamination_values": null
+            },
+            "amplitude_cutoff": {
+                "peak_sign": "neg",
+                "num_histogram_bins": 100,
+                "histogram_smoothing_value": 3,
+                "amplitudes_bins_min_ratio": 5
+            },
+            "amplitude_median": {
+                "peak_sign": "neg"
+            },
+            "amplitude_cv": {
+                "average_num_spikes_per_bin": 50,
+                "percentiles": [5, 95],
+                "min_num_bins": 10,
+                "amplitude_extension": "spike_amplitudes"
+            },
+            "firing_range": {
+                "bin_size_s": 5, 
+                "percentiles": [5, 95]
+            },
+            "synchrony": {
+                "synchrony_sizes": [2, 4, 8]
+            },
+            "nearest_neighbor": {
+                "max_spikes": 10000, 
+                "n_neighbors": 4
+            },
+            "nn_isolation": {
+                "max_spikes": 10000, 
+                "min_spikes": 10, 
+                "n_neighbors": 4, 
+                "n_components": 10, 
+                "radius_um": 100
+            },
+            "nn_noise_overlap": {
+                "max_spikes": 10000, 
+                "min_spikes": 10, 
+                "n_neighbors": 4, 
+                "n_components": 10, 
+                "radius_um": 100
+            },
+            "silhouette": {
+                "method": ["simplified"]
+            }
+        }
+    },
+    "curation": {
+        "job_kwargs": {
+            "chunk_duration": "1s",
+            "progress_bar": false
+        },
+        "query": "isi_violations_ratio < 0.5 and presence_ratio > 0.8 and amplitude_cutoff < 0.1",
+        "noise_neural_classifier": "SpikeInterface/UnitRefine_noise_neural_classifier",
+        "sua_mua_classifier": "SpikeInterface/UnitRefine_sua_mua_classifier"
+    },
+    "visualization": {
+        "job_kwargs": {
+            "chunk_duration": "1s",
+            "progress_bar": false
+        },
+        "timeseries": {
+            "n_snippets_per_segment": 2,
+            "snippet_duration_s": 0.5
+        },
+        "drift": {
+            "detection": {
+                "peak_sign": "neg",
+                "detect_threshold": 5,
+                "exclude_sweep_ms": 0.1
+            },
+            "localization": {
+                "ms_before": 0.1,
+                "ms_after": 0.3,
+                "radius_um": 100.0
+            },
+            "n_skip": 30,
+            "alpha": 0.15,
+            "vmin": -200,
+            "vmax": 0,
+            "cmap": "Greys_r",
+            "figsize": [10, 10]
+        },
+        "motion": {
+            "cmap": "Greys_r",
+            "scatter_decimate": 15,
+            "figsize": [15, 10]
+        }
+    },
+    "nwb": {
+        "backend": "zarr",
+        "ecephys": {
+            "stub": false,
+            "stub_seconds": 10,
+            "write_lfp": true,
+            "write_raw": false,
+            "lfp_temporal_factor": 2,
+            "lfp_spatial_factor": 4,
+            "lfp_highpass_freq_min": 0.1,
+            "surface_channel_agar_probes_indices": "",
+            "lfp": {
+                "filter": {
+                    "freq_min": 0.1,
+                    "freq_max": 500
+                },
+                "sampling_rate": 2500
+            }
+        }
+    },
+    "spikesorting": {
+        "sorter": null,
+        "kilosort4": {
+            "job_kwargs": {
+                "chunk_duration": "1s",
+                "progress_bar": false
+            },
+            "skip_motion_correction": false,
+            "min_drift_channels": 96,
+            "raise_if_fails": true,
+            "clear_cache": false,
+            "sorter": {
+                "batch_size": 60000,
+                "nblocks": 5,
+                "Th_universal": 9,
+                "Th_learned": 8,
+                "do_CAR": true,
+                "invert_sign": false,
+                "nt": 61,
+                "shift": null,
+                "scale": null,
+                "artifact_threshold": null,
+                "nskip": 25,
+                "whitening_range": 32,
+                "highpass_cutoff": 300,
+                "binning_depth": 5,
+                "sig_interp": 20,
+                "drift_smoothing": [0.5, 0.5, 0.5],
+                "nt0min": null,
+                "dmin": null,
+                "dminx": 32,
+                "min_template_size": 10,
+                "template_sizes": 5,
+                "nearest_chans": 10,
+                "nearest_templates": 100,
+                "max_channel_distance": null,
+                "templates_from_data": true,
+                "n_templates": 6,
+                "n_pcs": 6,
+                "Th_single_ch": 6,
+                "acg_threshold": 0.2,
+                "ccg_threshold": 0.25,
+                "cluster_downsampling": 20,
+                "x_centers": null,
+                "duplicate_spike_ms": 0.25,
+                "save_preprocessed_copy": false,
+                "torch_device": "auto",
+                "bad_channels": null,
+                "clear_cache": false,
+                "save_extra_vars": false,
+                "do_correction": true,
+                "keep_good_only": false,
+                "skip_kilosort_preprocessing": false,
+                "use_binary_file": null,
+                "delete_recording_dat": true
+            }
+        },
+        "kilosort25": {
+            "job_kwargs": {
+                "chunk_duration": "1s",
+                "progress_bar": false
+            },
+            "skip_motion_correction": false,
+            "min_drift_channels": 96,
+            "raise_if_fails": true,
+            "sorter": {
+                "detect_threshold": 6,
+                "projection_threshold": [10, 4],
+                "preclust_threshold": 8,
+                "car": true,
+                "minFR": 0.1,
+                "minfr_goodchannels": 0.1,
+                "nblocks": 5,
+                "sig": 20,
+                "freq_min": 150,
+                "sigmaMask": 30,
+                "nPCs": 3,
+                "ntbuff": 64,
+                "nfilt_factor": 4,
+                "NT": null,
+                "AUCsplit": 0.9,
+                "do_correction": true,
+                "wave_length": 61,
+                "keep_good_only": false,
+                "skip_kilosort_preprocessing": false,
+                "scaleproc": null,
+                "save_rez_to_mat": false,
+                "delete_tmp_files": ["matlab_files"],
+                "delete_recording_dat": false
+            }
+        },
+        "spykingcircus2": {
+            "job_kwargs": {
+                "chunk_duration": "1s",
+                "progress_bar": false
+            },
+            "sorter": {
+                "general": {"ms_before": 2, "ms_after": 2, "radius_um": 100},
+                "sparsity": {"method": "snr", "amplitude_mode": "peak_to_peak", "threshold": 0.25},
+                "filtering": {"freq_min": 150, "freq_max": 7000, "ftype": "bessel", "filter_order": 2, "margin_ms": 10},
+                "whitening": {"mode": "local", "regularize": false},
+                "detection": {"peak_sign": "neg", "detect_threshold": 5},
+                "selection": {
+                    "method": "uniform",
+                    "n_peaks_per_channel": 5000,
+                    "min_n_peaks": 100000,
+                    "select_per_channel": false,
+                    "seed": 42
+                },
+                "apply_motion_correction": true,
+                "motion_correction": {"preset": "dredge_fast"},
+                "merging": {"max_distance_um": 50},
+                "clustering": {"legacy": true},
+                "matching": {"method": "wobble"},
+                "apply_preprocessing": false,
+                "templates_from_svd": true,
+                "cache_preprocessing": {"mode": "no-cache", "memory_limit": 0.5, "delete_cache": true},
+                "multi_units_only": false,
+                "job_kwargs": {"n_jobs": 0.9},
+                "seed": 42,
+                "debug": false
+            }
+        }
+    }
+}

@@ -1,5 +1,15 @@
 # test pipeline with sample_nwb file
 # DOCKER_IMAGE="ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:si-0.102.1"
+NXF_VERSION="25.04.1"
+
+# Check if arguments are passed
+if [ "$#" -gt 0 ]; then
+    ARGS="$@"
+    echo "Arguments passed: $ARGS"
+else
+    ARGS=""
+    echo "No arguments passed"
+fi
 
 SCRIPT_PATH="$(realpath "$0")"
 echo "Running script at: $SCRIPT_PATH"
@@ -24,11 +34,18 @@ fi
 
 # define INPUT and OUTPUT directories
 DATA_PATH="$SAMPLE_DATASET_PATH/nwb"
-RESULTS_PATH="$SAMPLE_DATASET_PATH/nwb/results"
+RESULTS_PATH="$SAMPLE_DATASET_PATH/nwb_results"
+
+# check if nextflow_local_custom.config exists
+if [ -f "$PIPELINE_PATH/pipeline/nextflow_local_custom.config" ]; then
+    CONFIG_FILE="$PIPELINE_PATH/pipeline/nextflow_local_custom.config"
+else
+    CONFIG_FILE="$PIPELINE_PATH/pipeline/nextflow_local.config"
+fi
+echo "Using config file: $CONFIG_FILE"
 
 # run pipeline
-NXF_VER=22.10.8 DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
-    -C $PIPELINE_PATH/pipeline/nextflow_local.config \
-    -log $RESULTS_PATH/nextflow/nextflow.log \
-    run $PIPELINE_PATH/pipeline/main_local.nf \
-    --sorter kilosort4 --job_dispatch_args "--input nwb"
+NXF_VER=$NXF_VERSION DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
+    -C $CONFIG_FILE -log $RESULTS_PATH/nextflow/nextflow.log \
+    run $PIPELINE_PATH/pipeline/main_multi_backend.nf \
+    --params_file params_test.json $ARGS

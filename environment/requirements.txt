@@ -1,10 +1,13 @@
-spikeinterface==0.102.1
+spikeinterface==0.102.3
 pyvips==2.2.1
 torch==2.6.0
-pynwb==2.8.3
+pynwb==2.8.2
 hdbscan==0.8.40
 neuroconv==0.6.7
 wavpack-numcodecs==0.2.2
-hdmf-zarr==0.11.0
+hdmf-zarr==0.9.0
+s3fs==2025.3.0
+seaborn==0.13.2
 aind-data-schema==1.3.0
-aind_metadata_upgrader==0.0.24
+aind-qcportal-schema==0.4.0
+aind-metadata-upgrader==0.0.24

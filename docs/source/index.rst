@@ -14,12 +14,13 @@ Welcome to the AIND Ephys Pipeline documentation. This pipeline provides a compr
    parameters
    deployments
    customization
+   troubleshooting
    releases
 
 Overview
 --------
 
-The AIND Ephys Pipeline is built on Nextflow and integrates multiple tools for electrophysiology data processing, 
+The AIND Ephys Pipeline is built on ``Nextflow`` and integrates multiple tools for electrophysiology data processing, 
 from preprocessing through spike sorting to visualization and NWB export.
 
 Quick Links
