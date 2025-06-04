@@ -326,7 +326,7 @@ To deploy on a SLURM cluster, you need to have access to a SLURM cluster and hav
 To use Figurl cloud visualizations, follow the same steps descrived in the 
 [Local deployment - Requirements](#requirements) section and set the KACHERY environment variables.
 
-Then, you can submit the pipeline to the cluster similarly to the Local deplyment, 
+Then, you can submit the pipeline to the cluster similarly to the Local deployment, 
 but wrapping the command into a script that can be launched with `sbatch`.
 
 To avoid downloading the container images in the current location (usually the home folder),

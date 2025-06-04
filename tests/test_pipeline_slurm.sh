@@ -4,7 +4,7 @@
 # * Appropriate resources allocation, e.g. 
 #   `salloc -N 1 -n 12 -t 00:30:00 --gres=gpu:1 --mem=32G`
 
-# * Environement with nextflow and the required dependencies installed
+# * Environment with nextflow and the required dependencies installed
 #     e.g., create an environment.yml file with the following content:
 #     ```
 #     name: aind-ephys-pipeline

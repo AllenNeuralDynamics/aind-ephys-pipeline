@@ -11,7 +11,7 @@
 
 ### New features:
 * Removed unit classifier process (moved to curation)
-* Centralized capsule verions
+* Centralized capsule versions
 * Added CI tests and automated deployments
 
 
