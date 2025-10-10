@@ -106,8 +106,8 @@ Running Locally
 
 .. code-block:: bash
 
-   DATA_PATH=$PWD/../data;
-   RESULTS_PATH=$PWD/../results;
+   DATA_PATH=$PWD/../data
+   RESULTS_PATH=$PWD/../results
    nextflow -C nextflow_local.config -log $RESULTS_PATH/nextflow/nextflow.log \
       run main_multi_backend.nf \
       --n_jobs 8 -resume
