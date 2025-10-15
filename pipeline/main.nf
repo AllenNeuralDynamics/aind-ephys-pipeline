@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-// hash:sha256:b96c142176928125b7a3ff1ba213c801af263a85b7ee3660c7d46627f2bf51f2
+// hash:sha256:e2bd9e3d200127ccbadf2f10fcb7fe9a3524ca3f0502228c21e0f7fa61990679
 
 nextflow.enable.dsl = 1
 
@@ -344,8 +344,8 @@ process capsule_aind_ephys_results_collector_9 {
 	tag 'capsule-0338545'
 	container "$REGISTRY_HOST/published/5b7e48bb-8123-4b4c-b7bf-ebaa2de8555e:v6"
 
-	cpus 1
-	memory '7.5 GB'
+	cpus 4
+	memory '30 GB'
 
 	publishDir "$RESULTS_PATH", saveAs: { filename -> new File(filename).getName() }
 
@@ -369,8 +369,8 @@ process capsule_aind_ephys_results_collector_9 {
 	set -e
 
 	export CO_CAPSULE_ID=5b7e48bb-8123-4b4c-b7bf-ebaa2de8555e
-	export CO_CPUS=1
-	export CO_MEMORY=8053063680
+	export CO_CPUS=4
+	export CO_MEMORY=32212254720
 
 	mkdir -p capsule
 	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
@@ -449,7 +449,7 @@ process capsule_nwb_packaging_units_11 {
 // capsule - NWB Packaging Ecephys
 process capsule_nwb_packaging_ecephys_capsule_12 {
 	tag 'capsule-3438484'
-	container "$REGISTRY_HOST/published/b16dfc92-eab4-425d-978f-0ba61632c413:v8"
+	container "$REGISTRY_HOST/published/b16dfc92-eab4-425d-978f-0ba61632c413:v9"
 
 	cpus 8
 	memory '60 GB'
@@ -477,9 +477,9 @@ process capsule_nwb_packaging_ecephys_capsule_12 {
 
 	echo "[${task.tag}] cloning git repo..."
 	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git clone --filter=tree:0 --branch v8.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-3438484.git" capsule-repo
+		git clone --filter=tree:0 --branch v9.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-3438484.git" capsule-repo
 	else
-		git clone --branch v8.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-3438484.git" capsule-repo
+		git clone --branch v9.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-3438484.git" capsule-repo
 	fi
 	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
 	rm -rf capsule-repo
