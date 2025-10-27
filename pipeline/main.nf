@@ -502,7 +502,7 @@ process capsule_nwb_packaging_units_11 {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-7106853.git" capsule-repo
-	git -C capsule-repo checkout fed27f0441f2fb91b028dd43dc3a8acb3d6f01c2 --quiet
+	git -C capsule-repo checkout f68528f1d20a9bf5e228e426896c299a5cf4179f --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
