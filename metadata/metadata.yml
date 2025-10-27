@@ -1,5 +1,5 @@
 metadata_version: 1
-name: aind-ephys-pipeline-kilosort25
+name: aind-ephys-pipeline (kilosort25-v0.1.0)
 description: |-
   Electrophysiology analysis pipeline using Kilosort2.5 via SpikeInterface.
 
