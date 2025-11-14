@@ -13,7 +13,7 @@ Local Deployment
 For local deployment, you need:
 
 * ``nextflow`` (version 22.10.8 recommended)
-* ``docker``
+* ``docker`` (19.03+ if going to use GPUs, e.g. for spikesort_kilosort* workflows)
 * ``figurl`` (optional, for cloud visualization)
 
 SLURM Deployment
