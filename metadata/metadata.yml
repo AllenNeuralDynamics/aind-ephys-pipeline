@@ -1,12 +1,12 @@
 metadata_version: 1
-name: aind-ephys-pipeline (kilosort4)
+name: aind-ephys-pipeline (lupin)
 description: |-
-  Electrophysiology analysis pipeline using Kilosort2.5 via SpikeInterface.
+  Electrophysiology analysis pipeline using Lupin via SpikeInterface.
 
   The pipeline includes:
 
   - preprocessing: phase_shift, highpass filter, denoising (bad channel removal + common median reference ("cmr") or highpass spatial filter - "destripe"), and motion estimation (optionally correction)
-  - spike sorting: with Kilosort2.5
+  - spike sorting: with Lupin
   - postprocessing: remove duplicate units, compute amplitudes, spike/unit locations, PCA, correlograms, template similarity, template metrics, and quality metrics
   - curation: based on ISI violation ratio, presence ratio, and amplitude cutoff and unit labeling (noise, MUA, SUA) based on pre-trained classifier (UnitRefine)
   - visualization: timeseries, drift maps, and sorting output in sortingview
