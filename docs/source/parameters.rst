@@ -113,7 +113,7 @@ NWB Ecephys Parameters
 .. code-block:: bash
 
    --nwb_ecephys_args "
-     --backend {pynwb,hdmf}    # Backend to use for NWB writing (if pipeline 'input' is not NWB)
+     --backend {zarr,hdf5}     # Backend to use for NWB writing (default: zarr)
      --skip-lfp                # Skip LFP electrical series
      --write-raw               # Write RAW electrical series
      --lfp_temporal_factor N   # Temporal subsampling factor
