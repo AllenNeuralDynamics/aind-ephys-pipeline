@@ -179,7 +179,7 @@ process job_dispatch {
     git clone "https://github.com/CodyCBakerPhD/aind-ephys-job-dispatch.git" -b dandi_compute_fixes capsule-repo
     echo "\$(git -C capsule-repo remote -v) forked from"
     echo "\$(git -C capsule-repo branch) checked out"
-    git -C capsule-repo -c core.fileMode=false checkout ${versions['JOB_DISPATCH']}  --quiet
+    # git -C capsule-repo -c core.fileMode=false checkout ${versions['JOB_DISPATCH']}  --quiet
     mv capsule-repo/code capsule/code
     rm -rf capsule-repo
 
