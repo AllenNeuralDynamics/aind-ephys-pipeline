@@ -176,7 +176,7 @@ process job_dispatch {
     TASK_DIR=\$(pwd)
 
     echo "[${task.tag}] cloning git repo..."
-    git clone "https://github.com/AllenNeuralDynamics/aind-ephys-job-dispatch.git" capsule-repo
+    git clone "https://github.com/CodyCBakerPhD/aind-ephys-job-dispatch.git" -b dandi_compute_fixes capsule-repo
     git -C capsule-repo -c core.fileMode=false checkout ${versions['JOB_DISPATCH']}  --quiet
     mv capsule-repo/code capsule/code
     rm -rf capsule-repo
