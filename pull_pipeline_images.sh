@@ -98,10 +98,10 @@ esac
 # Pull images
 # ------------------------------
 
-
 for img in "${IMAGES[@]}"; do
   IMG_NAME="$img:$TAG"
   IMG_NAME="${IMG_NAME//\//-}"
+  IMG_NAME="${IMG_NAME//:/-}"
 
   echo "[pull] $img:$TAG to $CACHE_DIR/$IMG_NAME.img"
   if command -v singularity >/dev/null 2>&1; then
