@@ -38,8 +38,8 @@ flowchart LR
     end
 
     %% Connections
-    input --> deploy
-    deploy --> pipeline
+    input --> pipeline
+    deploy -.->|"orchestrates"| pipeline
     containers -.->|"provide runtime"| pipeline
     models -.->|"used in curation"| pipeline
     pipeline --> output
