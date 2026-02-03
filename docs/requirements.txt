@@ -3,3 +3,4 @@ furo
 sphinx-design
 numpydoc
 sphinxcontrib-jquery
+sphinxcontrib-mermaid
