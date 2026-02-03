@@ -56,7 +56,12 @@ flowchart LR
 
 **Key Points:**
 - **Two Deployment Modes**: Code Ocean ([`main.nf`](pipeline/main.nf)) uses branch-based sorter selection; SLURM/Local ([`main_multi_backend.nf`](pipeline/main_multi_backend.nf)) uses parameter-based selection
-- **11 Processing Steps**: Job dispatch → Preprocessing → Spike sorting (KS2.5/KS4/SC2) → Postprocessing → Curation → Visualization → Results collection → Quality control → NWB export
+- **11 Processing Steps**:
+  1. Job dispatch
+  2. Preprocessing
+  3. Spike sorting (KS2.5/KS4/SC2)
+  4-6. Postprocessing → Curation → Visualization
+  7-11. Results collection → Quality control → NWB export
 - **Infrastructure**: 4 container images from [GHCR](https://github.com/orgs/AllenNeuralDynamics/packages) and [UnitRefine ML models](https://huggingface.co/SpikeInterface) from Hugging Face
 - **Parallelization**: Steps run in parallel per probe/shank; version controlled via [`capsule_versions.env`](pipeline/capsule_versions.env)
 
