@@ -12,7 +12,7 @@ Detailed Architecture Diagram
 .. only:: html
 
    .. note::
-      **Interactive Diagram:** Use your mouse to zoom (scroll) and pan (click + drag). Click the ⛶ button for fullscreen view. All hyperlinks are clickable.
+      **Interactive Diagram:** Use your mouse to zoom (scroll) and pan (click + drag). All hyperlinks are clickable. A fullscreen button (⛶) may appear in the top-right corner when hovering over the diagram.
 
 .. mermaid::
 
