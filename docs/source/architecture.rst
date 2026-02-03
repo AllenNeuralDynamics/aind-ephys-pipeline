@@ -9,6 +9,11 @@ infrastructure components, and data flow.
 Detailed Architecture Diagram
 ------------------------------
 
+.. only:: html
+
+   .. note::
+      **Interactive Diagram:** Use your mouse to zoom (scroll) and pan (click + drag). Click the ⛶ button for fullscreen view. All hyperlinks are clickable.
+
 .. mermaid::
 
    flowchart TD
