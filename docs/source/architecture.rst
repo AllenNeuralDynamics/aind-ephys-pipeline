@@ -197,4 +197,50 @@ Version Control
 Git commit hashes in ``capsule_versions.env`` pin exact versions of each processing step's repository,
 ensuring reproducibility across pipeline runs.
 
-See :doc:`pipeline_steps` for detailed information about each processing step.
+Pipeline Steps Detailed Breakdown
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. **Job Dispatch** (`aind-ephys-job-dispatch <https://github.com/AllenNeuralDynamics/aind-ephys-job-dispatch>`_):
+   Generates a list of JSON files to be processed in parallel. Parallelization is performed over multiple probes
+   and multiple shanks (e.g., for NP2-4shank probes). The steps from preprocessing to visualization are run in parallel.
+
+2. **Preprocessing** (`aind-ephys-preprocessing <https://github.com/AllenNeuralDynamics/aind-ephys-preprocessing>`_):
+   Phase shift, highpass filter, denoising (bad channel removal + common median reference ("cmr") or highpass
+   spatial filter - "destripe"), and motion estimation (optionally correction).
+
+3. **Spike Sorting** - Several spike sorters are available:
+
+   - `Kilosort2.5 <https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort25>`_
+   - `Kilosort4 <https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort4>`_
+   - `SpykingCircus2 <https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-spykingcircus2>`_
+
+4. **Postprocessing** (`aind-ephys-postprocessing <https://github.com/AllenNeuralDynamics/aind-ephys-postprocessing>`_):
+   Remove duplicate units, compute amplitudes, spike/unit locations, PCA, correlograms, template similarity,
+   template metrics, and quality metrics.
+
+5. **Curation** (`aind-ephys-curation <https://github.com/AllenNeuralDynamics/aind-ephys-curation>`_):
+   Based on ISI violation ratio, presence ratio, and amplitude cutoff and pretrained unit classifier
+   (`UnitRefine <https://huggingface.co/SpikeInterface>`_).
+
+6. **Visualization** (`aind-ephys-visualization <https://github.com/AllenNeuralDynamics/aind-ephys-visualization>`_):
+   Timeseries, drift maps, and sorting output in `figurl <https://github.com/flatironinstitute/figurl>`_.
+
+7. **Result Collection** (`aind-ephys-result-collector <https://github.com/AllenNeuralDynamics/aind-ephys-result-collector>`_):
+   This step collects the output of all parallel jobs and copies the output folders to the results folder.
+
+8. **Quality Control** (`aind-ephys-processing-qc <https://github.com/AllenNeuralDynamics/aind-ephys-processing-qc>`_):
+   Run quality control checks on the processing results.
+
+9. **QC Collector** (`aind-ephys-qc-collector <https://github.com/AllenNeuralDynamics/aind-ephys-qc-collector>`_):
+   Aggregate quality control results from parallel jobs.
+
+10. **NWB Ecephys** (`aind-ecephys-nwb <https://github.com/AllenNeuralDynamics/aind-ecephys-nwb>`_):
+    Export raw/LFP electrophysiology data to NWB format.
+
+11. **NWB Units** (`aind-units-nwb <https://github.com/AllenNeuralDynamics/aind-units-nwb>`_):
+    Export spike sorting results (units) to NWB format.
+
+Each file can contain multiple streams (e.g., probes), but only a continuous chunk of data (such as an
+Open Ephys experiment+recording or an NWB ``ElectricalSeries``).
+
+See :doc:`pipeline_steps` for more detailed information about each processing step.
