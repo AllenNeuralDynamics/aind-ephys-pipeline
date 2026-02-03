@@ -72,4 +72,4 @@ mermaid_fullscreen = True
 
 # Customize fullscreen button (optional)
 mermaid_fullscreen_button_text = "⛶"
-mermaid_fullscreen_button_opacity = "0.7"
+mermaid_fullscreen_button_opacity = "70"  # Percentage value (70 = 70%)
