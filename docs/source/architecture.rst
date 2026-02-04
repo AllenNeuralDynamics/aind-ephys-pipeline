@@ -192,9 +192,9 @@ Data Flow
 **Processing**: 11 sequential steps with parallelization at steps 2-6 (per probe/shank)
 
 **Output**: Results published to ``RESULTS_PATH`` including:
-   - NWB files (steps 10-11)
+   - Collected parallel job results - preprocessing, sorting, postprocessing, curation, visualizations (step 7)
    - Quality control reports (step 9)
-   - Visualizations (step 6)
+   - NWB files with raw/LFP data and spike sorting units (steps 10-11)
 
 Version Control
 ~~~~~~~~~~~~~~~
