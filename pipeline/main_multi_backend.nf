@@ -69,7 +69,7 @@ if (params.params_file) {
 def job_dispatch_args = ""
 if (params.params_file && json_params.job_dispatch) {
     job_dispatch_args = "--params '${groovy.json.JsonOutput.toJson(json_params.job_dispatch)}'"
-} else if ("job_dispatch_args" in params_keys) {
+} else if ("job_dispatch_args" in params_keys && params.job_dispatch_args instanceof String) {
     job_dispatch_args = params.job_dispatch_args
 }
 
@@ -83,28 +83,28 @@ if (params.params_file && json_params.preprocessing) {
 def postprocessing_args = ""
 if (params.params_file && json_params.postprocessing) {
     postprocessing_args = "--params '${groovy.json.JsonOutput.toJson(json_params.postprocessing)}'"
-} else if ("postprocessing_args" in params_keys) {
+} else if ("postprocessing_args" in params_keys && params.postprocessing_args instanceof String) {
     postprocessing_args = params.postprocessing_args
 }
 
 def curation_args = ""
 if (params.params_file && json_params.curation) {
     curation_args = "--params '${groovy.json.JsonOutput.toJson(json_params.curation)}'"
-} else if ("curation_args" in params_keys) {
+} else if ("curation_args" in params_keys && params.curation_args instanceof String) {
     curation_args = params.curation_args
 }
 
 def visualization_kwargs = ""
 if (params.params_file && json_params.visualization) {
     visualization_kwargs = "--params '${groovy.json.JsonOutput.toJson(json_params.visualization)}'"
-} else if ("visualization_kwargs" in params_keys) {
+} else if ("visualization_kwargs" in params_keys && params.visualization_kwargs instanceof String) {
     visualization_kwargs = params.visualization_kwargs
 }
 
 def nwb_ecephys_args = ""
 if (params.params_file && json_params.nwb?.ecephys) {
     nwb_ecephys_args = "--params '${groovy.json.JsonOutput.toJson(json_params.nwb.ecephys)}'"
-} else if ("nwb_ecephys_args" in params_keys) {
+} else if ("nwb_ecephys_args" in params_keys && params.nwb_ecephys_args instanceof String) {
     nwb_ecephys_args = params.nwb_ecephys_args
 }
 
