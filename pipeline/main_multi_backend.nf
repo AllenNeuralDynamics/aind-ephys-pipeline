@@ -76,7 +76,7 @@ if (params.params_file && json_params.job_dispatch) {
 def preprocessing_args = ""
 if (params.params_file && json_params.preprocessing) {
     preprocessing_args = "--params '${groovy.json.JsonOutput.toJson(json_params.preprocessing)}'"
-} else if ("preprocessing_args" in params_keys) {
+} else if ("preprocessing_args" in params_keys && params.preprocessing_args instanceof String) {
     preprocessing_args = params.preprocessing_args
 }
 
