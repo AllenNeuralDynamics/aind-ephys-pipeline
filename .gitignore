@@ -13,3 +13,4 @@ tests/.nfs*
 
 # User-specific files
 pipeline/nextflow_slurm_custom.config
+*.idea
