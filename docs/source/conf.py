@@ -21,6 +21,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
+    'sphinxcontrib.mermaid',
 ]
 
 # Napoleon settings
@@ -59,3 +60,16 @@ html_theme_options = {
     "light_logo": "light-logo.svg",
     "dark_logo": "dark-logo.svg",
 }
+
+# -- Mermaid configuration ---------------------------------------------------
+# https://github.com/mgaitan/sphinxcontrib-mermaid
+
+# Enable zoom functionality for all mermaid diagrams
+mermaid_d3_zoom = True
+
+# Enable fullscreen modal viewing for all mermaid diagrams
+mermaid_fullscreen = True
+
+# Customize fullscreen button (optional)
+mermaid_fullscreen_button_text = "⛶"
+mermaid_fullscreen_button_opacity = "70"  # Percentage value (70 = 70%)

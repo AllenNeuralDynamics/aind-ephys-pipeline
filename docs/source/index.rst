@@ -8,6 +8,7 @@ Welcome to the AIND Ephys Pipeline documentation. This pipeline provides a compr
    :caption: Contents:
 
    introduction
+   architecture
    installation
    pipeline_steps
    input_output
