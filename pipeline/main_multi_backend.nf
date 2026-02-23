@@ -238,6 +238,8 @@ process preprocessing {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -277,6 +279,8 @@ process spikesort_kilosort25 {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -316,6 +320,8 @@ process spikesort_kilosort4 {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -355,11 +361,54 @@ process spikesort_spykingcircus2 {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
     clone_repo "${params.git_repo_prefix}ephys-spikesort-spykingcircus2.git" "${versions['SPIKESORT_SC2']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${spikesorting_args} ${job_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process spikesort_lupin {
+    tag 'spikesort-lupin'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    input:
+    val max_duration_minutes
+    path preprocessing_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${params.git_repo_prefix}ephys-spikesort-lupin.git" "${versions['SPIKESORT_LUPIN']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -397,6 +446,8 @@ process postprocessing {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -436,6 +487,8 @@ process curation {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -480,6 +533,8 @@ process visualization {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -570,6 +625,8 @@ process quality_control {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -626,44 +683,6 @@ process quality_control_collector {
     """
 }
 
-process nwb_subject {
-    tag 'nwb-subject'
-    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${params.container_tag}"
-    container container_name
-
-    input:
-    val max_duration_minutes
-    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
-
-    output:
-    path 'capsule/results/*', emit: results
-
-    script:
-    """
-    #!/usr/bin/env bash
-    set -e
-
-    mkdir -p capsule
-    mkdir -p capsule/data
-    mkdir -p capsule/results
-    mkdir -p capsule/scratch
-
-    if [[ ${params.executor} == "slurm" ]]; then
-        echo "[${task.tag}] allocated task time: ${task.time}"
-    fi
-
-    echo "[${task.tag}] cloning git repo..."
-    ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}subject-nwb.git" "${versions['NWB_SUBJECT']}"
-
-    echo "[${task.tag}] running capsule..."
-    cd capsule/code
-    chmod +x run
-    ./run ${nwb_subject_args}
-
-    echo "[${task.tag}] completed!"
-    """
-}
 
 process nwb_ecephys {
     tag 'nwb-ecephys'
@@ -690,6 +709,8 @@ process nwb_ecephys {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -784,6 +805,13 @@ workflow {
             max_duration_minutes,
             preprocessing_out.results
         )
+    } else if (sorter == 'lupin') {
+        spikesort_out = spikesort_lupin(
+            max_duration_minutes,
+            preprocessing_out.results
+        )
+    } else {
+        error "Unsupported sorter: ${sorter}"
     }
 
     // Postprocessing
