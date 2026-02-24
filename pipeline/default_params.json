@@ -373,29 +373,32 @@
                 "progress_bar": false
             },
             "sorter": {
-                "general": {"ms_before": 2, "ms_after": 2, "radius_um": 100},
-                "sparsity": {"method": "snr", "amplitude_mode": "peak_to_peak", "threshold": 0.25},
-                "filtering": {"freq_min": 150, "freq_max": 7000, "ftype": "bessel", "filter_order": 2, "margin_ms": 10},
+                "general": {"ms_before": 0.5, "ms_after": 1.5, "radius_um": 100.0},
+                "filtering": {"freq_min": 150, "freq_max": 7000, "ftype": "bessel", "filter_order": 2, "margin_ms": 20},
                 "whitening": {"mode": "local", "regularize": false},
-                "detection": {"peak_sign": "neg", "detect_threshold": 5},
+                "detection": {
+                    "method": "matched_filtering",
+                    "method_kwargs": {"peak_sign": "neg", "detect_threshold": 5},
+                    "pipeline_kwargs": {}
+                },
                 "selection": {
                     "method": "uniform",
-                    "n_peaks_per_channel": 5000,
-                    "min_n_peaks": 100000,
-                    "select_per_channel": false,
-                    "seed": 42
+                    "method_kwargs": {"n_peaks_per_channel": 5000, "min_n_peaks": 100000, "select_per_channel": false},
                 },
                 "apply_motion_correction": true,
                 "motion_correction": {"preset": "dredge_fast"},
                 "merging": {"max_distance_um": 50},
-                "clustering": {"legacy": true},
-                "matching": {"method": "wobble"},
+                "clustering": {"method": "iterative-hdbscan", "method_kwargs": {}},
+                "cleaning": {"min_snr": 5, "max_jitter_ms": 0.1, "sparsify_threshold": null},
+                "matching": {"method": "circus-omp", "method_kwargs": {}, "pipeline_kwargs": {}},
                 "apply_preprocessing": false,
-                "templates_from_svd": true,
-                "cache_preprocessing": {"mode": "no-cache", "memory_limit": 0.5, "delete_cache": true},
+                "apply_whitening": true,
+                "cache_preprocessing": {"mode": "memory", "memory_limit": 0.5, "delete_cache": true},
+                "chunk_preprocessing": {"memory_limit": null},
                 "multi_units_only": false,
-                "job_kwargs": {"n_jobs": 0.9},
+                "job_kwargs": {},
                 "seed": 42,
+                "deterministic_peaks_detection": false,
                 "debug": false
             }
         }
