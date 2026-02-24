@@ -4,7 +4,7 @@ Introduction
 The AIND Ephys Pipeline is an electrophysiology analysis pipeline built with `SpikeInterface <https://github.com/SpikeInterface/spikeinterface>`_ and `Nextflow <https://www.nextflow.io/>`_. 
 It provides a comprehensive suite of tools for processing and analyzing electrophysiology data.
 
-Key concepts
+Key Concepts
 ------------
 
 The pipeline is designed to process raw electrophysiology data through a series of "discrete" steps 

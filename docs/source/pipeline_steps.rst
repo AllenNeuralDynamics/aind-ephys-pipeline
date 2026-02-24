@@ -85,7 +85,7 @@ Each plot of the *timeseries* is also saved as a static image in the ``visualiza
 Result Collection
 -----------------
 
-The `result collection <https://github.com/AllenNeuralDynamics/aind-ephys-result-collector/>`_ step:
+The `result collection <https://github.com/AllenNeuralDynamics/aind-ephys-results-collector/>`_ step:
 
 * Aggregates outputs from all parallel jobs
 * Copies output folders to the results directory
