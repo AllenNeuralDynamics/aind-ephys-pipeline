@@ -11,7 +11,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|aind-nwb-utils|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs' requirements.txt | xargs pip install
+    grep -E 'aind-data-schema|aind-nwb-utils|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs|neo' requirements.txt | xargs pip install
 
 # Extract the spikeinterface version and install with extras
 RUN pip install --upgrade pip && \
