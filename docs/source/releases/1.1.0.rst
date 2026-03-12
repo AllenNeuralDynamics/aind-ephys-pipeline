@@ -1,7 +1,7 @@
 .. _1.0.1:
 
-1.0.1 - February 2026
-=====================
+1.0.1 - March 2026
+==================
 
 Minor release of the AIND Ephys Pipeline, which includes bug fixes.
 
@@ -14,8 +14,10 @@ Package versions
 ----------------
 * ``spikeinterface`` version: 0.103.2
 * ``aind-data-schema`` version: 2.4.0
+* ``neo`` version 0.14.4
 
 Bug fixes
 ---------
 * Explicit specification of ``N_JOBS_EXT`` env variable for SLURM systems
 * Fix NWB export group naming
+* Fix NEO issue when importing CBIN files
