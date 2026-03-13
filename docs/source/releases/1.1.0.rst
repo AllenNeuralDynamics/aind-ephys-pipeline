@@ -8,6 +8,7 @@ Minor release of the AIND Ephys Pipeline, which includes bug fixes.
 The main changes in this release are:
 
 * Explicit specification of ``N_JOBS_EXT`` env variable for SLURM systems
+* Add ``EXTRA_INSTALLS`` variable in the ``capsule_versions.env`` file to specify extra packages needed for the reader.
   
 
 Package versions
