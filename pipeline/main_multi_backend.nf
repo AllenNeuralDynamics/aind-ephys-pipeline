@@ -66,6 +66,7 @@ params.versions = parse_capsule_versions()
 params.container_tag = "si-${params.versions['SPIKEINTERFACE_VERSION']}"
 println "CONTAINER TAG: ${params.container_tag}"
 
+// params keys on the outer level were loaded via CLI flags (the `json_params` are from the `params_file`)
 params_keys = params.keySet()
 
 // if not specified, assume local executor
@@ -103,13 +104,22 @@ if (params.params_file) {
     println "No parameters file provided, using command line arguments."
 }
 
-// Initialize args variables with params from JSON file or command line args
-def job_dispatch_args = ""
-if (params.params_file && json_params.job_dispatch) {
-    job_dispatch_args = "--params '${groovy.json.JsonOutput.toJson(json_params.job_dispatch)}'"
-} else if ("job_dispatch_args" in params_keys && params.job_dispatch_args instanceof String) {
-    job_dispatch_args = params.job_dispatch_args
+// Build job_dispatch params: start from file, merge CLI overrides, stringify once
+def job_dispatch_map = json_params.job_dispatch ? new LinkedHashMap(json_params.job_dispatch) : [:]
+println "Initial job_dispatch_map`: ${job_dispatch_map}"
+if ("job_dispatch_args" in params_keys && params.job_dispatch_args instanceof String) {
+    def cli_tokens = params.job_dispatch_args.trim().split(/\s+/) as List
+    for (int i = 0; i < cli_tokens.size(); i++) {
+        if (cli_tokens[i].startsWith('--')) {
+            def key = cli_tokens[i].substring(2).replace('-', '_')
+            def value = (i + 1 < cli_tokens.size() && !cli_tokens[i + 1].startsWith('--')) ? cli_tokens[++i] : true
+            job_dispatch_map[key] = value
+        }
+    }
 }
+println "`job_dispatch_map` after merging CLI args: ${job_dispatch_map}"
+def job_dispatch_args = job_dispatch_map ? "--params '${groovy.json.JsonOutput.toJson(job_dispatch_map)}'" : ""
+println "Final job_dispatch_args: ${job_dispatch_args}"
 
 def preprocessing_args = ""
 if (params.params_file && json_params.preprocessing) {
