@@ -50,8 +50,10 @@ def parse_capsule_versions() {
     if (file(capsule_versions).exists()) {
         file(capsule_versions).eachLine { line ->
             if (line.contains('=')) {
-                def (key, value) = line.tokenize('=')
-                versions[key.trim()] = value.trim()
+                def idx = line.indexOf('=')
+                def key = line.substring(0, idx).trim()
+                def value = line.substring(idx + 1).trim().replaceAll(/^["']|["']$/, '')
+                versions[key] = value
             }
         }
     } else {
@@ -65,6 +67,15 @@ params.versions = parse_capsule_versions()
 // container tag
 params.container_tag = "si-${params.versions['SPIKEINTERFACE_VERSION']}"
 println "CONTAINER TAG: ${params.container_tag}"
+params.extra_installs = params.versions['EXTRA_INSTALLS'] ?: ""
+if (params.extra_installs) {
+    println "Extra installs specified: ${params.extra_installs}"
+} else {
+    println "No extra installs specified."
+}
+def extra_installs_list = params.extra_installs ? params.extra_installs.split(',').collect { it.trim() }.findAll { it } : []
+def extra_installs_cmd = extra_installs_list ? "pip install " + extra_installs_list.collect { "'" + it + "'" }.join(' ') : ""
+def extra_installs_echo = extra_installs_list ? "echo 'installing extra packages: " + extra_installs_list.join(', ') + "'" : ""
 
 // params keys on the outer level were loaded via CLI flags (the `json_params` are from the `params_file`)
 params_keys = params.keySet()
@@ -212,6 +223,9 @@ process job_dispatch {
     #!/usr/bin/env bash
     set -e
 
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -259,6 +273,9 @@ process preprocessing {
     """
     #!/usr/bin/env bash
     set -e
+
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -468,6 +485,9 @@ process postprocessing {
     #!/usr/bin/env bash
     set -e
 
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -555,6 +575,9 @@ process visualization {
     #!/usr/bin/env bash
     set -e
 
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -606,6 +629,9 @@ process results_collector {
     #!/usr/bin/env bash
     set -e
 
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -646,6 +672,9 @@ process quality_control {
     """
     #!/usr/bin/env bash
     set -e
+
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -731,6 +760,9 @@ process nwb_ecephys {
     #!/usr/bin/env bash
     set -e
 
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -776,6 +808,9 @@ process nwb_units {
     """
     #!/usr/bin/env bash
     set -e
+
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
 
     mkdir -p capsule
     mkdir -p capsule/data

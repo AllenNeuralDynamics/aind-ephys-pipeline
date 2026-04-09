@@ -67,6 +67,11 @@ Job Dispatch Parameters
 
    "
 
+.. note::
+
+   If the reader needs extra packages installed, specify them in the ``EXTRA_INSTALLS`` variable in the ``capsule_versions.env`` file 
+   (e.g. ``EXTRA_INSTALLS="mtscomp"``).
+
 Preprocessing Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
