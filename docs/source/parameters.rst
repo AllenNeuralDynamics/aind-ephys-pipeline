@@ -42,7 +42,7 @@ Each pipeline step can be configured with specific parameters using the format:
 
 .. code-block:: bash
 
-   --{step_name}_args "{args}"
+   --{step_name}_args="{args}"
 
 Job Dispatch Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,9 +137,9 @@ Here's an example of running the pipeline with custom parameters:
    nextflow -C nextflow_local.config run main_multi_backend.nf \
      --n_jobs 16 \
      --sorter kilosort4 \
-     --job_dispatch_args "--input spikeglx --debug --debug-duration 120" \
-     --preprocessing_args "--motion compute --motion-preset nonrigid_fast_and_accurate" \
-     --nwb_ecephys_args "--skip-lfp"
+     --job_dispatch_args="--input spikeglx --debug --debug-duration 120" \
+     --preprocessing_args="--motion compute --motion-preset nonrigid_fast_and_accurate" \
+     --nwb_ecephys_args="--skip-lfp"
 
 This example:
    * Runs 16 parallel jobs
