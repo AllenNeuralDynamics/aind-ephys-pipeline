@@ -1,4 +1,4 @@
-name: Test Nextflow Pipeline
+name: Test Full Nextflow Pipeline
 
 on:
   pull_request:

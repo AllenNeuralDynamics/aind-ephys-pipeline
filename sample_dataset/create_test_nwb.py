@@ -37,5 +37,10 @@ def generate_nwb():
     with NWBHDF5IO(output_folder / "sample.nwb", mode="w") as io:
         io.write(nwbfile)
 
+    # save spikeinterface recording zarr format for testing the job dispatch
+    output_si_folder = this_folder / "spikeinterface"
+    output_si_folder.mkdir(exist_ok=True)
+    recording.save(folder=output_si_folder / "sample_recording.zarr", format="zarr")
+
 if __name__ == '__main__':
     generate_nwb()

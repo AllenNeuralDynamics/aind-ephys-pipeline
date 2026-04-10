@@ -202,7 +202,7 @@ process job_dispatch {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-job-dispatch.git" "${params.versions['JOB_DISPATCH']}"
+    clone_repo "${params.versions['JOB_DISPATCH_REPO']}" "${params.versions['JOB_DISPATCH_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -253,7 +253,7 @@ process preprocessing {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-preprocessing.git" "${params.versions['PREPROCESSING']}"
+    clone_repo "${params.versions['PREPROCESSING_REPO']}" "${params.versions['PREPROCESSING_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -294,7 +294,7 @@ process spikesort_kilosort25 {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-spikesort-kilosort25.git" "${params.versions['SPIKESORT_KS25']}"
+    clone_repo "${params.versions['SPIKESORT_KS25_REPO']}" "${params.versions['SPIKESORT_KS25_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -335,7 +335,7 @@ process spikesort_kilosort4 {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-spikesort-kilosort4.git" "${params.versions['SPIKESORT_KS4']}"
+    clone_repo "${params.versions['SPIKESORT_KS4_REPO']}" "${params.versions['SPIKESORT_KS4_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -376,7 +376,7 @@ process spikesort_spykingcircus2 {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-spikesort-spykingcircus2.git" "${params.versions['SPIKESORT_SC2']}"
+    clone_repo "${params.versions['SPIKESORT_SC2_REPO']}" "${params.versions['SPIKESORT_SC2_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -417,7 +417,7 @@ process spikesort_lupin {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-spikesort-lupin.git" "${params.versions['SPIKESORT_LUPIN']}"
+    clone_repo "${params.versions['SPIKESORT_LUPIN_REPO']}" "${params.versions['SPIKESORT_LUPIN_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -464,7 +464,7 @@ process postprocessing {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-postprocessing.git" "${params.versions['POSTPROCESSING']}"
+    clone_repo "${params.versions['POSTPROCESSING_REPO']}" "${params.versions['POSTPROCESSING_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -505,7 +505,7 @@ process curation {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-curation.git" "${params.versions['CURATION']}"
+    clone_repo "${params.versions['CURATION_REPO']}" "${params.versions['CURATION_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -554,7 +554,7 @@ process visualization {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-visualization.git" "${params.versions['VISUALIZATION']}"
+    clone_repo "${params.versions['VISUALIZATION_REPO']}" "${params.versions['VISUALIZATION_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -606,7 +606,7 @@ process results_collector {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-results-collector.git" "${params.versions['RESULTS_COLLECTOR']}"
+    clone_repo "${params.versions['RESULTS_COLLECTOR_REPO']}" "${params.versions['RESULTS_COLLECTOR_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -652,7 +652,7 @@ process quality_control {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-processing-qc.git" "${params.versions['QUALITY_CONTROL']}"
+    clone_repo "${params.versions['QUALITY_CONTROL_REPO']}" "${params.versions['QUALITY_CONTROL_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -693,7 +693,7 @@ process quality_control_collector {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ephys-qc-collector.git" "${params.versions['QUALITY_CONTROL_COLLECTOR']}"
+    clone_repo "${params.versions['QUALITY_CONTROL_COLLECTOR_REPO']}" "${params.versions['QUALITY_CONTROL_COLLECTOR_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -739,7 +739,7 @@ process nwb_ecephys {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}ecephys-nwb.git" "${params.versions['NWB_ECEPHYS']}"
+    clone_repo "${params.versions['NWB_ECEPHYS_REPO']}" "${params.versions['NWB_ECEPHYS_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -782,7 +782,7 @@ process nwb_units {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.git_repo_prefix}units-nwb.git" "${params.versions['NWB_UNITS']}"
+    clone_repo "${params.versions['NWB_UNITS_REPO']}" "${params.versions['NWB_UNITS_COMMIT']}"
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
