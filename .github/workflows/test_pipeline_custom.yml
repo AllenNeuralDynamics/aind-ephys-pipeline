@@ -1,4 +1,4 @@
-name: Test Full Nextflow Pipeline
+name: Test NextflowPipeline Customization
 
 on:
   pull_request:
@@ -46,4 +46,4 @@ jobs:
           run: |
             DATA_PATH="$(pwd)/sample_dataset/nwb" RESULTS_PATH="$(pwd)/sample_dataset/nwb/results" \
             nextflow  -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main_multi_backend.nf \
-            --params_file "$(pwd)/.github/workflows/params_test.json"
+            --params_file "$(pwd)/.github/workflows/params_test_custom.json"

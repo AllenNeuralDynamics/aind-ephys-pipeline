@@ -4,7 +4,7 @@ AIND Ephys Pipeline Documentation
 Welcome to the AIND Ephys Pipeline documentation. This pipeline provides a comprehensive solution for electrophysiology data analysis using SpikeInterface.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    introduction
