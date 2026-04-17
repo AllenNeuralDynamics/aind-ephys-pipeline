@@ -25,19 +25,15 @@ A browser-based webapp for generating and validating parameter JSON files for th
 
 ## Quick Start
 
-The app is a static site — no build step or package install required. Just serve the
-repository root with any HTTP server:
+The app is a static site — no build step or package install required.
+Just run the included launcher script (Python 3 only dependency):
 
 ```bash
-# From the repository root
-python3 -m http.server 8765
-
-# Then open in your browser
-# http://localhost:8765/params_app/
+python params_app/serve.py
 ```
 
-The app loads `pipeline/default_params_schema.json` and `pipeline/default_params.json`
-via relative paths, so it must be served from the repo root (not from inside `params_app/`).
+This serves from the repository root, prints the full URL, and opens it in your browser.
+An optional port argument is supported: `python params_app/serve.py 9000`.
 
 ## Files
 
@@ -47,6 +43,7 @@ via relative paths, so it must be served from the repo root (not from inside `pa
 | `style.css` | Responsive styling |
 | `app.js` | Form builder, JSON generation, and AJV validation logic |
 | `ajv7.min.js` | Local copy of AJV v8.17.1 (JSON Schema draft-07 validator) |
+| `serve.py` | Cross-platform launcher (starts server, opens browser) |
 
 ## Dependencies
 

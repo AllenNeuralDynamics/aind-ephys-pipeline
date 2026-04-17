@@ -111,7 +111,7 @@
 
     function renderSection(label, schemaNode, path) {
         const node = resolveRef(schemaNode);
-        const wrapper = el("div", { class: "section" });
+        const wrapper = el("div", { class: "section collapsed" });
         const header = el("div", { class: "section-header" },
             el("span", { class: "arrow" }, "▼"),
             el("span", null, label)
@@ -123,11 +123,13 @@
         wrapper.appendChild(header);
 
         const body = el("div", { class: "section-body" });
-        if (node.type === "object" && node.properties) {
+        const nodeTypes = Array.isArray(node.type) ? node.type : [node.type];
+        if (nodeTypes.includes("object") && node.properties) {
             for (const [k, v] of Object.entries(node.properties)) {
                 const resolved = resolveRef(v);
                 const childPath = [...path, k];
-                if (resolved.type === "object" && resolved.properties) {
+                const resolvedTypes = Array.isArray(resolved.type) ? resolved.type : [resolved.type];
+                if (resolvedTypes.includes("object") && resolved.properties) {
                     body.appendChild(renderSection(k, resolved, childPath));
                 } else {
                     body.appendChild(renderField(k, resolved, childPath));
@@ -289,6 +291,13 @@
         const defVal = deepGet(defaultParams, path);
         const curVal = deepGet(currentValues, path);
         field.classList.toggle("changed", JSON.stringify(curVal) !== JSON.stringify(defVal));
+        updatePreview();
+    }
+
+    /* ───────── Live JSON preview ───────── */
+    const outputEl = document.getElementById("editor-output");
+    function updatePreview() {
+        outputEl.textContent = JSON.stringify(currentValues, null, 4);
     }
 
     /* ───────── Generate output (only non-default values) ───────── */
@@ -313,6 +322,7 @@
     document.getElementById("btn-load-defaults").addEventListener("click", () => {
         currentValues = structuredClone(defaultParams);
         renderForm();
+        updatePreview();
     });
     document.getElementById("btn-collapse-all").addEventListener("click", () => {
         formRoot.querySelectorAll(".section").forEach((s) => s.classList.add("collapsed"));
@@ -332,14 +342,6 @@
         });
     });
 
-    const outputWrap = document.getElementById("editor-output-wrap");
-    const outputEl = document.getElementById("editor-output");
-
-    document.getElementById("btn-generate").addEventListener("click", () => {
-        const json = JSON.stringify(currentValues, null, 4);
-        outputEl.textContent = json;
-        outputWrap.classList.remove("hidden");
-    });
     document.getElementById("btn-download").addEventListener("click", () => {
         const json = JSON.stringify(currentValues, null, 4);
         downloadJSON(json, "params.json");
@@ -349,7 +351,7 @@
         navigator.clipboard.writeText(json).then(() => {
             const btn = document.getElementById("btn-copy");
             btn.textContent = "Copied!";
-            setTimeout(() => (btn.textContent = "Copy to Clipboard"), 1500);
+            setTimeout(() => (btn.textContent = "Copy"), 1500);
         });
     });
     document.getElementById("file-import").addEventListener("change", function () {
@@ -362,6 +364,7 @@
                 text = text.replace(/,\s*([}\]])/g, "$1");
                 currentValues = JSON.parse(text);
                 renderForm();
+                updatePreview();
             } catch (e) {
                 alert("Invalid JSON: " + e.message);
             }
@@ -430,4 +433,5 @@
 
     /* ───────── Init ───────── */
     renderForm();
+    updatePreview();
 })();

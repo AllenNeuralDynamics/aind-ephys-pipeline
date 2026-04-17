@@ -21,27 +21,32 @@
     <main>
         <!-- ===== Editor Tab ===== -->
         <section id="tab-editor" class="tab-content active">
-            <div class="toolbar">
-                <button id="btn-load-defaults" title="Reset all values to defaults">Load Defaults</button>
-                <button id="btn-collapse-all">Collapse All</button>
-                <button id="btn-expand-all">Expand All</button>
-                <label class="toggle-label">
-                    <input type="checkbox" id="chk-only-changed"> Show only changed
-                </label>
-            </div>
-            <div id="form-root"></div>
-            <div class="toolbar bottom-bar">
-                <button id="btn-generate" class="primary">Generate JSON</button>
-                <button id="btn-download">Download JSON</button>
-                <button id="btn-copy">Copy to Clipboard</button>
-                <label class="file-label">
-                    Import JSON…
-                    <input type="file" id="file-import" accept=".json">
-                </label>
-            </div>
-            <div id="editor-output-wrap" class="hidden">
-                <h3>Generated Parameters</h3>
-                <pre id="editor-output"></pre>
+            <div class="editor-split">
+                <div class="editor-left">
+                    <div class="toolbar">
+                        <button id="btn-load-defaults" title="Reset all values to defaults">Load Defaults</button>
+                        <button id="btn-collapse-all">Collapse All</button>
+                        <button id="btn-expand-all">Expand All</button>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="chk-only-changed"> Show only changed
+                        </label>
+                    </div>
+                    <div id="form-root"></div>
+                </div>
+                <div class="editor-right">
+                    <div class="panel-header">
+                        <h3>Generated JSON</h3>
+                        <div class="toolbar">
+                            <button id="btn-download">Download</button>
+                            <button id="btn-copy">Copy</button>
+                            <label class="file-label">
+                                Import…
+                                <input type="file" id="file-import" accept=".json">
+                            </label>
+                        </div>
+                    </div>
+                    <pre id="editor-output"></pre>
+                </div>
             </div>
         </section>
 

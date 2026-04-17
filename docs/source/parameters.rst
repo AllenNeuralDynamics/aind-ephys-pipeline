@@ -42,14 +42,18 @@ A browser-based parameter editor is included in ``params_app/``.
 It reads the JSON schema (``pipeline/default_params_schema.json``) and renders an
 interactive form for creating and editing parameter files, with built-in validation.
 
-To run the webapp, serve the repository root with any HTTP server:
+To run the webapp, use the included launcher script (requires Python 3):
 
 .. code-block:: bash
 
-   # From the repository root
-   python3 -m http.server 8765
+   python params_app/serve.py
 
-Then open http://localhost:8765/params_app/ in your browser.
+This starts a local server from the repository root, prints the URL, and opens it
+in your browser. An optional port argument is supported:
+
+.. code-block:: bash
+
+   python params_app/serve.py 9000
 
 The webapp provides two tabs:
 
