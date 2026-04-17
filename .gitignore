@@ -16,4 +16,6 @@ tests/.nfs*
 
 # User-specific files
 pipeline/nextflow_slurm_custom.config
+pipeline/capsule_versions_custom.env
+
 *.idea

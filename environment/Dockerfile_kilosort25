@@ -6,7 +6,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 COPY requirements.txt .
 
 RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema' requirements.txt | xargs pip install
+    grep -E 'aind-data-schema|scipy' requirements.txt | xargs pip install
 
 # Extract the spikeinterface version and install with extras
 RUN pip install --upgrade pip && \

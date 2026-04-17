@@ -48,4 +48,4 @@ echo "Using config file: $CONFIG_FILE"
 NXF_VER=$NXF_VERSION DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
     -C $CONFIG_FILE -log $RESULTS_PATH/nextflow/nextflow.log \
     run $PIPELINE_PATH/pipeline/main_multi_backend.nf \
-    --params_file params_test.json $ARGS
+    --params_file params_test_mc.json $ARGS
