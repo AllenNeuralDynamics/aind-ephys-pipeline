@@ -1,0 +1,2082 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/pipeline/default_params_schema.json",
+    "title": "AIND Ephys Pipeline Parameters",
+    "description": "Configuration schema for the AIND electrophysiology analysis pipeline. See https://aind-ephys-pipeline.readthedocs.io/en/latest/parameters.html for documentation.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "job_dispatch": {
+            "type": "object",
+            "description": "Parameters for the job dispatch step, which generates JSON job files for parallel processing.",
+            "additionalProperties": false,
+            "properties": {
+                "split_segments": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to split recording segments for parallel processing."
+                },
+                "split_groups": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to process different channel groups separately."
+                },
+                "debug": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to run in DEBUG mode (clips recording to a short duration)."
+                },
+                "debug_duration": {
+                    "type": "number",
+                    "default": 30,
+                    "minimum": 0,
+                    "description": "Duration in seconds of clipped recording in debug mode. Only used if debug is enabled."
+                },
+                "skip_timestamps_check": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip the timestamps check."
+                },
+                "multi_session": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to enable multi-session processing."
+                },
+                "input": {
+                    "type": "string",
+                    "enum": ["aind", "spikeglx", "openephys", "nwb", "spikeinterface"],
+                    "default": "aind",
+                    "description": "Which loader to use for data ingestion."
+                },
+                "spikeinterface_info": {
+                    "type": ["object", "null"],
+                    "default": null,
+                    "description": "Configuration for the spikeinterface loader. Only used when input is 'spikeinterface'.",
+                    "properties": {
+                        "reader_type": {
+                            "type": "string",
+                            "description": "The SpikeInterface reader type (e.g., 'plexon', 'neuralynx', 'intan')."
+                        },
+                        "reader_kwargs": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Keyword arguments passed to the reader (e.g., {'folder': '/path/to/folder'})."
+                        },
+                        "keep_stream_substrings": {
+                            "type": ["string", "array", "null"],
+                            "default": null,
+                            "description": "Stream name substrings to keep (e.g., 'AP' or ['AP', 'LFP']).",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "skip_stream_substrings": {
+                            "type": ["string", "array", "null"],
+                            "default": null,
+                            "description": "Stream name substrings to skip (e.g., 'NIDQ' or ['USB', 'EVENTS']).",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "probe_paths": {
+                            "type": ["string", "object", "null"],
+                            "default": null,
+                            "description": "Path(s) to ProbeInterface JSON file(s). If a dict, keys are stream names and values are probe paths."
+                        }
+                    },
+                    "required": ["reader_type"]
+                }
+            }
+        },
+        "preprocessing": {
+            "type": "object",
+            "description": "Parameters for the preprocessing step (filtering, denoising, motion correction).",
+            "additionalProperties": false,
+            "properties": {
+                "job_kwargs": {
+                    "$ref": "#/$defs/job_kwargs"
+                },
+                "denoising_strategy": {
+                    "type": "string",
+                    "enum": ["cmr", "destripe"],
+                    "default": "cmr",
+                    "description": "Denoising strategy: common median reference (cmr) or highpass spatial filter (destripe)."
+                },
+                "min_preprocessing_duration": {
+                    "type": "number",
+                    "default": 120,
+                    "minimum": 0,
+                    "description": "Minimum recording duration in seconds required to run preprocessing."
+                },
+                "filter_type": {
+                    "type": "string",
+                    "enum": ["highpass", "bandpass"],
+                    "default": "highpass",
+                    "description": "Type of frequency filter to apply."
+                },
+                "remove_out_channels": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to remove outside-brain channels."
+                },
+                "remove_bad_channels": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to remove detected bad channels."
+                },
+                "max_bad_channel_fraction": {
+                    "type": "number",
+                    "default": 0.5,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Maximum fraction of bad channels allowed. If exceeded, the recording is skipped."
+                },
+                "highpass_filter": {
+                    "type": "object",
+                    "description": "Parameters for the highpass filter.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "freq_min": {
+                            "type": "number",
+                            "default": 300.0,
+                            "minimum": 0,
+                            "description": "Minimum frequency cutoff in Hz."
+                        },
+                        "margin_ms": {
+                            "type": "number",
+                            "default": 5.0,
+                            "minimum": 0,
+                            "description": "Margin in milliseconds for edge effects."
+                        }
+                    }
+                },
+                "bandpass_filter": {
+                    "type": "object",
+                    "description": "Parameters for the bandpass filter.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "freq_min": {
+                            "type": "number",
+                            "default": 300.0,
+                            "minimum": 0,
+                            "description": "Minimum frequency cutoff in Hz."
+                        },
+                        "freq_max": {
+                            "type": "number",
+                            "default": 6000.0,
+                            "minimum": 0,
+                            "description": "Maximum frequency cutoff in Hz."
+                        },
+                        "margin_ms": {
+                            "type": "number",
+                            "default": 5.0,
+                            "minimum": 0,
+                            "description": "Margin in milliseconds for edge effects."
+                        }
+                    }
+                },
+                "phase_shift": {
+                    "type": "object",
+                    "description": "Parameters for inter-sample phase shift correction.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "margin_ms": {
+                            "type": "number",
+                            "default": 100.0,
+                            "minimum": 0,
+                            "description": "Margin in milliseconds for edge effects."
+                        }
+                    }
+                },
+                "detect_bad_channels": {
+                    "type": "object",
+                    "description": "Parameters for bad channel detection.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "method": {
+                            "type": "string",
+                            "default": "coherence+psd",
+                            "description": "Method used for bad channel detection."
+                        },
+                        "dead_channel_threshold": {
+                            "type": "number",
+                            "default": -0.5,
+                            "description": "Threshold for dead channel detection."
+                        },
+                        "noisy_channel_threshold": {
+                            "type": "number",
+                            "default": 1.0,
+                            "description": "Threshold for noisy channel detection."
+                        },
+                        "outside_channel_threshold": {
+                            "type": "number",
+                            "default": -0.3,
+                            "description": "Threshold for outside-brain channel detection."
+                        },
+                        "outside_channels_location": {
+                            "type": "string",
+                            "enum": ["top", "bottom", "both"],
+                            "default": "top",
+                            "description": "Expected location of outside-brain channels on the probe."
+                        },
+                        "n_neighbors": {
+                            "type": "integer",
+                            "default": 11,
+                            "minimum": 1,
+                            "description": "Number of neighbor channels to use for detection."
+                        },
+                        "seed": {
+                            "type": "integer",
+                            "default": 0,
+                            "description": "Random seed for reproducibility."
+                        }
+                    }
+                },
+                "common_reference": {
+                    "type": "object",
+                    "description": "Parameters for common reference removal (used when denoising_strategy is 'cmr').",
+                    "additionalProperties": false,
+                    "properties": {
+                        "reference": {
+                            "type": "string",
+                            "enum": ["global", "local"],
+                            "default": "global",
+                            "description": "Type of reference: global or local."
+                        },
+                        "operator": {
+                            "type": "string",
+                            "enum": ["median", "average"],
+                            "default": "median",
+                            "description": "Operator used for computing the reference."
+                        }
+                    }
+                },
+                "highpass_spatial_filter": {
+                    "type": "object",
+                    "description": "Parameters for highpass spatial filter (used when denoising_strategy is 'destripe').",
+                    "additionalProperties": false,
+                    "properties": {
+                        "n_channel_pad": {
+                            "type": "integer",
+                            "default": 60,
+                            "minimum": 0,
+                            "description": "Number of channels to pad."
+                        },
+                        "n_channel_taper": {
+                            "type": ["integer", "null"],
+                            "default": null,
+                            "description": "Number of channels for tapering. If null, defaults to n_channel_pad."
+                        },
+                        "direction": {
+                            "type": "string",
+                            "default": "y",
+                            "description": "Direction of the spatial filter."
+                        },
+                        "apply_agc": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to apply automatic gain control."
+                        },
+                        "agc_window_length_s": {
+                            "type": "number",
+                            "default": 0.01,
+                            "minimum": 0,
+                            "description": "Window length in seconds for AGC."
+                        },
+                        "highpass_butter_order": {
+                            "type": "integer",
+                            "default": 3,
+                            "minimum": 1,
+                            "description": "Order of the Butterworth highpass filter."
+                        },
+                        "highpass_butter_wn": {
+                            "type": "number",
+                            "default": 0.01,
+                            "minimum": 0,
+                            "description": "Normalized cutoff frequency for the Butterworth filter."
+                        }
+                    }
+                },
+                "motion_correction": {
+                    "type": "object",
+                    "description": "Parameters for motion estimation and correction.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "compute": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to compute motion estimation."
+                        },
+                        "apply": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to apply motion correction to the recording."
+                        },
+                        "preset": {
+                            "type": "string",
+                            "enum": [
+                                "dredge",
+                                "dredge_fast",
+                                "nonrigid_accurate",
+                                "nonrigid_fast_and_accurate",
+                                "rigid_fast",
+                                "kilosort_like"
+                            ],
+                            "default": "dredge_fast",
+                            "description": "Motion correction preset algorithm."
+                        },
+                        "detect_kwargs": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Additional keyword arguments for peak detection."
+                        },
+                        "select_kwargs": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Additional keyword arguments for peak selection."
+                        },
+                        "localize_peaks_kwargs": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Additional keyword arguments for peak localization."
+                        },
+                        "estimate_motion_kwargs": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Additional keyword arguments for motion estimation.",
+                            "properties": {
+                                "win_step_norm": {
+                                    "type": "number",
+                                    "description": "Normalized window step size."
+                                },
+                                "win_scale_norm": {
+                                    "type": "number",
+                                    "description": "Normalized window scale."
+                                }
+                            }
+                        },
+                        "interpolate_motion_kwargs": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Additional keyword arguments for motion interpolation."
+                        }
+                    }
+                }
+            }
+        },
+        "postprocessing": {
+            "type": "object",
+            "description": "Parameters for postprocessing (computing spike/unit metrics and extensions).",
+            "additionalProperties": false,
+            "properties": {
+                "job_kwargs": {
+                    "$ref": "#/$defs/job_kwargs"
+                },
+                "use_motion_corrected": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to use the motion-corrected recording for postprocessing."
+                },
+                "sparsity": {
+                    "type": "object",
+                    "description": "Sparsity parameters for waveform extraction.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "method": {
+                            "type": "string",
+                            "enum": ["radius", "best_channels", "by_property", "snr", "ptp", "energy", "threshold"],
+                            "default": "radius",
+                            "description": "Method used to compute channel sparsity."
+                        },
+                        "radius_um": {
+                            "type": "number",
+                            "default": 100,
+                            "minimum": 0,
+                            "description": "Radius in micrometers for sparsity computation (used when method is 'radius')."
+                        }
+                    }
+                },
+                "duplicate_threshold": {
+                    "type": "number",
+                    "default": 0.9,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Agreement threshold for removing duplicate units."
+                },
+                "return_scaled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to return scaled (in microvolts) or raw traces."
+                },
+                "random_spikes": {
+                    "type": "object",
+                    "description": "Parameters for random spike selection used in extensions.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "max_spikes_per_unit": {
+                            "type": "integer",
+                            "default": 500,
+                            "minimum": 1,
+                            "description": "Maximum number of spikes per unit to use."
+                        },
+                        "method": {
+                            "type": "string",
+                            "enum": ["uniform", "all"],
+                            "default": "uniform",
+                            "description": "Method for selecting random spikes."
+                        },
+                        "margin_size": {
+                            "type": ["integer", "null"],
+                            "default": null,
+                            "description": "Margin size for spike selection. If null, no margin is applied."
+                        },
+                        "seed": {
+                            "type": ["integer", "null"],
+                            "default": null,
+                            "description": "Random seed for reproducibility. If null, no seed is set."
+                        }
+                    }
+                },
+                "noise_levels": {
+                    "type": "object",
+                    "description": "Parameters for noise level estimation.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "num_chunks_per_segment": {
+                            "type": "integer",
+                            "default": 20,
+                            "minimum": 1,
+                            "description": "Number of chunks per segment to use for noise estimation."
+                        },
+                        "chunk_size": {
+                            "type": "integer",
+                            "default": 10000,
+                            "minimum": 1,
+                            "description": "Size of each chunk in samples."
+                        },
+                        "seed": {
+                            "type": ["integer", "null"],
+                            "default": null,
+                            "description": "Random seed for reproducibility."
+                        }
+                    }
+                },
+                "waveforms": {
+                    "type": "object",
+                    "description": "Parameters for waveform extraction.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "ms_before": {
+                            "type": "number",
+                            "default": 3.0,
+                            "minimum": 0,
+                            "description": "Time in milliseconds to extract before spike peak."
+                        },
+                        "ms_after": {
+                            "type": "number",
+                            "default": 4.0,
+                            "minimum": 0,
+                            "description": "Time in milliseconds to extract after spike peak."
+                        },
+                        "dtype": {
+                            "type": ["string", "null"],
+                            "default": null,
+                            "description": "Data type for waveforms. If null, uses the recording's dtype."
+                        }
+                    }
+                },
+                "templates": {
+                    "type": "object",
+                    "default": {},
+                    "description": "Parameters for template computation."
+                },
+                "spike_amplitudes": {
+                    "type": "object",
+                    "description": "Parameters for spike amplitude computation.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "peak_sign": {
+                            "$ref": "#/$defs/peak_sign"
+                        }
+                    }
+                },
+                "template_similarity": {
+                    "type": "object",
+                    "description": "Parameters for template similarity computation.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "method": {
+                            "type": "string",
+                            "default": "cosine_similarity",
+                            "description": "Method used to compute template similarity."
+                        }
+                    }
+                },
+                "correlograms": {
+                    "type": "object",
+                    "description": "Parameters for cross-correlogram computation.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "window_ms": {
+                            "type": "number",
+                            "default": 50.0,
+                            "minimum": 0,
+                            "description": "Window size in milliseconds."
+                        },
+                        "bin_ms": {
+                            "type": "number",
+                            "default": 1.0,
+                            "minimum": 0,
+                            "description": "Bin size in milliseconds."
+                        }
+                    }
+                },
+                "isi_histograms": {
+                    "type": "object",
+                    "description": "Parameters for inter-spike interval histogram computation.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "window_ms": {
+                            "type": "number",
+                            "default": 100.0,
+                            "minimum": 0,
+                            "description": "Window size in milliseconds."
+                        },
+                        "bin_ms": {
+                            "type": "number",
+                            "default": 5.0,
+                            "minimum": 0,
+                            "description": "Bin size in milliseconds."
+                        }
+                    }
+                },
+                "unit_locations": {
+                    "type": "object",
+                    "description": "Parameters for unit location estimation.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "method": {
+                            "type": "string",
+                            "default": "monopolar_triangulation",
+                            "description": "Method for estimating unit locations."
+                        }
+                    }
+                },
+                "spike_locations": {
+                    "type": "object",
+                    "description": "Parameters for individual spike location estimation.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "method": {
+                            "type": "string",
+                            "default": "grid_convolution",
+                            "description": "Method for estimating spike locations."
+                        }
+                    }
+                },
+                "template_metrics": {
+                    "type": "object",
+                    "description": "Parameters for template metrics computation.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "upsampling_factor": {
+                            "type": "integer",
+                            "default": 10,
+                            "minimum": 1,
+                            "description": "Factor for upsampling templates before computing metrics."
+                        },
+                        "sparsity": {
+                            "type": ["object", "null"],
+                            "default": null,
+                            "description": "Sparsity parameters for template metrics. If null, uses the global sparsity."
+                        },
+                        "include_multi_channel_metrics": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to include multi-channel template metrics."
+                        }
+                    }
+                },
+                "principal_components": {
+                    "type": "object",
+                    "description": "Parameters for PCA computation on waveforms.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "n_components": {
+                            "type": "integer",
+                            "default": 5,
+                            "minimum": 1,
+                            "description": "Number of principal components to compute."
+                        },
+                        "mode": {
+                            "type": "string",
+                            "enum": ["by_channel_local", "by_channel_global", "concatenated"],
+                            "default": "by_channel_local",
+                            "description": "Mode for PCA computation."
+                        },
+                        "whiten": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to whiten the principal components."
+                        }
+                    }
+                },
+                "quality_metrics_names": {
+                    "type": "array",
+                    "description": "List of quality metric names to compute.",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "num_spikes",
+                            "firing_rate",
+                            "presence_ratio",
+                            "snr",
+                            "isi_violation",
+                            "rp_violation",
+                            "sliding_rp_violation",
+                            "amplitude_cutoff",
+                            "amplitude_median",
+                            "amplitude_cv",
+                            "synchrony",
+                            "firing_range",
+                            "drift",
+                            "isolation_distance",
+                            "l_ratio",
+                            "d_prime",
+                            "nearest_neighbor",
+                            "silhouette",
+                            "nn_isolation",
+                            "nn_noise_overlap"
+                        ]
+                    },
+                    "default": [
+                        "num_spikes",
+                        "firing_rate",
+                        "presence_ratio",
+                        "snr",
+                        "isi_violation",
+                        "rp_violation",
+                        "sliding_rp_violation",
+                        "amplitude_cutoff",
+                        "amplitude_median",
+                        "amplitude_cv",
+                        "synchrony",
+                        "firing_range",
+                        "drift",
+                        "isolation_distance",
+                        "l_ratio",
+                        "d_prime",
+                        "nearest_neighbor",
+                        "silhouette"
+                    ]
+                },
+                "quality_metrics": {
+                    "type": "object",
+                    "description": "Detailed configuration for each quality metric.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "presence_ratio": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "bin_duration_s": {
+                                    "type": "number",
+                                    "default": 60,
+                                    "minimum": 0,
+                                    "description": "Bin duration in seconds for presence ratio computation."
+                                }
+                            }
+                        },
+                        "snr": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "peak_sign": {
+                                    "$ref": "#/$defs/peak_sign"
+                                },
+                                "peak_mode": {
+                                    "type": "string",
+                                    "enum": ["extremum", "at_index"],
+                                    "default": "extremum",
+                                    "description": "Mode for peak detection in SNR computation."
+                                }
+                            }
+                        },
+                        "isi_violation": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "isi_threshold_ms": {
+                                    "type": "number",
+                                    "default": 1.5,
+                                    "minimum": 0,
+                                    "description": "ISI threshold in milliseconds for violation detection."
+                                },
+                                "min_isi_ms": {
+                                    "type": "number",
+                                    "default": 0,
+                                    "minimum": 0,
+                                    "description": "Minimum ISI in milliseconds."
+                                }
+                            }
+                        },
+                        "rp_violation": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "refractory_period_ms": {
+                                    "type": "number",
+                                    "default": 1,
+                                    "minimum": 0,
+                                    "description": "Refractory period in milliseconds."
+                                },
+                                "censored_period_ms": {
+                                    "type": "number",
+                                    "default": 0.0,
+                                    "minimum": 0,
+                                    "description": "Censored period in milliseconds."
+                                }
+                            }
+                        },
+                        "sliding_rp_violation": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "bin_size_ms": {
+                                    "type": "number",
+                                    "default": 0.25,
+                                    "minimum": 0,
+                                    "description": "Bin size in milliseconds."
+                                },
+                                "window_size_s": {
+                                    "type": "number",
+                                    "default": 1,
+                                    "minimum": 0,
+                                    "description": "Window size in seconds."
+                                },
+                                "exclude_ref_period_below_ms": {
+                                    "type": "number",
+                                    "default": 0.5,
+                                    "minimum": 0,
+                                    "description": "Exclude refractory periods below this value in milliseconds."
+                                },
+                                "max_ref_period_ms": {
+                                    "type": "number",
+                                    "default": 10,
+                                    "minimum": 0,
+                                    "description": "Maximum refractory period in milliseconds."
+                                },
+                                "contamination_values": {
+                                    "type": ["array", "null"],
+                                    "default": null,
+                                    "items": {
+                                        "type": "number"
+                                    },
+                                    "description": "Contamination values to test. If null, uses defaults."
+                                }
+                            }
+                        },
+                        "amplitude_cutoff": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "peak_sign": {
+                                    "$ref": "#/$defs/peak_sign"
+                                },
+                                "num_histogram_bins": {
+                                    "type": "integer",
+                                    "default": 100,
+                                    "minimum": 1,
+                                    "description": "Number of bins for the amplitude histogram."
+                                },
+                                "histogram_smoothing_value": {
+                                    "type": "number",
+                                    "default": 3,
+                                    "minimum": 0,
+                                    "description": "Smoothing value for the amplitude histogram."
+                                },
+                                "amplitudes_bins_min_ratio": {
+                                    "type": "number",
+                                    "default": 5,
+                                    "minimum": 0,
+                                    "description": "Minimum ratio of amplitudes to bins."
+                                }
+                            }
+                        },
+                        "amplitude_median": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "peak_sign": {
+                                    "$ref": "#/$defs/peak_sign"
+                                }
+                            }
+                        },
+                        "amplitude_cv": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "average_num_spikes_per_bin": {
+                                    "type": "integer",
+                                    "default": 50,
+                                    "minimum": 1,
+                                    "description": "Average number of spikes per bin."
+                                },
+                                "percentiles": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 100
+                                    },
+                                    "default": [5, 95],
+                                    "description": "Percentiles for amplitude CV computation."
+                                },
+                                "min_num_bins": {
+                                    "type": "integer",
+                                    "default": 10,
+                                    "minimum": 1,
+                                    "description": "Minimum number of bins required."
+                                },
+                                "amplitude_extension": {
+                                    "type": "string",
+                                    "default": "spike_amplitudes",
+                                    "description": "Name of the amplitude extension to use."
+                                }
+                            }
+                        },
+                        "firing_range": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "bin_size_s": {
+                                    "type": "number",
+                                    "default": 5,
+                                    "minimum": 0,
+                                    "description": "Bin size in seconds for firing range computation."
+                                },
+                                "percentiles": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 100
+                                    },
+                                    "default": [5, 95],
+                                    "description": "Percentiles for firing range computation."
+                                }
+                            }
+                        },
+                        "synchrony": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "synchrony_sizes": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer",
+                                        "minimum": 2
+                                    },
+                                    "default": [2, 4, 8],
+                                    "description": "Sizes of synchrony groups to compute."
+                                }
+                            }
+                        },
+                        "nearest_neighbor": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "max_spikes": {
+                                    "type": "integer",
+                                    "default": 10000,
+                                    "minimum": 1,
+                                    "description": "Maximum number of spikes to use."
+                                },
+                                "n_neighbors": {
+                                    "type": "integer",
+                                    "default": 4,
+                                    "minimum": 1,
+                                    "description": "Number of nearest neighbors."
+                                }
+                            }
+                        },
+                        "nn_isolation": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "max_spikes": {
+                                    "type": "integer",
+                                    "default": 10000,
+                                    "minimum": 1,
+                                    "description": "Maximum number of spikes to use."
+                                },
+                                "min_spikes": {
+                                    "type": "integer",
+                                    "default": 10,
+                                    "minimum": 1,
+                                    "description": "Minimum number of spikes required."
+                                },
+                                "n_neighbors": {
+                                    "type": "integer",
+                                    "default": 4,
+                                    "minimum": 1,
+                                    "description": "Number of nearest neighbors."
+                                },
+                                "n_components": {
+                                    "type": "integer",
+                                    "default": 10,
+                                    "minimum": 1,
+                                    "description": "Number of PCA components."
+                                },
+                                "radius_um": {
+                                    "type": "number",
+                                    "default": 100,
+                                    "minimum": 0,
+                                    "description": "Radius in micrometers."
+                                }
+                            }
+                        },
+                        "nn_noise_overlap": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "max_spikes": {
+                                    "type": "integer",
+                                    "default": 10000,
+                                    "minimum": 1,
+                                    "description": "Maximum number of spikes to use."
+                                },
+                                "min_spikes": {
+                                    "type": "integer",
+                                    "default": 10,
+                                    "minimum": 1,
+                                    "description": "Minimum number of spikes required."
+                                },
+                                "n_neighbors": {
+                                    "type": "integer",
+                                    "default": 4,
+                                    "minimum": 1,
+                                    "description": "Number of nearest neighbors."
+                                },
+                                "n_components": {
+                                    "type": "integer",
+                                    "default": 10,
+                                    "minimum": 1,
+                                    "description": "Number of PCA components."
+                                },
+                                "radius_um": {
+                                    "type": "number",
+                                    "default": 100,
+                                    "minimum": 0,
+                                    "description": "Radius in micrometers."
+                                }
+                            }
+                        },
+                        "silhouette": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "method": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": ["simplified", "full", "battery"]
+                                    },
+                                    "default": ["simplified"],
+                                    "description": "Silhouette scoring methods to compute."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "curation": {
+            "type": "object",
+            "description": "Parameters for quality control curation of sorted units.",
+            "additionalProperties": false,
+            "properties": {
+                "job_kwargs": {
+                    "$ref": "#/$defs/job_kwargs"
+                },
+                "query": {
+                    "type": "string",
+                    "default": "isi_violations_ratio < 0.5 and presence_ratio > 0.8 and amplitude_cutoff < 0.1",
+                    "description": "Pandas query string for threshold-based unit filtering using quality metrics."
+                },
+                "noise_neural_classifier": {
+                    "type": "string",
+                    "default": "SpikeInterface/UnitRefine_noise_neural_classifier",
+                    "description": "Hugging Face model path for classifying units as noise vs neural."
+                },
+                "sua_mua_classifier": {
+                    "type": "string",
+                    "default": "SpikeInterface/UnitRefine_sua_mua_classifier",
+                    "description": "Hugging Face model path for classifying neural units as single-unit (SUA) vs multi-unit (MUA)."
+                }
+            }
+        },
+        "visualization": {
+            "type": "object",
+            "description": "Parameters for generating plots and interactive visualizations.",
+            "additionalProperties": false,
+            "properties": {
+                "job_kwargs": {
+                    "$ref": "#/$defs/job_kwargs"
+                },
+                "timeseries": {
+                    "type": "object",
+                    "description": "Parameters for timeseries visualization.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "n_snippets_per_segment": {
+                            "type": "integer",
+                            "default": 2,
+                            "minimum": 1,
+                            "description": "Number of timeseries snippets per segment."
+                        },
+                        "snippet_duration_s": {
+                            "type": "number",
+                            "default": 0.5,
+                            "minimum": 0,
+                            "description": "Duration of each snippet in seconds."
+                        }
+                    }
+                },
+                "drift": {
+                    "type": "object",
+                    "description": "Parameters for drift map visualization.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "detection": {
+                            "type": "object",
+                            "description": "Peak detection parameters for drift visualization.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "peak_sign": {
+                                    "$ref": "#/$defs/peak_sign"
+                                },
+                                "detect_threshold": {
+                                    "type": "number",
+                                    "default": 5,
+                                    "minimum": 0,
+                                    "description": "Detection threshold in MAD units."
+                                },
+                                "exclude_sweep_ms": {
+                                    "type": "number",
+                                    "default": 0.1,
+                                    "minimum": 0,
+                                    "description": "Exclusion sweep window in milliseconds."
+                                }
+                            }
+                        },
+                        "localization": {
+                            "type": "object",
+                            "description": "Peak localization parameters for drift visualization.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "ms_before": {
+                                    "type": "number",
+                                    "default": 0.1,
+                                    "minimum": 0,
+                                    "description": "Time before peak in milliseconds."
+                                },
+                                "ms_after": {
+                                    "type": "number",
+                                    "default": 0.3,
+                                    "minimum": 0,
+                                    "description": "Time after peak in milliseconds."
+                                },
+                                "radius_um": {
+                                    "type": "number",
+                                    "default": 100.0,
+                                    "minimum": 0,
+                                    "description": "Localization radius in micrometers."
+                                }
+                            }
+                        },
+                        "n_skip": {
+                            "type": "integer",
+                            "default": 30,
+                            "minimum": 1,
+                            "description": "Number of spikes to skip for plotting (subsampling factor)."
+                        },
+                        "alpha": {
+                            "type": "number",
+                            "default": 0.15,
+                            "minimum": 0,
+                            "maximum": 1,
+                            "description": "Transparency (alpha) for scatter plot points."
+                        },
+                        "vmin": {
+                            "type": "number",
+                            "default": -200,
+                            "description": "Minimum value for colormap."
+                        },
+                        "vmax": {
+                            "type": "number",
+                            "default": 0,
+                            "description": "Maximum value for colormap."
+                        },
+                        "cmap": {
+                            "type": "string",
+                            "default": "Greys_r",
+                            "description": "Matplotlib colormap name."
+                        },
+                        "figsize": {
+                            "$ref": "#/$defs/figsize",
+                            "default": [10, 10]
+                        }
+                    }
+                },
+                "motion": {
+                    "type": "object",
+                    "description": "Parameters for motion visualization.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "cmap": {
+                            "type": "string",
+                            "default": "Greys_r",
+                            "description": "Matplotlib colormap name."
+                        },
+                        "scatter_decimate": {
+                            "type": "integer",
+                            "default": 15,
+                            "minimum": 1,
+                            "description": "Decimation factor for scatter plot."
+                        },
+                        "figsize": {
+                            "$ref": "#/$defs/figsize",
+                            "default": [15, 10]
+                        }
+                    }
+                }
+            }
+        },
+        "nwb": {
+            "type": "object",
+            "description": "Parameters for NWB (Neurodata Without Borders) export.",
+            "additionalProperties": false,
+            "properties": {
+                "ecephys": {
+                    "type": "object",
+                    "description": "Parameters for electrophysiology NWB export.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "backend": {
+                            "type": "string",
+                            "enum": ["zarr", "hdf5"],
+                            "default": "zarr",
+                            "description": "Backend to use for NWB file writing."
+                        },
+                        "stub": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to create a stub NWB file (truncated, for testing)."
+                        },
+                        "stub_seconds": {
+                            "type": "number",
+                            "default": 10,
+                            "minimum": 0,
+                            "description": "Duration in seconds for the stub NWB file."
+                        },
+                        "write_lfp": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to write LFP electrical series."
+                        },
+                        "write_raw": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to write RAW electrical series."
+                        },
+                        "lfp_temporal_factor": {
+                            "type": "integer",
+                            "default": 2,
+                            "minimum": 1,
+                            "description": "Temporal subsampling factor for LFP."
+                        },
+                        "lfp_spatial_factor": {
+                            "type": "integer",
+                            "default": 4,
+                            "minimum": 1,
+                            "description": "Spatial subsampling factor for LFP."
+                        },
+                        "lfp_highpass_freq_min": {
+                            "type": "number",
+                            "default": 0.1,
+                            "minimum": 0,
+                            "description": "LFP highpass filter minimum frequency in Hz."
+                        },
+                        "surface_channel_agar_probes_indices": {
+                            "type": "string",
+                            "default": "",
+                            "description": "Comma-separated indices of probes with surface channel in agar."
+                        },
+                        "lfp": {
+                            "type": "object",
+                            "description": "LFP processing parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "filter": {
+                                    "type": "object",
+                                    "description": "LFP filter parameters.",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "freq_min": {
+                                            "type": "number",
+                                            "default": 0.1,
+                                            "minimum": 0,
+                                            "description": "Minimum frequency for LFP bandpass filter in Hz."
+                                        },
+                                        "freq_max": {
+                                            "type": "number",
+                                            "default": 500,
+                                            "minimum": 0,
+                                            "description": "Maximum frequency for LFP bandpass filter in Hz."
+                                        }
+                                    }
+                                },
+                                "sampling_rate": {
+                                    "type": "number",
+                                    "default": 2500,
+                                    "minimum": 0,
+                                    "description": "Target sampling rate for LFP in Hz."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "spikesorting": {
+            "type": "object",
+            "description": "Parameters for the spike sorting step.",
+            "additionalProperties": false,
+            "properties": {
+                "sorter": {
+                    "type": ["string", "null"],
+                    "enum": ["kilosort25", "kilosort4", "spykingcircus2", null],
+                    "default": null,
+                    "description": "Spike sorter to use. If null, uses the --sorter command-line parameter."
+                },
+                "kilosort4": {
+                    "$ref": "#/$defs/sorter_wrapper_kilosort4"
+                },
+                "kilosort25": {
+                    "$ref": "#/$defs/sorter_wrapper_kilosort25"
+                },
+                "spykingcircus2": {
+                    "$ref": "#/$defs/sorter_wrapper_spykingcircus2"
+                }
+            }
+        }
+    },
+    "$defs": {
+        "job_kwargs": {
+            "type": "object",
+            "description": "SpikeInterface job keyword arguments for parallel processing.",
+            "additionalProperties": false,
+            "properties": {
+                "chunk_duration": {
+                    "type": "string",
+                    "default": "1s",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?s$",
+                    "description": "Duration of each processing chunk (e.g., '1s')."
+                },
+                "progress_bar": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to display a progress bar."
+                }
+            }
+        },
+        "peak_sign": {
+            "type": "string",
+            "enum": ["neg", "pos", "both"],
+            "default": "neg",
+            "description": "Sign of the peak to detect."
+        },
+        "figsize": {
+            "type": "array",
+            "items": {
+                "type": "number",
+                "minimum": 0
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Figure size as [width, height] in inches."
+        },
+        "sorter_wrapper_kilosort4": {
+            "type": "object",
+            "description": "Kilosort4 spike sorter configuration.",
+            "additionalProperties": false,
+            "properties": {
+                "job_kwargs": {
+                    "$ref": "#/$defs/job_kwargs"
+                },
+                "skip_motion_correction": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip the sorter's internal motion correction."
+                },
+                "min_drift_channels": {
+                    "type": "integer",
+                    "default": 96,
+                    "minimum": 1,
+                    "description": "Minimum number of channels required to enable drift correction."
+                },
+                "raise_if_fails": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to raise an error if spike sorting fails."
+                },
+                "clear_cache": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to force PyTorch memory cleanup between runs."
+                },
+                "sorter": {
+                    "type": "object",
+                    "description": "Kilosort4 algorithm-specific parameters.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "batch_size": {
+                            "type": "integer",
+                            "default": 60000,
+                            "minimum": 1,
+                            "description": "Batch size in samples."
+                        },
+                        "nblocks": {
+                            "type": "integer",
+                            "default": 5,
+                            "minimum": 0,
+                            "description": "Number of non-rigid blocks for drift correction. 0 disables drift correction."
+                        },
+                        "Th_universal": {
+                            "type": "number",
+                            "default": 9,
+                            "description": "Spike detection threshold (universal templates)."
+                        },
+                        "Th_learned": {
+                            "type": "number",
+                            "default": 8,
+                            "description": "Spike detection threshold (learned templates)."
+                        },
+                        "do_CAR": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to apply common average reference."
+                        },
+                        "invert_sign": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to invert the sign of the data."
+                        },
+                        "nt": {
+                            "type": "integer",
+                            "default": 61,
+                            "minimum": 1,
+                            "description": "Number of temporal samples per waveform."
+                        },
+                        "shift": {
+                            "type": ["number", "null"],
+                            "default": null,
+                            "description": "Scalar shift to apply to data. If null, computed automatically."
+                        },
+                        "scale": {
+                            "type": ["number", "null"],
+                            "default": null,
+                            "description": "Scalar scale to apply to data. If null, computed automatically."
+                        },
+                        "artifact_threshold": {
+                            "type": ["number", "null"],
+                            "default": null,
+                            "description": "Threshold for artifact removal. If null, no artifact removal."
+                        },
+                        "nskip": {
+                            "type": "integer",
+                            "default": 25,
+                            "minimum": 1,
+                            "description": "Number of batches to skip for drift estimation."
+                        },
+                        "whitening_range": {
+                            "type": "integer",
+                            "default": 32,
+                            "minimum": 1,
+                            "description": "Number of channels for whitening."
+                        },
+                        "highpass_cutoff": {
+                            "type": "number",
+                            "default": 300,
+                            "minimum": 0,
+                            "description": "Highpass filter cutoff frequency in Hz."
+                        },
+                        "binning_depth": {
+                            "type": "number",
+                            "default": 5,
+                            "minimum": 0,
+                            "description": "Bin size in micrometers for drift estimation."
+                        },
+                        "sig_interp": {
+                            "type": "number",
+                            "default": 20,
+                            "description": "Sigma for interpolation."
+                        },
+                        "drift_smoothing": {
+                            "type": "array",
+                            "items": {
+                                "type": "number"
+                            },
+                            "default": [0.5, 0.5, 0.5],
+                            "description": "Drift smoothing parameters."
+                        },
+                        "nt0min": {
+                            "type": ["integer", "null"],
+                            "default": null,
+                            "description": "Minimum time index for template. If null, computed automatically."
+                        },
+                        "dmin": {
+                            "type": ["number", "null"],
+                            "default": null,
+                            "description": "Minimum vertical spacing between channels. If null, computed automatically."
+                        },
+                        "dminx": {
+                            "type": "number",
+                            "default": 32,
+                            "description": "Minimum horizontal spacing between channels in micrometers."
+                        },
+                        "min_template_size": {
+                            "type": "number",
+                            "default": 10,
+                            "minimum": 0,
+                            "description": "Minimum template size."
+                        },
+                        "template_sizes": {
+                            "type": "integer",
+                            "default": 5,
+                            "minimum": 1,
+                            "description": "Number of template sizes."
+                        },
+                        "nearest_chans": {
+                            "type": "integer",
+                            "default": 10,
+                            "minimum": 1,
+                            "description": "Number of nearest channels for template matching."
+                        },
+                        "nearest_templates": {
+                            "type": "integer",
+                            "default": 100,
+                            "minimum": 1,
+                            "description": "Number of nearest templates to consider."
+                        },
+                        "max_channel_distance": {
+                            "type": ["number", "null"],
+                            "default": null,
+                            "description": "Maximum channel distance. If null, no limit."
+                        },
+                        "templates_from_data": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to derive templates from data."
+                        },
+                        "n_templates": {
+                            "type": "integer",
+                            "default": 6,
+                            "minimum": 1,
+                            "description": "Number of universal templates."
+                        },
+                        "n_pcs": {
+                            "type": "integer",
+                            "default": 6,
+                            "minimum": 1,
+                            "description": "Number of principal components for template features."
+                        },
+                        "Th_single_ch": {
+                            "type": "number",
+                            "default": 6,
+                            "description": "Threshold for single-channel detection."
+                        },
+                        "acg_threshold": {
+                            "type": "number",
+                            "default": 0.2,
+                            "minimum": 0,
+                            "maximum": 1,
+                            "description": "Auto-correlogram threshold for merging."
+                        },
+                        "ccg_threshold": {
+                            "type": "number",
+                            "default": 0.25,
+                            "minimum": 0,
+                            "maximum": 1,
+                            "description": "Cross-correlogram threshold for merging."
+                        },
+                        "cluster_downsampling": {
+                            "type": "integer",
+                            "default": 20,
+                            "minimum": 1,
+                            "description": "Downsampling factor for clustering."
+                        },
+                        "x_centers": {
+                            "type": ["array", "null"],
+                            "default": null,
+                            "items": {
+                                "type": "number"
+                            },
+                            "description": "X-centers for non-rigid drift correction. If null, computed automatically."
+                        },
+                        "duplicate_spike_ms": {
+                            "type": "number",
+                            "default": 0.25,
+                            "minimum": 0,
+                            "description": "Time window in milliseconds for duplicate spike removal."
+                        },
+                        "save_preprocessed_copy": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to save a copy of the preprocessed data."
+                        },
+                        "torch_device": {
+                            "type": "string",
+                            "default": "auto",
+                            "description": "PyTorch device to use ('auto', 'cuda', 'cpu')."
+                        },
+                        "bad_channels": {
+                            "type": ["array", "null"],
+                            "default": null,
+                            "items": {
+                                "type": "integer"
+                            },
+                            "description": "List of bad channel indices. If null, auto-detected."
+                        },
+                        "clear_cache": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to clear GPU cache."
+                        },
+                        "save_extra_vars": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to save extra variables for debugging."
+                        },
+                        "do_correction": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to apply drift correction."
+                        },
+                        "keep_good_only": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to keep only 'good' labeled units."
+                        },
+                        "skip_kilosort_preprocessing": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to skip Kilosort's internal preprocessing."
+                        },
+                        "use_binary_file": {
+                            "type": ["boolean", "null"],
+                            "default": null,
+                            "description": "Whether to use a binary file. If null, auto-determined."
+                        },
+                        "delete_recording_dat": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to delete the recording .dat file after sorting."
+                        }
+                    }
+                }
+            }
+        },
+        "sorter_wrapper_kilosort25": {
+            "type": "object",
+            "description": "Kilosort2.5 spike sorter configuration.",
+            "additionalProperties": false,
+            "properties": {
+                "job_kwargs": {
+                    "$ref": "#/$defs/job_kwargs"
+                },
+                "skip_motion_correction": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip the sorter's internal motion correction."
+                },
+                "min_drift_channels": {
+                    "type": "integer",
+                    "default": 96,
+                    "minimum": 1,
+                    "description": "Minimum number of channels required to enable drift correction."
+                },
+                "raise_if_fails": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to raise an error if spike sorting fails."
+                },
+                "sorter": {
+                    "type": "object",
+                    "description": "Kilosort2.5 algorithm-specific parameters.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "detect_threshold": {
+                            "type": "number",
+                            "default": 6,
+                            "description": "Spike detection threshold."
+                        },
+                        "projection_threshold": {
+                            "type": "array",
+                            "items": {
+                                "type": "number"
+                            },
+                            "default": [10, 4],
+                            "description": "Projection thresholds [initial, final]."
+                        },
+                        "preclust_threshold": {
+                            "type": "number",
+                            "default": 8,
+                            "description": "Pre-clustering threshold."
+                        },
+                        "car": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to apply common average reference."
+                        },
+                        "minFR": {
+                            "type": "number",
+                            "default": 0.1,
+                            "minimum": 0,
+                            "description": "Minimum firing rate for a unit."
+                        },
+                        "minfr_goodchannels": {
+                            "type": "number",
+                            "default": 0.1,
+                            "minimum": 0,
+                            "description": "Minimum firing rate for good channels."
+                        },
+                        "nblocks": {
+                            "type": "integer",
+                            "default": 5,
+                            "minimum": 0,
+                            "description": "Number of non-rigid blocks for drift correction."
+                        },
+                        "sig": {
+                            "type": "number",
+                            "default": 20,
+                            "description": "Sigma for drift smoothing."
+                        },
+                        "freq_min": {
+                            "type": "number",
+                            "default": 150,
+                            "minimum": 0,
+                            "description": "Highpass filter frequency in Hz."
+                        },
+                        "sigmaMask": {
+                            "type": "number",
+                            "default": 30,
+                            "description": "Sigma for channel masking."
+                        },
+                        "nPCs": {
+                            "type": "integer",
+                            "default": 3,
+                            "minimum": 1,
+                            "description": "Number of principal components for features."
+                        },
+                        "ntbuff": {
+                            "type": "integer",
+                            "default": 64,
+                            "minimum": 1,
+                            "description": "Buffer size in time samples."
+                        },
+                        "nfilt_factor": {
+                            "type": "integer",
+                            "default": 4,
+                            "minimum": 1,
+                            "description": "Factor for number of filters (nfilt = nchannels * nfilt_factor)."
+                        },
+                        "NT": {
+                            "type": ["integer", "null"],
+                            "default": null,
+                            "description": "Batch size in samples. If null, auto-determined."
+                        },
+                        "AUCsplit": {
+                            "type": "number",
+                            "default": 0.9,
+                            "minimum": 0,
+                            "maximum": 1,
+                            "description": "AUC threshold for splitting clusters."
+                        },
+                        "do_correction": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to apply drift correction."
+                        },
+                        "wave_length": {
+                            "type": "integer",
+                            "default": 61,
+                            "minimum": 1,
+                            "description": "Waveform length in samples."
+                        },
+                        "keep_good_only": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to keep only 'good' labeled units."
+                        },
+                        "skip_kilosort_preprocessing": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to skip Kilosort's internal preprocessing."
+                        },
+                        "scaleproc": {
+                            "type": ["number", "null"],
+                            "default": null,
+                            "description": "Scaling factor for whitened data. If null, auto-determined."
+                        },
+                        "save_rez_to_mat": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to save rez structure to .mat file."
+                        },
+                        "delete_tmp_files": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "default": ["matlab_files"],
+                            "description": "List of temporary file types to delete after sorting."
+                        },
+                        "delete_recording_dat": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to delete the recording .dat file after sorting."
+                        }
+                    }
+                }
+            }
+        },
+        "sorter_wrapper_spykingcircus2": {
+            "type": "object",
+            "description": "SpykingCircus2 spike sorter configuration.",
+            "additionalProperties": false,
+            "properties": {
+                "job_kwargs": {
+                    "$ref": "#/$defs/job_kwargs"
+                },
+                "sorter": {
+                    "type": "object",
+                    "description": "SpykingCircus2 algorithm-specific parameters.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "general": {
+                            "type": "object",
+                            "description": "General parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "ms_before": {
+                                    "type": "number",
+                                    "default": 0.5,
+                                    "minimum": 0,
+                                    "description": "Time in ms before spike peak."
+                                },
+                                "ms_after": {
+                                    "type": "number",
+                                    "default": 1.5,
+                                    "minimum": 0,
+                                    "description": "Time in ms after spike peak."
+                                },
+                                "radius_um": {
+                                    "type": "number",
+                                    "default": 100.0,
+                                    "minimum": 0,
+                                    "description": "Radius in micrometers."
+                                }
+                            }
+                        },
+                        "filtering": {
+                            "type": "object",
+                            "description": "Filtering parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "freq_min": {
+                                    "type": "number",
+                                    "default": 150,
+                                    "minimum": 0,
+                                    "description": "Minimum frequency in Hz."
+                                },
+                                "freq_max": {
+                                    "type": "number",
+                                    "default": 7000,
+                                    "minimum": 0,
+                                    "description": "Maximum frequency in Hz."
+                                },
+                                "ftype": {
+                                    "type": "string",
+                                    "default": "bessel",
+                                    "description": "Filter type."
+                                },
+                                "filter_order": {
+                                    "type": "integer",
+                                    "default": 2,
+                                    "minimum": 1,
+                                    "description": "Filter order."
+                                },
+                                "margin_ms": {
+                                    "type": "number",
+                                    "default": 20,
+                                    "minimum": 0,
+                                    "description": "Margin in milliseconds."
+                                }
+                            }
+                        },
+                        "whitening": {
+                            "type": "object",
+                            "description": "Whitening parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "mode": {
+                                    "type": "string",
+                                    "enum": ["local", "global"],
+                                    "default": "local",
+                                    "description": "Whitening mode."
+                                },
+                                "regularize": {
+                                    "type": "boolean",
+                                    "default": false,
+                                    "description": "Whether to regularize the whitening matrix."
+                                }
+                            }
+                        },
+                        "detection": {
+                            "type": "object",
+                            "description": "Spike detection parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "default": "matched_filtering",
+                                    "description": "Detection method."
+                                },
+                                "method_kwargs": {
+                                    "type": "object",
+                                    "description": "Keyword arguments for the detection method.",
+                                    "properties": {
+                                        "peak_sign": {
+                                            "$ref": "#/$defs/peak_sign"
+                                        },
+                                        "detect_threshold": {
+                                            "type": "number",
+                                            "default": 5,
+                                            "description": "Detection threshold."
+                                        }
+                                    }
+                                },
+                                "pipeline_kwargs": {
+                                    "type": "object",
+                                    "default": {},
+                                    "description": "Pipeline keyword arguments."
+                                }
+                            }
+                        },
+                        "selection": {
+                            "type": "object",
+                            "description": "Spike selection parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "default": "uniform",
+                                    "description": "Selection method."
+                                },
+                                "method_kwargs": {
+                                    "type": "object",
+                                    "description": "Keyword arguments for the selection method.",
+                                    "properties": {
+                                        "n_peaks_per_channel": {
+                                            "type": "integer",
+                                            "default": 5000,
+                                            "minimum": 1,
+                                            "description": "Number of peaks per channel."
+                                        },
+                                        "min_n_peaks": {
+                                            "type": "integer",
+                                            "default": 100000,
+                                            "minimum": 1,
+                                            "description": "Minimum total number of peaks."
+                                        },
+                                        "select_per_channel": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "Whether to select per channel."
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "apply_motion_correction": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to apply internal motion correction."
+                        },
+                        "motion_correction": {
+                            "type": "object",
+                            "description": "Internal motion correction parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "preset": {
+                                    "type": "string",
+                                    "default": "dredge_fast",
+                                    "description": "Motion correction preset."
+                                }
+                            }
+                        },
+                        "merging": {
+                            "type": "object",
+                            "description": "Unit merging parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "max_distance_um": {
+                                    "type": "number",
+                                    "default": 50,
+                                    "minimum": 0,
+                                    "description": "Maximum distance in micrometers for merging."
+                                }
+                            }
+                        },
+                        "clustering": {
+                            "type": "object",
+                            "description": "Clustering parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "default": "iterative-hdbscan",
+                                    "description": "Clustering method."
+                                },
+                                "method_kwargs": {
+                                    "type": "object",
+                                    "default": {},
+                                    "description": "Keyword arguments for the clustering method."
+                                }
+                            }
+                        },
+                        "cleaning": {
+                            "type": "object",
+                            "description": "Cluster cleaning parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "min_snr": {
+                                    "type": "number",
+                                    "default": 5,
+                                    "minimum": 0,
+                                    "description": "Minimum SNR for a cluster."
+                                },
+                                "max_jitter_ms": {
+                                    "type": "number",
+                                    "default": 0.1,
+                                    "minimum": 0,
+                                    "description": "Maximum jitter in milliseconds."
+                                },
+                                "sparsify_threshold": {
+                                    "type": ["number", "null"],
+                                    "default": null,
+                                    "description": "Threshold for sparsification. If null, no sparsification."
+                                }
+                            }
+                        },
+                        "matching": {
+                            "type": "object",
+                            "description": "Template matching parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "method": {
+                                    "type": "string",
+                                    "default": "circus-omp",
+                                    "description": "Matching method."
+                                },
+                                "method_kwargs": {
+                                    "type": "object",
+                                    "default": {},
+                                    "description": "Keyword arguments for the matching method."
+                                },
+                                "pipeline_kwargs": {
+                                    "type": "object",
+                                    "default": {},
+                                    "description": "Pipeline keyword arguments."
+                                }
+                            }
+                        },
+                        "apply_preprocessing": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to apply internal preprocessing."
+                        },
+                        "apply_whitening": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to apply whitening."
+                        },
+                        "cache_preprocessing": {
+                            "type": "object",
+                            "description": "Cache parameters for preprocessing.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "mode": {
+                                    "type": "string",
+                                    "enum": ["memory", "folder", "no-cache"],
+                                    "default": "memory",
+                                    "description": "Caching mode."
+                                },
+                                "memory_limit": {
+                                    "type": "number",
+                                    "default": 0.5,
+                                    "minimum": 0,
+                                    "description": "Memory limit as a fraction of available RAM."
+                                },
+                                "delete_cache": {
+                                    "type": "boolean",
+                                    "default": true,
+                                    "description": "Whether to delete cache after sorting."
+                                }
+                            }
+                        },
+                        "chunk_preprocessing": {
+                            "type": "object",
+                            "description": "Chunk preprocessing parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "memory_limit": {
+                                    "type": ["number", "null"],
+                                    "default": null,
+                                    "description": "Memory limit. If null, auto-determined."
+                                }
+                            }
+                        },
+                        "multi_units_only": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to only detect multi-unit activity."
+                        },
+                        "job_kwargs": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Additional job keyword arguments for SpykingCircus2."
+                        },
+                        "seed": {
+                            "type": "integer",
+                            "default": 42,
+                            "description": "Random seed for reproducibility."
+                        },
+                        "deterministic_peaks_detection": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to use deterministic peak detection."
+                        },
+                        "debug": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to enable debug mode."
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
