@@ -1,0 +1,11 @@
+.. _1.1.1:
+
+1.1.1 - April 24th 2026
+=======================
+
+Minor release of the AIND Ephys Pipeline with a bug fix on the NWB units.
+
+
+Bug fixes
+---------
+* NWB units always copies input NWB file to results ([nwb units #20](https://github.com/AllenNeuralDynamics/aind-units-nwb/pull/20))
