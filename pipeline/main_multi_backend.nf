@@ -28,12 +28,14 @@ def buildStepArgs(Map json_section, String cli_param_name) {
     if (cli_param_name in params_keys && params[cli_param_name] instanceof String) {
         println "Merging ${cli_param_name} from JSON with CLI args: ${params[cli_param_name]}"
         def cli_tokens = params[cli_param_name].trim().split(/\s+/) as List
-        for (int i = 0; i < cli_tokens.size(); i++) {
+        def i = 0
+        while (i < cli_tokens.size()) {
             if (cli_tokens[i].startsWith('--')) {
                 def key = cli_tokens[i].substring(2).replace('-', '_')
                 def value = (i + 1 < cli_tokens.size() && !cli_tokens[i + 1].startsWith('--')) ? cli_tokens[++i] : true
                 args_map[key] = value
             }
+            i++
         }
     }
     return args_map ? "--params '${groovy.json.JsonOutput.toJson(args_map)}'" : ""
