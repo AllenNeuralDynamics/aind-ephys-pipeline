@@ -2,6 +2,10 @@ FROM spikeinterface/kilosort4-base:4.0.18_cuda-12.0.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+RUN useradd -m -u 1000 pipelineuser
+USER pipelineuser
+WORKDIR /home/pipelineuser
+
 # Copy requirements.txt into the container
 COPY requirements.txt .
 
