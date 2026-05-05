@@ -4,6 +4,10 @@ on:
   pull_request:
       branches: [main]
       types: [synchronize, opened, reopened]
+  
+env: 
+  NXF_SYNTAX_PARSER: v1
+
 jobs:
     test:
         runs-on: ubuntu-latest

@@ -1,19 +1,27 @@
-FROM spikeinterface/kilosort4-base:4.0.18_cuda-12.0.0
+FROM spikeinterface/kilosort4-base:4.0.38_cuda-12.0.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Copy requirements.txt into the container
-COPY requirements.txt .
+# 1. Create user
+RUN useradd -m -u 1000 pipelineuser
 
+# 2. Setup work area
+WORKDIR /home/pipelineuser
+
+# 3. Copy requirements AND change ownership so the user can read it
+COPY --chown=pipelineuser:pipelineuser requirements.txt .
+
+# 4. Switch user
+USER pipelineuser
+
+# 5. Update PATH so the user-installed pip/packages are found
+ENV PATH="/home/pipelineuser/.local/bin:${PATH}"
+
+# 6. Install Python packages
 RUN pip install --upgrade pip && \
     grep -E 'aind-data-schema|scipy' requirements.txt | xargs pip install
 
-# Extract the spikeinterface version and install with extras
+# 7 .Extract the spikeinterface version and install with extras
 RUN pip install --upgrade pip && \
     SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' requirements.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
-
-# Fix for multiple channel groups: https://github.com/SpikeInterface/spikeinterface/pull/3944
-RUN git clone https://github.com/alejoe91/spikeinterface.git && cd spikeinterface && \
-    git checkout 64cee6d2be24288ef803c9a686f137105f975655 && pip install . && \
-    cd .. && rm -rf spikeinterface

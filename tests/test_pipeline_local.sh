@@ -1,6 +1,8 @@
 # test pipeline with sample_nwb file
 # DOCKER_IMAGE="ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:si-0.102.1"
-NXF_VERSION="25.04.1"
+# NXF_VERSION="25.04.1"
+NXF_VERSION="26.04.0"
+
 
 # Check if arguments are passed
 if [ "$#" -gt 0 ]; then
@@ -43,6 +45,11 @@ else
     CONFIG_FILE="$PIPELINE_PATH/pipeline/nextflow_local.config"
 fi
 echo "Using config file: $CONFIG_FILE"
+
+# use legacy syntax parser for Nextflow >= 26.04.0
+if printf '%s\n%s\n' "26.04.0" "$NXF_VERSION" | sort -V -C; then
+    export NXF_SYNTAX_PARSER=v1
+fi
 
 # run pipeline
 NXF_VER=$NXF_VERSION DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
