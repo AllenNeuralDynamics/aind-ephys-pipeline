@@ -657,7 +657,7 @@ process quality_control {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run
+    ./run --pipeline-data-path ${DATA_PATH}
 
     echo "[${task.tag}] completed!"
     """

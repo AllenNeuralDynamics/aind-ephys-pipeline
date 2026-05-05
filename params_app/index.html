@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIND Ephys Pipeline — Parameter Editor</title>
+    <script src="ajv7.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>AIND Ephys Pipeline — Parameter Editor</h1>
+        <p class="subtitle">Generate and validate pipeline parameter files using the JSON schema</p>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab active" data-tab="editor">Editor</button>
+        <button class="tab" data-tab="validate">Validate JSON</button>
+    </nav>
+
+    <main>
+        <!-- ===== Editor Tab ===== -->
+        <section id="tab-editor" class="tab-content active">
+            <div class="editor-split">
+                <div class="editor-left">
+                    <div class="toolbar">
+                        <button id="btn-load-defaults" title="Reset all values to defaults">Load Defaults</button>
+                        <button id="btn-collapse-all">Collapse All</button>
+                        <button id="btn-expand-all">Expand All</button>
+                        <label class="toggle-label">
+                            <input type="checkbox" id="chk-only-changed"> Show only changed
+                        </label>
+                    </div>
+                    <div id="form-root"></div>
+                </div>
+                <div class="editor-right">
+                    <div class="panel-header">
+                        <h3>Generated JSON</h3>
+                        <div class="toolbar">
+                            <button id="btn-download">Download</button>
+                            <button id="btn-copy">Copy</button>
+                            <label class="file-label">
+                                Import…
+                                <input type="file" id="file-import" accept=".json">
+                            </label>
+                        </div>
+                    </div>
+                    <pre id="editor-output"></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== Validate Tab ===== -->
+        <section id="tab-validate" class="tab-content">
+            <p>Paste or upload a JSON file to validate it against the pipeline schema.</p>
+            <div class="toolbar">
+                <label class="file-label">
+                    Upload JSON…
+                    <input type="file" id="file-validate" accept=".json">
+                </label>
+                <button id="btn-validate" class="primary">Validate</button>
+                <button id="btn-clear-validate">Clear</button>
+            </div>
+            <textarea id="validate-input" rows="20" placeholder='Paste your params JSON here…' spellcheck="false"></textarea>
+            <div id="validate-result" class="hidden"></div>
+        </section>
+    </main>
+
+    <footer>
+        <a href="https://aind-ephys-pipeline.readthedocs.io" target="_blank" rel="noopener">Documentation</a>
+        &middot;
+        <a href="https://github.com/AllenNeuralDynamics/aind-ephys-pipeline" target="_blank" rel="noopener">GitHub</a>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

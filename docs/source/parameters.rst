@@ -27,7 +27,6 @@ To use a parameter file, specify it with the ``--params_file`` option:
    --params_file PATH_TO_PARAMS_FILE
    # Example: --params_file pipeline/default_params.json
 
-Note that the parameter file will override any command line parameters specified.
 
 .. note::
 
@@ -35,8 +34,80 @@ Note that the parameter file will override any command line parameters specified
    The ``sorter`` field, if specified and not null, will override the command line ``--sorter`` parameter.
 
 
+Parameter Editor Webapp
+-----------------------
+
+A browser-based parameter editor is included in ``params_app/``.
+It reads the JSON schema (``pipeline/default_params_schema.json``) and renders an
+interactive form for creating and editing parameter files, with built-in validation.
+
+To run the webapp, use the included launcher script (requires Python 3):
+
+.. code-block:: bash
+
+   python params_app/serve.py
+
+This starts a local server from the repository root, prints the URL, and opens it
+in your browser. An optional port argument is supported:
+
+.. code-block:: bash
+
+   python params_app/serve.py 9000
+
+The webapp provides two tabs:
+
+* **Editor** — an interactive form with all pipeline parameters, inline descriptions,
+  enum dropdowns, nullable toggles, and collapsible sections. You can generate, download,
+  copy, or import JSON files.
+* **Validate JSON** — paste or upload an existing JSON file to validate it against the
+  schema. Errors are shown with their JSON path and message.
+
+No installation or build step is required — the app is fully static.
+
+JSON Schema
+-----------
+
+The file ``pipeline/default_params_schema.json`` is a
+`JSON Schema (draft-07) <https://json-schema.org/>`_ that formally describes every
+parameter, its type, allowed values, and defaults. You can use it for:
+
+* **Editor integration** — VS Code, PyCharm, and other editors can provide
+  autocompletion and inline validation when you add a ``$schema`` reference at the
+  top of your params file:
+
+  .. code-block:: json
+
+     {
+         "$schema": "./default_params_schema.json",
+         "job_dispatch": { "input": "nwb" }
+     }
+
+* **Programmatic validation** — validate parameter files in Python:
+
+  .. code-block:: python
+
+     import json, jsonschema
+
+     with open("pipeline/default_params_schema.json") as f:
+         schema = json.load(f)
+     with open("my_params.json") as f:
+         params = json.load(f)
+
+     jsonschema.validate(params, schema)  # raises on error
+
+
 Process-Specific Arguments
 --------------------------
+
+Parameters can be specified via the parameter file or passed directly as command line arguments when running the pipeline.
+CLI arguments will override any conflicting parameters set in the parameter file.
+
+Each pipeline step can be configured with specific parameters using the format:
+
+.. code-block:: bash
+
+   --{step_name}_args="{args}"
+
 
 Job Dispatch Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -716,85 +787,6 @@ Parameter file section (``visualization``):
 ``motion.figsize``
    Figure size ``[width, height]`` in inches for the motion plot.
 
-
-CLI Parameters
---------------
-
-In addition to the parameters specified in the parameter file, you can also pass parameters 
-directly via the command line when running the pipeline. CLI arguments will override any 
-conflicting parameters set in the parameter file.
-
-Each pipeline step can be configured with specific parameters using the format:
-
-.. code-block:: bash
-
-   --{step_name}_args="{args}"
-
-
-Here is a list of available CLI parameters for each step:
-
-
-.. code-block:: bash
-
-   --job_dispatch_args "
-     --no-split-segments       # Whether to concatenate or split recording segments or not. Default: split segments
-     --no-split-groups         # Whether to process different groups separately. Default: split groups
-     --debug                   # Whether to run in DEBUG mode. Default: False
-     --debug-duration DURATION # Duration of clipped recording in debug mode. Only used if debug is enabled. Default: 30 seconds
-     --skip-timestamps-check   # Skip timestamps check. Default: False
-     --input {aind,spikeglx,openephys,nwb,spikeinterface}
-                               # Which 'loader' to use (aind | spikeglx | openephys | nwb | spikeinterface)
-     --spikeinterface-info SPIKEINTERFACE_INFO
-                               # A JSON path or string to specify how to parse the recording in spikeinterface, including: 
-                                 - 1. reader_type (required): string with the reader type (e.g. 'plexon', 'neuralynx', 'intan' etc.).
-                                 - 2. reader_kwargs (optional): dictionary with the reader kwargs (e.g. {'folder': '/path/to/folder'}).
-                                 - 3. keep_stream_substrings (optional): string or list of strings with the stream names to load (e.g. 'AP' or ['AP', 'LFP']).
-                                 - 4. skip_stream_substrings (optional): string (or list of strings) with substrings used to skip streams (e.g. 'NIDQ' or ['USB', 'EVENTS']).
-                                 - 5. probe_paths (optional): string or dict the probe paths to a ProbeInterface JSON file (e.g. '/path/to/probe.json'). 
-                                                              If a dict is provided, the key is the stream name and the value is the probe path. 
-                                                              If reader_kwargs is not provided, the reader will be created with default parameters. 
-                                                              The probe_path is required if the reader doesn't load the probe automatically.
-
-   "
-
-   --preprocessing_args "
-     --denoising {cmr,destripe}          # Denoising strategy
-     --filter-type {highpass,bandpass}   # Filter type
-     --no-remove-out-channels            # Skip out-channels removal
-     --no-remove-bad-channels            # Skip bad-channels removal
-     --max-bad-channel-fraction FRACTION # Max fraction of bad channels
-     --motion {skip,compute,apply}       # Motion correction mode
-     --motion-preset PRESET              # Motion correction preset
-     --motion-temporal-bin-s             # Temporal bin size (seconds)
-     --t-start START                     # Recording start time (seconds)
-     --t-stop STOP                       # Recording stop time (seconds)
-     --min-duration DURATION             # Minimum recording duration (seconds) to run preprocessing
-   "
-
-   --spikesort_args "
-     --raise-if-fails            # Raise error on failure
-     --skip-motion-correction    # Skip sorter motion correction
-     --min-drift-channels N      # Min channels for motion correction
-     --clear-cache               # Force PyTorch memory cleanup (Kilosort4)
-   "
-
-   --postprocessing_args "
-     --use-motion-corrected   # Apply motion correction before postprocessing
-                              # (only effective if motion was computed but not applied in preprocessing)
-   "
-
-   --nwb_ecephys_args "
-     --backend {zarr,hdf5}     # Backend to use for NWB writing (default: zarr)
-     --skip-lfp                # Skip LFP electrical series
-     --write-raw               # Write RAW electrical series
-     --lfp_temporal_factor N   # Temporal subsampling factor
-     --lfp_spatial_factor N    # Spatial subsampling factor
-     --lfp_highpass_freq_min F # LFP highpass filter cutoff (Hz)
-   "
-
-   --visualization_kwargs "
-     --output-format {png,svg}  # Output figure format (default: png)
-   "
 
 
 Full example with custom parameters
