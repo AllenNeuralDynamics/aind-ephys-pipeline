@@ -17,11 +17,16 @@ RUN pip install --upgrade pip && \
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
 
-# 3. Create non-root user for runtime
-RUN useradd -m -u 1000 pipelineuser
+# 3. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 
-# 4. Setup work area
+# 4. Create non-root user for runtime, with home dir writable by any UID
+#    (see Dockerfile_base for context).
+RUN useradd -m -u 1000 pipelineuser && chmod 777 /home/pipelineuser
+ENV HOME=/home/pipelineuser
+
+# 5. Setup work area
 WORKDIR /home/pipelineuser
 
-# 5. Switch to non-root user
+# 6. Switch to non-root user
 USER pipelineuser
