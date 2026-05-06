@@ -2,27 +2,19 @@ FROM spikeinterface/kilosort2_5-compiled-base:latest
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Note: KS2.5 base image (built from MATLAB) already provides 'appuser' with UID 1000.
 
-# 1. Ensure the existing appuser owns their home directory 
-# Note: KS2.5 image is built from matlab, which already creates an 'appuser'
-# with UID 1000, so we use that instead of creating a new user
-RUN chown -R appuser:appuser /home/appuser
-
-# 2. Use the existing user instead of creating 'pipelineuser'
-USER appuser
-WORKDIR /home/appuser
-
-# 3. Copy files with correct ownership
-COPY --chown=appuser:appuser requirements.txt .
-
-# 4. Update PATH so the user-installed pip/packages are found
-ENV PATH="/home/appuser/.local/bin:${PATH}"
-
-# 5. Install Python packages
+# 1. Install Python packages as root so they land in the system site-packages,
+#    accessible to any user regardless of UID at runtime.
+USER root
+COPY requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|scipy' requirements.txt | xargs pip install
+    grep -E 'aind-data-schema|scipy' /tmp/requirements.txt | xargs pip install
 
-# 6. Extract the spikeinterface version and install with extras
-RUN pip install --upgrade pip && \
-    SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' requirements.txt | cut -d'=' -f3) && \
+RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
+
+# 2. Ensure appuser owns their home directory and switch to non-root user
+RUN chown -R appuser:appuser /home/appuser
+WORKDIR /home/appuser
+USER appuser
