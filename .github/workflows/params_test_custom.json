@@ -11,52 +11,53 @@
     "preprocessing": {
         "job_kwargs": {
             "chunk_duration": "1s",
-            "progress_bar": false
+            "progress_bar": false,
+            "mp_context": "spawn"
         },
-        "min_preprocessing_duration": 120,
-        "custom_preprocessing_pipeline": {},
-        "denoising_strategy": "cmr",
         "filter_type": "bandpass",
-        "highpass_filter": {
-            "freq_min": 300.0,
-            "margin_ms": 5.0
-        },
-        "bandpass_filter": {
-            "freq_min": 300.0,
-            "freq_max": 6000.0,
-            "margin_ms": 5.0
-        },
-        "phase_shift": {
-            "margin_ms": 100.0
-        },
-        "detect_bad_channels": {
-            "method": "coherence+psd",
-            "dead_channel_threshold": -0.5,
-            "noisy_channel_threshold": 1.0,
-            "outside_channel_threshold": -0.3,
-            "outside_channels_location": "top",
-            "n_neighbors": 11,
-            "seed": 0
-        },
-        "remove_out_channels": true,
-        "remove_bad_channels": true,
+        "remove_out_channels": false,
+        "remove_bad_channels": false,
         "max_bad_channel_fraction": 0.5,
-        "common_reference": {
-            "reference": "global",
-            "operator": "median"
+        "denoising_strategy": "destripe",
+        "default_preprocessing_pipeline": {
+            "phase_shift": {
+                "margin_ms": 100.0
+            },
+            "highpass_filter": {
+                "freq_min": 300.0,
+                "margin_ms": 5.0
+            },
+            "bandpass_filter": {
+                "freq_min": 300.0,
+                "freq_max": 6000.0,
+                "margin_ms": 5.0
+            },
+            "detect_and_remove_bad_channels": {
+                "method": "coherence+psd",
+                "dead_channel_threshold": -0.5,
+                "noisy_channel_threshold": 1.0,
+                "outside_channel_threshold": -0.3,
+                "outside_channels_location": "top",
+                "n_neighbors": 11,
+                "channel_filters": ["noise", "dead", "out"],
+                "seed": 0
+            },
+            "common_reference": {
+                "reference": "global",
+                "operator": "median"
+            },
+            "highpass_spatial_filter": {
+                "n_channel_pad": 10,
+                "n_channel_taper": null,
+                "direction": "y",
+                "apply_agc": true,
+                "agc_window_length_s": 0.01,
+                "highpass_butter_order": 3,
+                "highpass_butter_wn": 0.01
+            }
         },
-        "highpass_spatial_filter": {
-            "n_channel_pad": 60,
-            "n_channel_taper": null,
-            "direction": "y",
-            "apply_agc": true,
-            "agc_window_length_s": 0.01,
-            "highpass_butter_order": 3,
-            "highpass_butter_wn": 0.01
-        },
+        "custom_preprocessing_pipeline": null,
         "motion_correction": {
-            "compute": false,
-            "apply": false,
             "preset": "dredge_fast",
             "detect_kwargs": {},
             "select_kwargs": {},

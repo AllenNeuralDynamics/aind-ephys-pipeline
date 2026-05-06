@@ -14,11 +14,11 @@
             "progress_bar": false,
             "mp_context": "spawn"
         },
-        "filter_type": "bandpass",
-        "remove_out_channels": false,
-        "remove_bad_channels": false,
+        "filter_type": "highpass",
+        "remove_out_channels": true,
+        "remove_bad_channels": true,
         "max_bad_channel_fraction": 0.5,
-        "denoising_strategy": "destripe",
+        "denoising_strategy": "cmr",
         "default_preprocessing_pipeline": {
             "phase_shift": {
                 "margin_ms": 100.0
