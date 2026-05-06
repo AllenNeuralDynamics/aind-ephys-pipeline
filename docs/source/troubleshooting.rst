@@ -24,6 +24,26 @@ While we resolve the compatibility issues with the new syntax, you can set the e
         export NXF_SYNTAX_PARSER=v1
 
 
+
+``OSError: Unable to synchronously open file``
+----------------------------------------------
+
+This error can occur when using NWB with HDF5 backend as input to the pipeline on a filesystem that does not support file locking, such as
+NFS or certain cloud storage solutions (mainly SLURM clusters).
+
+To resolve this issue, you can set the environment variable ``HDF5_USE_FILE_LOCKING`` to ``FALSE``.
+
+
+
+
+.. note.::
+
+    This following permission errors should not happen anymore with the latest versions of the containers, which do not run as root.
+    See PRS `#103 <https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/pull/103>`_ and 
+    `#104 <https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/pull/104>`_ for more details.
+
+
+
 NUMBA cache issue: ``RuntimeError: cannot cache function``
 ----------------------------------------------------------
 
@@ -46,12 +66,6 @@ To resolve this issue, you can create a folder where your user has write access 
     file, so they will be automatically used automatically if defined.
 
 
-.. note.::
-
-    This error should not happen anymore with the latest versions of the containers, which do not run as root.
-    See `this PR <https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/pull/103>`_ for more details.
-
-
 ``OSError: Read-only file system`` error
 ----------------------------------------
 
@@ -71,12 +85,3 @@ in the ``nextflow_slurm.config`` file:
 
     This error should not happen anymore with the latest versions of the containers, which do not run as root.
     See `this PR <https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/pull/103>`_ for more details.
-
-
-``OSError: Unable to synchronously open file``
-----------------------------------------------
-
-This error can occur when using NWB with HDF5 backend as input to the pipeline on a filesystem that does not support file locking, such as
-NFS or certain cloud storage solutions (mainly SLURM clusters).
-
-To resolve this issue, you can set the environment variable ``HDF5_USE_FILE_LOCKING`` to ``FALSE``.
