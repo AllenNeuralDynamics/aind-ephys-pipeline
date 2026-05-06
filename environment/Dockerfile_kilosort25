@@ -14,7 +14,10 @@ RUN pip install --upgrade pip && \
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
 
-# 2. Ensure appuser owns their home directory and switch to non-root user
+# 2. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+
+# 3. Ensure appuser owns their home directory and switch to non-root user
 RUN chown -R appuser:appuser /home/appuser
 WORKDIR /home/appuser
 USER appuser
