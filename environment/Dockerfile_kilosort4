@@ -2,26 +2,20 @@ FROM spikeinterface/kilosort4-base:4.0.38_cuda-12.0.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# 1. Create user
+# 1. Install Python packages as root so they land in the system site-packages,
+#    accessible to any user regardless of UID at runtime.
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip && \
+    grep -E 'aind-data-schema|scipy' /tmp/requirements.txt | xargs pip install
+
+RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cut -d'=' -f3) && \
+    pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
+
+# 2. Create non-root user for runtime
 RUN useradd -m -u 1000 pipelineuser
 
-# 2. Setup work area
+# 3. Setup work area
 WORKDIR /home/pipelineuser
 
-# 3. Copy requirements AND change ownership so the user can read it
-COPY --chown=pipelineuser:pipelineuser requirements.txt .
-
-# 4. Switch user
+# 4. Switch to non-root user
 USER pipelineuser
-
-# 5. Update PATH so the user-installed pip/packages are found
-ENV PATH="/home/pipelineuser/.local/bin:${PATH}"
-
-# 6. Install Python packages
-RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|scipy' requirements.txt | xargs pip install
-
-# 7 .Extract the spikeinterface version and install with extras
-RUN pip install --upgrade pip && \
-    SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' requirements.txt | cut -d'=' -f3) && \
-    pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"

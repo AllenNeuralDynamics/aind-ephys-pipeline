@@ -8,26 +8,20 @@ RUN apt-get update \
         build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Create user
+# 2. Install Python packages as root so they land in the system (conda) site-packages,
+#    accessible to any user regardless of UID at runtime.
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip && \
+    grep -E 'aind-data-schema|aind-nwb-utils|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs|neo' /tmp/requirements.txt | xargs pip install
+
+RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cut -d'=' -f3) && \
+    pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
+
+# 3. Create non-root user for runtime
 RUN useradd -m -u 1000 pipelineuser
 
-# 3. Setup work area
+# 4. Setup work area
 WORKDIR /home/pipelineuser
 
-# 4. Copy requirements AND change ownership so the user can read it
-COPY --chown=pipelineuser:pipelineuser requirements.txt .
-
-# 5. Switch user
+# 5. Switch to non-root user
 USER pipelineuser
-
-# 6. Update PATH so the user-installed pip/packages are found
-ENV PATH="/home/pipelineuser/.local/bin:${PATH}"
-
-# 7. Install Python packages
-RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|aind-nwb-utils|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs|neo' requirements.txt | xargs pip install
-
-# 8. Extract the spikeinterface version and install with extras
-RUN pip install --upgrade pip && \
-    SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' requirements.txt | cut -d'=' -f3) && \
-    pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
