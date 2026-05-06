@@ -29,11 +29,12 @@ RUN pip install --upgrade pip && \
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full,widgets]==${SPIKEINTERFACE_VERSION}"
 
-# 3. Redirect numba's JIT cache to a writable location.
+# 3. Redirect cache dirs to a writable location (numba, matplotlib).
 #    Numba defaults to caching next to the .py source files, which live in the
 #    root-owned conda site-packages and are not writable when the container is
 #    run with --user $(id -u):$(id -g) (UID != 1000).
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+ENV MPLCONFIGDIR=/tmp/matplotlib_cache
 
 # 4. Create non-root user for runtime
 RUN useradd -m -u 1000 pipelineuser
