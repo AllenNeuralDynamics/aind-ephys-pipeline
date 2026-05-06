@@ -17,7 +17,9 @@ RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cu
 # 2. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 
-# 3. Ensure appuser owns their home directory and switch to non-root user
-RUN chown -R appuser:appuser /home/appuser
+# 3. Ensure appuser owns their home directory and make it writable by any UID
+#    (see Dockerfile_base for context), then switch to non-root user.
+RUN chown -R appuser:appuser /home/appuser && chmod 777 /home/appuser
+ENV HOME=/home/appuser
 WORKDIR /home/appuser
 USER appuser

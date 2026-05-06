@@ -14,8 +14,10 @@ RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cu
 # 2. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 
-# 3. Create non-root user for runtime
-RUN useradd -m -u 1000 pipelineuser
+# 3. Create non-root user for runtime, with home dir writable by any UID
+#    (see Dockerfile_base for context).
+RUN useradd -m -u 1000 pipelineuser && chmod 777 /home/pipelineuser
+ENV HOME=/home/pipelineuser
 
 # 4. Setup work area
 WORKDIR /home/pipelineuser

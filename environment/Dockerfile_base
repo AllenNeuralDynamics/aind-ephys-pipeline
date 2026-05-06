@@ -37,8 +37,13 @@ ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 ENV MPLCONFIGDIR=/tmp/matplotlib_cache
 ENV HF_HOME=/tmp/huggingface_cache
 
-# 4. Create non-root user for runtime
-RUN useradd -m -u 1000 pipelineuser
+# 4. Create non-root user for runtime, with home dir writable by any UID.
+#    This lets tools that write to ~/.something (kachery, huggingface tokens,
+#    pip caches, etc.) work even when the container is launched with
+#    --user $(id -u):$(id -g) where the host UID isn't in /etc/passwd and
+#    HOME would otherwise fall back to '/'.
+RUN useradd -m -u 1000 pipelineuser && chmod 777 /home/pipelineuser
+ENV HOME=/home/pipelineuser
 
 # 5. Setup work area
 WORKDIR /home/pipelineuser
