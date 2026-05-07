@@ -15,7 +15,7 @@ The main changes in this release are:
 
 .. warning::
 
-    The updates to the ``preprocessing`` and ``postprocessing`` steps modified the expected structure of perameters file.
+    The updates to the ``preprocessing`` and ``postprocessing`` steps modified the expected structure of parameters file.
     Please take a look at the updated parameters file documentation and update your parameters file accordingly when using this new release.
     You can use the :ref:`parameter-editor-webapp` (``python params_app/serve.py``) to easily create and validate your parameters file.
 
