@@ -38,7 +38,7 @@
                 "noisy_channel_threshold": 1.0,
                 "outside_channel_threshold": -0.3,
                 "outside_channels_location": "top",
-                "n_neighbors": 11,
+                "n_neighbors": 5,
                 "channel_filters": ["noise", "dead", "out"],
                 "seed": 0
             },

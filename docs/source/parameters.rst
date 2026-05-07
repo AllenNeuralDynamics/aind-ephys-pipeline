@@ -34,6 +34,8 @@ To use a parameter file, specify it with the ``--params_file`` option:
    The ``sorter`` field, if specified and not null, will override the command line ``--sorter`` parameter.
 
 
+.. _parameter-editor-webapp:
+
 Parameter Editor Webapp
 -----------------------
 
@@ -580,14 +582,6 @@ Parameter file section (``postprocessing``):
 
 Curation Parameters
 ~~~~~~~~~~~~~~~~~~~
-
-# TODO: add curation CLI args
-.. code-block:: bash
-
-   --curation_args "
-     # Most curation settings are controlled via the parameter file.
-     # The --params option can be used to pass the parameter file path directly.
-   "
 
 Parameter file section (``curation``):
 

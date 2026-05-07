@@ -1,0 +1,28 @@
+.. _1.2.0:
+
+1.2.0 - May 2026
+==================
+
+The main changes in this release are:
+
+* Increased pipeline flexibility (`#98 <https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/pull/98>`_):
+  * job_dispatch: enhanced ``spikeinterface`` input option to accept spikeinterface-native datasets (e.g. binary folder / zarr / JSON / PKL)
+  * preprocessing: option to provide a custom preprocessing pipeline and use ``apply_preprocessing_pipeline``
+  * postprocessing: flexibility in defining extensions, with minimal requirements of ``random_spikes`` and ``templates``
+  * curation / visualization / QC / NWB units: more robust against missing extensions and metrics
+* Rebuilt container images, now running on non-root users and defining CACHE folders internally to avoid permission issues (`#103 <https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/pull/103>`_ / `#104 <https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/pull/104>`_)
+
+
+.. warning::
+
+    The updates to the ``preprocessing`` and ``postprocessing`` steps modified the expected structure of perameters file.
+    Please take a look at the updated parameters file documentation and update your parameters file accordingly when using this new release.
+    You can use the :ref:`parameter-editor-webapp` (``python params_app/serve.py``) to easily create and validate your parameters file.
+
+
+Package versions
+----------------
+* ``spikeinterface`` version: 0.103.2
+* ``aind-data-schema`` version: 2.4.0
+* ``neo`` version 0.14.4
+
