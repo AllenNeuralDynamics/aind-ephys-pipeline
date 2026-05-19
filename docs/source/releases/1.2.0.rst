@@ -1,7 +1,7 @@
 .. _1.2.0:
 
-1.2.0 - May 2026
-==================
+1.2.0 - May 8th 2026
+====================
 
 The main changes in this release are:
 
