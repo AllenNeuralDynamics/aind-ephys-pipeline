@@ -1,0 +1,17 @@
+.. _1.2.1:
+
+1.2.1 - May 21st 2026
+=====================
+
+Minor bugfix release and sync with the latest versions of processing steps.
+
+* quality control: fix bug in saturation detection
+* nwb-ecephys: fix creation of NWB Device for Neuropixels Quad-Base probes
+* nwb_units: fix postprocessed stream names and remove saving of additional devices
+
+Package versions
+----------------
+* ``spikeinterface`` version: 0.103.2
+* ``aind-data-schema`` version: 2.4.0
+* ``neo`` version 0.14.4
+
