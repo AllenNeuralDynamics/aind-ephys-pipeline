@@ -8,7 +8,7 @@
     "properties": {
         "pipeline_version": {
             "type": "string",
-            "enum": ["1.2.0", "1.2.1", "1.2.2"],
+            "pattern": "^1\\.2\\.[0-9]+$",
             "description": "Version of the pipeline the parameters are compatible with. This should be updated when default parameters are changed in a way that is not backward compatible."
         },
         "job_dispatch": {
