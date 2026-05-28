@@ -1,4 +1,5 @@
 {
+    "pipeline_version": "1.2.2",
     "job_dispatch": {
         "split_segments": true,
         "split_groups": true,
