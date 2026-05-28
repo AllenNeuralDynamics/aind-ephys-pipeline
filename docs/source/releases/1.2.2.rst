@@ -1,6 +1,6 @@
 .. _1.2.2:
 
-1.2.2 - May 22nd 2026
+1.2.2 - May 28th 2026
 =====================
 
 Minor bugfix release with:
