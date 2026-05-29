@@ -1,0 +1,16 @@
+name: Link Issue to Milestone Parent
+
+on:
+  issues:
+    types: [milestoned]
+
+jobs:
+  link-issue:
+    if: github.event.issue.milestone != null
+    uses: AllenNeuralDynamics/.github/.github/workflows/util-link-issues-by-milestone.yml@main
+    with:
+      issue-number: ${{ github.event.issue.number }}
+      issue-id: ${{ github.event.issue.id }}
+      milestone-description: ${{ github.event.issue.milestone.description }}
+    secrets:
+      service-token: ${{ secrets.SERVICE_TOKEN }}
