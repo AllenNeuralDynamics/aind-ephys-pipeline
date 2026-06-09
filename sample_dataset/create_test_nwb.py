@@ -19,6 +19,7 @@ this_folder = Path(__file__).parent
 
 def generate_nwb():
     duration = 180
+    sort_duration = 10
     num_channels = 32
     num_units = 20
     output_folder = this_folder / "nwb"
@@ -33,6 +34,14 @@ def generate_nwb():
     nwbfile = mock_NWBFile()
     nwbfile.subject = mock_Subject()
     add_recording_to_nwbfile(recording, nwbfile=nwbfile)
+
+    # Also add one short recording that should be skipped
+    short_recording, _ = si.generate_ground_truth_recording(
+        num_channels=num_channels,
+        num_units=num_units,
+        durations=[sort_duration],
+    )
+    add_recording_to_nwbfile(short_recording, nwbfile=nwbfile, es_key="short")
 
     with NWBHDF5IO(output_folder / "sample.nwb", mode="w") as io:
         io.write(nwbfile)
