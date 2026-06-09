@@ -41,7 +41,13 @@ def generate_nwb():
         num_units=num_units,
         durations=[sort_duration],
     )
-    add_recording_to_nwbfile(short_recording, nwbfile=nwbfile, es_key="short")
+    # TODO: fix this
+    metadata = dict(Ecephys=dict())
+    metadata['Ecephys']['ElectricalSeriesShort'] = dict(
+        name="short",
+        description="Short recording"
+    )
+    add_recording_to_nwbfile(short_recording, nwbfile=nwbfile, metadata=metadata, es_key="ElectricalSeriesShort")
 
     with NWBHDF5IO(output_folder / "sample.nwb", mode="w") as io:
         io.write(nwbfile)
