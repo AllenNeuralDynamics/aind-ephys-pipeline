@@ -41,7 +41,6 @@ def generate_nwb():
         num_units=num_units,
         durations=[sort_duration],
     )
-    # TODO: fix this
     metadata = dict(Ecephys=dict())
     metadata['Ecephys']['ElectricalSeriesShort'] = dict(
         name="short",
