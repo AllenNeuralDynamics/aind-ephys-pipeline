@@ -19,7 +19,7 @@ this_folder = Path(__file__).parent
 
 def generate_nwb():
     duration = 180
-    sort_duration = 10
+    short_duration = 10
     num_channels = 32
     num_units = 20
     output_folder = this_folder / "nwb"
@@ -39,7 +39,7 @@ def generate_nwb():
     short_recording, _ = si.generate_ground_truth_recording(
         num_channels=num_channels,
         num_units=num_units,
-        durations=[sort_duration],
+        durations=[short_duration],
     )
     metadata = dict(Ecephys=dict())
     metadata['Ecephys']['ElectricalSeriesShort'] = dict(
