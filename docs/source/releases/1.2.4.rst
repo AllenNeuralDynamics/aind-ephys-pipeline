@@ -1,0 +1,22 @@
+.. _1.2.4:
+
+1.2.4 - Jun 12th 2026
+=====================
+
+Minor bugfix release with:
+
+Testing:
+* Add unsgined stream to test NWB file
+
+Parameters:
+* Add missing ``preprocessing/min_preprocessing_duration`` parameter to default parameters
+
+Processing steps:
+* NWB ecephys: fix bug with unsigned dtype
+
+Package versions
+----------------
+* ``spikeinterface`` version: 0.103.2
+* ``aind-data-schema`` version: 2.4.0
+* ``neo`` version 0.14.4
+
