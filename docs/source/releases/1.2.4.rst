@@ -12,6 +12,8 @@ Parameters:
 * Add missing ``preprocessing/min_preprocessing_duration`` parameter to default parameters
 
 Processing steps:
+* job dispatch: skip NWB ElectricalSeries with no channel locations
+* preprocessing: clean up skip logic
 * NWB ecephys: fix bug with unsigned dtype
 
 Package versions
