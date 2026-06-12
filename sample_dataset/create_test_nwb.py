@@ -49,13 +49,13 @@ def generate_nwb():
     add_recording_to_nwbfile(short_recording, nwbfile=nwbfile, metadata=metadata, es_key="ElectricalSeriesShort")
 
     # Add unsigned electrical series
-    recording_unsigned, _ = si.generate_ground_truth_recording(
+    recording, _ = si.generate_ground_truth_recording(
         num_channels=num_channels,
         num_units=num_units,
         durations=[duration],
     )
-    recording_unsigned = recording_unsigned.astype('uint16')
-    metadata = dict(Ecephys=dict())
+    traces_unsigned = recording.get_traces().astype('uint16')
+    recording_unsigned = si.NumpyRecording(traces_unsigned, sampling_frequency=recording.get_sampling_frequency())
     metadata['Ecephys']['ElectricalSeriesUnsigned'] = dict(
         name="unsigned",
         description="Unsigned recording"
