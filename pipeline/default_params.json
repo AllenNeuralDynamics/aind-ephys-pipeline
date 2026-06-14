@@ -18,6 +18,7 @@
         "filter_type": "highpass",
         "remove_out_channels": true,
         "remove_bad_channels": true,
+        "min_preprocessing_duration": 120,
         "max_bad_channel_fraction": 0.5,
         "denoising_strategy": "cmr",
         "default_preprocessing_pipeline": {
