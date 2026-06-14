@@ -54,7 +54,10 @@ def generate_nwb():
         num_units=num_units,
         durations=[duration],
     )
-    traces_unsigned = recording.get_traces().astype('uint16')
+    traces = recording.get_traces()
+    # add offset
+    traces_unsigned = traces + 2**15
+    traces_unsigned = traces_unsigned.astype('uint16')
     recording_unsigned = si.NumpyRecording(traces_unsigned, sampling_frequency=recording.get_sampling_frequency())
     metadata['Ecephys']['ElectricalSeriesUnsigned'] = dict(
         name="unsigned",
