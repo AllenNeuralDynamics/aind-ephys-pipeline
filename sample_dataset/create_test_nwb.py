@@ -54,17 +54,17 @@ def generate_nwb():
         num_units=num_units,
         durations=[duration],
     )
-    traces = recording.get_traces()
+    traces = recording.get_traces() 
     # add offset
     traces_unsigned = traces + 2**15
     traces_unsigned = traces_unsigned.astype('uint16')
     recording_unsigned = si.NumpyRecording(traces_unsigned, sampling_frequency=recording.get_sampling_frequency())
+    recording_unsigned.set_probe(recording.get_probe(), in_place=True)
     metadata['Ecephys']['ElectricalSeriesUnsigned'] = dict(
         name="unsigned",
         description="Unsigned recording"
     )
     add_recording_to_nwbfile(recording_unsigned, nwbfile=nwbfile, metadata=metadata, es_key="ElectricalSeriesUnsigned")
-
 
     with NWBHDF5IO(output_folder / "sample.nwb", mode="w") as io:
         io.write(nwbfile)
@@ -72,7 +72,9 @@ def generate_nwb():
     # save spikeinterface recording zarr format for testing the job dispatch
     output_si_folder = this_folder / "spikeinterface"
     output_si_folder.mkdir(exist_ok=True)
-    recording.save(folder=output_si_folder / "sample_recording.zarr", format="zarr")
+    recording.save(folder=output_si_folder / "sample_recording.zarr", format="zarr", overwrite=True)
+    short_recording.save(folder=output_si_folder / "sample_recording_short.zarr", format="zarr", overwrite=True)
+    recording_unsigned.save(folder=output_si_folder / "sample_recording_unsigned.zarr", format="zarr", overwrite=True)
 
 if __name__ == '__main__':
     generate_nwb()
