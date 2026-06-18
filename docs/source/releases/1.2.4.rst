@@ -1,12 +1,13 @@
 .. _1.2.4:
 
-1.2.4 - Jun 12th 2026
+1.2.4 - Jun 18th 2026
 =====================
 
 Minor bugfix release with:
 
 Testing:
-* Add unsigned stream to test NWB file
+* Add unsigned stream for testing
+* Add workflow to test pipeline from spikeinterface Zarr format
 
 Parameters:
 * Add missing ``preprocessing/min_preprocessing_duration`` parameter to default parameters

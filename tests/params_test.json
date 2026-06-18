@@ -16,7 +16,7 @@
         },
         "filter_type": "highpass",
         "remove_out_channels": true,
-        "remove_bad_channels": true,
+        "remove_bad_channels": false,
         "max_bad_channel_fraction": 0.5,
         "denoising_strategy": "cmr",
         "default_preprocessing_pipeline": {

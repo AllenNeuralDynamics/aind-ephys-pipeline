@@ -6,7 +6,7 @@
         "debug_duration": 30,
         "skip_timestamps_check": false,
         "multi_session": false,
-        "input": "nwb"
+        "input": "spikeinterface"
     },
     "preprocessing": {
         "job_kwargs": {
