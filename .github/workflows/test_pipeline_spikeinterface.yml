@@ -50,4 +50,4 @@ jobs:
           run: |
             DATA_PATH="$(pwd)/sample_dataset/spikeinterface" RESULTS_PATH="$(pwd)/sample_dataset/spikeinterface_results" \
             nextflow  -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main_multi_backend.nf \
-            --params_file "$(pwd)/.github/workflows/params_test_spikeinterface.json"
+            --params_file "$(pwd)/.github/workflows/params_test_si.json"
