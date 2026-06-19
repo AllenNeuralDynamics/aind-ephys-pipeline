@@ -6,7 +6,10 @@
         "debug_duration": 30,
         "skip_timestamps_check": false,
         "multi_session": false,
-        "input": "spikeinterface"
+        "input": "spikeinterface",
+        "spikeinterface_info": {
+            "reader_type": "spikeinterface"
+        }
     },
     "preprocessing": {
         "job_kwargs": {
