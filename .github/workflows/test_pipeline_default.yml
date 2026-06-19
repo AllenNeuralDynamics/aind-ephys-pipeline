@@ -1,4 +1,4 @@
-name: Test Default Nextflow Pipeline
+name: Test Pipeline from NWB
 
 on:
   pull_request:
