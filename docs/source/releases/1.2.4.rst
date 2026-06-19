@@ -17,6 +17,7 @@ Processing steps:
 * preprocessing: clean up skip logic
 * spikesort spykingcircus2: remove ``is_merged`` property before saving sorting output
 * NWB ecephys: handle unsigned dtype
+* NWB units: fix probe_model_name logic when missing probe_device_name
 * quality control: handle unsigned dtype
 
 Package versions
