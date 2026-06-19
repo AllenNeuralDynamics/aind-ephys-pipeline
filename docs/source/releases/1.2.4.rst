@@ -15,6 +15,7 @@ Parameters:
 Processing steps:
 * job dispatch: skip NWB ElectricalSeries with no channel locations
 * preprocessing: clean up skip logic
+* spikesort spykingcircus2: remove ``is_merged`` property before saving sorting output
 * NWB ecephys: handle unsigned dtype
 * quality control: handle unsigned dtype
 
