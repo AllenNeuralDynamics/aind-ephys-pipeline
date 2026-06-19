@@ -1,4 +1,4 @@
-name: Test NextflowPipeline Customization
+name: Test Pipeline Customization
 
 on:
   pull_request:

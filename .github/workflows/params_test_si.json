@@ -1,13 +1,15 @@
 {
-    "pipeline_version": "1.2.3",
     "job_dispatch": {
-        "split_segments": true,
+        "concatenate": false,
         "split_groups": true,
         "debug": false,
         "debug_duration": 30,
         "skip_timestamps_check": false,
         "multi_session": false,
-        "input": "aind"
+        "input": "spikeinterface",
+        "spikeinterface_info": {
+            "reader_type": "spikeinterface"
+        }
     },
     "preprocessing": {
         "job_kwargs": {
@@ -16,9 +18,8 @@
             "mp_context": "spawn"
         },
         "filter_type": "highpass",
-        "remove_out_channels": true,
-        "remove_bad_channels": true,
-        "min_preprocessing_duration": 120,
+        "remove_out_channels": false,
+        "remove_bad_channels": false,
         "max_bad_channel_fraction": 0.5,
         "denoising_strategy": "cmr",
         "default_preprocessing_pipeline": {
@@ -40,7 +41,7 @@
                 "noisy_channel_threshold": 1.0,
                 "outside_channel_threshold": -0.3,
                 "outside_channels_location": "top",
-                "n_neighbors": 11,
+                "n_neighbors": 5,
                 "channel_filters": ["noise", "dead", "out"],
                 "seed": 0
             },
@@ -49,7 +50,7 @@
                 "operator": "median"
             },
             "highpass_spatial_filter": {
-                "n_channel_pad": 60,
+                "n_channel_pad": 10,
                 "n_channel_taper": null,
                 "direction": "y",
                 "apply_agc": true,
@@ -265,8 +266,8 @@
         }
     },
     "nwb": {
+        "backend": "zarr",
         "ecephys": {
-            "backend": "zarr",
             "stub": false,
             "stub_seconds": 10,
             "write_lfp": true,
@@ -285,96 +286,7 @@
         }
     },
     "spikesorting": {
-        "sorter": null,
-        "kilosort4": {
-            "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-            },
-            "skip_motion_correction": false,
-            "min_drift_channels": 96,
-            "raise_if_fails": true,
-            "clear_cache": false,
-            "sorter": {
-                "batch_size": 60000,
-                "nblocks": 5,
-                "Th_universal": 9,
-                "Th_learned": 8,
-                "do_CAR": true,
-                "invert_sign": false,
-                "nt": 61,
-                "shift": null,
-                "scale": null,
-                "artifact_threshold": null,
-                "nskip": 25,
-                "whitening_range": 32,
-                "highpass_cutoff": 300,
-                "binning_depth": 5,
-                "sig_interp": 20,
-                "drift_smoothing": [0.5, 0.5, 0.5],
-                "nt0min": null,
-                "dmin": null,
-                "dminx": 32,
-                "min_template_size": 10,
-                "template_sizes": 5,
-                "nearest_chans": 10,
-                "nearest_templates": 100,
-                "max_channel_distance": null,
-                "templates_from_data": true,
-                "n_templates": 6,
-                "n_pcs": 6,
-                "Th_single_ch": 6,
-                "acg_threshold": 0.2,
-                "ccg_threshold": 0.25,
-                "cluster_downsampling": 20,
-                "x_centers": null,
-                "duplicate_spike_ms": 0.25,
-                "save_preprocessed_copy": false,
-                "torch_device": "auto",
-                "bad_channels": null,
-                "clear_cache": false,
-                "save_extra_vars": false,
-                "do_correction": true,
-                "keep_good_only": false,
-                "skip_kilosort_preprocessing": false,
-                "use_binary_file": null,
-                "delete_recording_dat": true
-            }
-        },
-        "kilosort25": {
-            "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-            },
-            "skip_motion_correction": false,
-            "min_drift_channels": 96,
-            "raise_if_fails": true,
-            "sorter": {
-                "detect_threshold": 6,
-                "projection_threshold": [10, 4],
-                "preclust_threshold": 8,
-                "car": true,
-                "minFR": 0.1,
-                "minfr_goodchannels": 0.1,
-                "nblocks": 5,
-                "sig": 20,
-                "freq_min": 150,
-                "sigmaMask": 30,
-                "nPCs": 3,
-                "ntbuff": 64,
-                "nfilt_factor": 4,
-                "NT": null,
-                "AUCsplit": 0.9,
-                "do_correction": true,
-                "wave_length": 61,
-                "keep_good_only": false,
-                "skip_kilosort_preprocessing": false,
-                "scaleproc": null,
-                "save_rez_to_mat": false,
-                "delete_tmp_files": ["matlab_files"],
-                "delete_recording_dat": false
-            }
-        },
+        "sorter": "spykingcircus2",
         "spykingcircus2": {
             "job_kwargs": {
                 "chunk_duration": "1s",
@@ -391,7 +303,7 @@
                 },
                 "selection": {
                     "method": "uniform",
-                    "method_kwargs": {"n_peaks_per_channel": 5000, "min_n_peaks": 100000, "select_per_channel": false}
+                    "method_kwargs": {"n_peaks_per_channel": 5000, "min_n_peaks": 100000, "select_per_channel": false},
                 },
                 "apply_motion_correction": true,
                 "motion_correction": {"preset": "dredge_fast"},
