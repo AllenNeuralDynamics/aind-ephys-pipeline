@@ -4,6 +4,8 @@ nextflow.enable.dsl = 2
 params.ecephys_path = DATA_PATH
 params.params_file = (binding.hasVariable('PARAMS_FILE') && PARAMS_FILE) ? PARAMS_FILE : null
 
+// println System.getenv().collect { k, v -> "$k=$v" }.join('\n')
+
 // Git repository prefix - can be overridden via command line or environment variable
 params.git_repo_prefix = System.getenv('GIT_REPO_PREFIX') ?: 'https://github.com/AllenNeuralDynamics/aind-'
 
