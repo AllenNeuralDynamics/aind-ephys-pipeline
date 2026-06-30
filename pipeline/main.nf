@@ -2,7 +2,7 @@
 nextflow.enable.dsl = 2
 
 params.ecephys_path = DATA_PATH
-params.params_file = null
+params.params_file = System.getenv('PARAMS_FILE') ?: null
 
 // Git repository prefix - can be overridden via command line or environment variable
 params.git_repo_prefix = System.getenv('GIT_REPO_PREFIX') ?: 'https://github.com/AllenNeuralDynamics/aind-'
@@ -145,7 +145,10 @@ if (params.params_file && json_params.spikesorting) {
     sorter = json_params.spikesorting.sorter ?: null
 }
 if (sorter == null && "sorter" in params_keys) {
-    sorter = params.sorter ?: "kilosort4"
+    sorter = params.sorter ?: null
+}
+if (sorter == null) {
+    sorter = System.getenv('SORTER') ?: null
 }
 if (sorter == null) {
     println "No sorter specified, defaulting to kilosort4"
