@@ -121,7 +121,6 @@
             },
             "template_metrics": {
                 "upsampling_factor": 10,
-                "sparsity": null,
                 "include_multi_channel_metrics": true
             },
             "principal_components": {

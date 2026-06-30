@@ -506,7 +506,6 @@ Parameter file section (``postprocessing``):
            },
            "template_metrics": {
                "upsampling_factor": 10,
-               "sparsity": null,
                "include_multi_channel_metrics": true
            },
            "principal_components": {
@@ -519,7 +518,7 @@ Parameter file section (``postprocessing``):
                    "num_spikes", "firing_rate", "presence_ratio",
                    "snr", "isi_violation", "rp_violation",
                    "sliding_rp_violation", "amplitude_cutoff",
-                   "amplitude_median", "amplitude_cv",
+                   "amplitude_median", "amplitude_cv", 
                    "synchrony", "firing_range", "drift",
                    "mahalanobis", "l_ratio", "d_prime",
                    "nearest_neighbor", "silhouette"
