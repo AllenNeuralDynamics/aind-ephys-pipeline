@@ -271,6 +271,8 @@ process spikesort_kilosort25 {
     tag 'spikesort-kilosort25'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort25:${params.container_tag}"
     container container_name
+    accelerator 1
+    label 'gpu'
 
     input:
     val max_duration_minutes
@@ -312,6 +314,8 @@ process spikesort_kilosort4 {
     tag 'spikesort-kilosort4'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort4:${params.container_tag}"
     container container_name
+    accelerator 1
+    label 'gpu'
 
     input:
     val max_duration_minutes
