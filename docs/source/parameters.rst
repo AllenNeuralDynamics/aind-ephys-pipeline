@@ -10,7 +10,7 @@ The pipeline accepts several global parameters that control its overall behavior
 
    --n_jobs N_JOBS                 Number of parallel jobs (for local deployment)
    --runmode {full,fast}          Processing mode ('fast' skips some steps like motion correction)
-   --sorter {kilosort25,kilosort4,spykingcircus2}   Spike sorter selection
+   --sorter {kilosort25,kilosort4,spykingcircus2,lupin}   Spike sorter selection
 
 
 Parameter File
@@ -414,12 +414,12 @@ Parameter file section (``spikesorting``):
 
 .. note::
 
-   The ``kilosort4``, ``kilosort25``, and ``spykingcircus2`` sub-objects inside ``spikesorting``
+   The ``kilosort4``, ``kilosort25``, ``spykingcircus2``, and ``lupin`` sub-objects inside ``spikesorting``
    hold sorter-specific parameters and are documented separately in each sorter separately.
 
 ``sorter``
    Selects the spike sorter to use. Accepted values: ``"kilosort4"``, ``"kilosort25"``,
-   ``"spykingcircus2"``. When ``null``, the sorter is determined by the ``--sorter`` CLI
+   ``"spykingcircus2"``, ``"lupin"``. When ``null``, the sorter is determined by the ``--sorter`` CLI
    argument.
 
 ``{sorter}.job_kwargs``

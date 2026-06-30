@@ -36,6 +36,7 @@ The pipeline supports multiple spike sorting algorithms:
 * `Kilosort2.5 <https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort25/>`_
 * `Kilosort4 <https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort4/>`_
 * `SpykingCircus2 <https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-spykingcircus2/>`_
+* `Lupin <https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-lupin/>`_
 
 Each sorter can be selected based on your specific needs and data characteristics.
 
