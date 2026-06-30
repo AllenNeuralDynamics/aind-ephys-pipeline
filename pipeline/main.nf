@@ -197,6 +197,7 @@ process job_dispatch {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
@@ -248,10 +249,9 @@ process preprocessing {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -291,10 +291,9 @@ process spikesort_kilosort25 {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -334,10 +333,9 @@ process spikesort_kilosort4 {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -375,10 +373,9 @@ process spikesort_spykingcircus2 {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -416,10 +413,9 @@ process spikesort_lupin {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -463,10 +459,9 @@ process postprocessing {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -504,10 +499,9 @@ process curation {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -553,10 +547,9 @@ process visualization {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -651,10 +644,9 @@ process quality_control {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
@@ -738,10 +730,9 @@ process nwb_ecephys {
     mkdir -p capsule/results
     mkdir -p capsule/scratch
 
+    export N_JOBS_EXT=${task.cpus}
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
 
     echo "[${task.tag}] cloning git repo..."
