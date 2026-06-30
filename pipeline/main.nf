@@ -911,3 +911,30 @@ workflow {
         nwb_ecephys_out.results.collect()
     )
 }
+
+params.ecephys_url = 's3://aind-ephys-data/ecephys_713593_2024-02-08_14-10-37'
+
+workflow {
+	// input data
+	ecephys_to_preprocess_ecephys_2 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
+	ecephys_to_job_dispatch_ecephys_4 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
+	ecephys_to_postprocess_ecephys_5 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
+	ecephys_to_visualize_ecephys_14 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
+	ecephys_to_collect_results_ecephys_22 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
+	ecephys_to_nwb_packaging_units_26 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
+	ecephys_to_nwb_packaging_ecephys_28 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
+	ecephys_to_quality_control_ecephys_31 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
+
+	// run processes
+	capsule_aind_ephys_job_dispatch_4(ecephys_to_job_dispatch_ecephys_4.collect())
+	capsule_aind_ephys_preprocessing_1(capsule_aind_ephys_job_dispatch_4.out.to_capsule_aind_ephys_preprocessing_1_1.flatten(), ecephys_to_preprocess_ecephys_2.collect())
+	capsule_nwb_packaging_ecephys_capsule_12(capsule_aind_ephys_job_dispatch_4.out.to_capsule_nwb_packaging_ecephys_capsule_12_27.collect(), ecephys_to_nwb_packaging_ecephys_28.collect())
+	capsule_spikesort_kilosort_4_ecephys_7(capsule_aind_ephys_preprocessing_1.out.to_capsule_spikesort_kilosort_4_ecephys_7_15)
+	capsule_aind_ephys_postprocessing_5(ecephys_to_postprocess_ecephys_5.collect(), capsule_spikesort_kilosort_4_ecephys_7.out.to_capsule_aind_ephys_postprocessing_5_6.collect(), capsule_aind_ephys_preprocessing_1.out.to_capsule_aind_ephys_postprocessing_5_7.collect(), capsule_aind_ephys_job_dispatch_4.out.to_capsule_aind_ephys_postprocessing_5_8.flatten())
+	capsule_aind_ephys_curation_2(capsule_aind_ephys_postprocessing_5.out.to_capsule_aind_ephys_curation_2_3)
+	capsule_aind_ephys_visualization_6(capsule_aind_ephys_job_dispatch_4.out.to_capsule_aind_ephys_visualization_6_9.collect(), capsule_aind_ephys_preprocessing_1.out.to_capsule_aind_ephys_visualization_6_10, capsule_aind_ephys_curation_2.out.to_capsule_aind_ephys_visualization_6_11.collect(), capsule_spikesort_kilosort_4_ecephys_7.out.to_capsule_aind_ephys_visualization_6_12.collect(), capsule_aind_ephys_postprocessing_5.out.to_capsule_aind_ephys_visualization_6_13.collect(), ecephys_to_visualize_ecephys_14.collect())
+	capsule_aind_ephys_results_collector_9(capsule_aind_ephys_job_dispatch_4.out.to_capsule_aind_ephys_results_collector_9_16.collect(), capsule_aind_ephys_preprocessing_1.out.to_capsule_aind_ephys_results_collector_9_17.collect(), capsule_spikesort_kilosort_4_ecephys_7.out.to_capsule_aind_ephys_results_collector_9_18.collect(), capsule_aind_ephys_postprocessing_5.out.to_capsule_aind_ephys_results_collector_9_19.collect(), capsule_aind_ephys_curation_2.out.to_capsule_aind_ephys_results_collector_9_20.collect(), capsule_aind_ephys_visualization_6.out.to_capsule_aind_ephys_results_collector_9_21.collect(), ecephys_to_collect_results_ecephys_22.collect())
+	capsule_nwb_packaging_units_11(capsule_aind_ephys_job_dispatch_4.out.to_capsule_nwb_packaging_units_11_23.collect(), capsule_nwb_packaging_ecephys_capsule_12.out.to_capsule_nwb_packaging_units_11_24.collect(), capsule_aind_ephys_results_collector_9.out.to_capsule_nwb_packaging_units_11_25.collect(), ecephys_to_nwb_packaging_units_26.collect())
+	capsule_quality_control_ecephys_13(capsule_aind_ephys_job_dispatch_4.out.to_capsule_quality_control_ecephys_13_29.flatten(), capsule_aind_ephys_results_collector_9.out.to_capsule_quality_control_ecephys_13_30.collect(), ecephys_to_quality_control_ecephys_31.collect())
+	capsule_quality_control_collector_ecephys_14(capsule_quality_control_ecephys_13.out.to_capsule_quality_control_collector_ecephys_14_32.collect())
+}
