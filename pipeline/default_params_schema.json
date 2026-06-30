@@ -8,7 +8,7 @@
     "properties": {
         "pipeline_version": {
             "type": "string",
-            "pattern": "^1\\.2\\.[0-9]+$",
+            "pattern": "^1\\.3\\.[0-9]+$",
             "description": "Version of the pipeline the parameters are compatible with. This should be updated when default parameters are changed in a way that is not backward compatible."
         },
         "job_dispatch": {
@@ -663,6 +663,16 @@
                                 }
                             }
                         },
+                        "amplitude_scalings": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Parameters for amplitude scaling computation. Uses SpikeInterface defaults when empty."
+                        },
+                        "valid_unit_periods": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Parameters for valid unit period detection. Uses SpikeInterface defaults when empty."
+                        },
                         "quality_metrics": {
                             "type": "object",
                             "description": "Parameters for quality metrics computation.",
@@ -1050,20 +1060,125 @@
                 "job_kwargs": {
                     "$ref": "#/$defs/job_kwargs"
                 },
-                "query": {
-                    "type": "string",
-                    "default": "isi_violations_ratio < 0.5 and presence_ratio > 0.8 and amplitude_cutoff < 0.1",
-                    "description": "Pandas query string for threshold-based unit filtering using quality metrics."
+                "qc_thresholds": {
+                    "type": "object",
+                    "description": "Threshold-based quality metric filters. Keys are metric names; values are objects with 'greater' and/or 'less' bounds.",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "greater": {"type": ["number", "null"]},
+                            "less": {"type": ["number", "null"]}
+                        }
+                    }
                 },
-                "noise_neural_classifier": {
-                    "type": "string",
-                    "default": "SpikeInterface/UnitRefine_noise_neural_classifier",
-                    "description": "Hugging Face model path for classifying units as noise vs neural."
+                "unitrefine": {
+                    "type": "object",
+                    "description": "UnitRefine ML classifier parameters.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "noise_neural_classifier": {
+                            "type": "string",
+                            "default": "SpikeInterface/UnitRefine_noise_neural_classifier",
+                            "description": "Hugging Face model path for classifying units as noise vs neural."
+                        },
+                        "sua_mua_classifier": {
+                            "type": "string",
+                            "default": "SpikeInterface/UnitRefine_sua_mua_classifier",
+                            "description": "Hugging Face model path for classifying neural units as single-unit (SUA) vs multi-unit (MUA)."
+                        }
+                    }
                 },
-                "sua_mua_classifier": {
+                "bombcell": {
+                    "type": "object",
+                    "description": "Bombcell labeling thresholds for noise, MUA, and non-somatic classification.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "noise": {
+                            "type": "object",
+                            "description": "Thresholds for noise unit classification.",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "greater": {"type": ["number", "null"]},
+                                    "less": {"type": ["number", "null"]}
+                                }
+                            }
+                        },
+                        "mua": {
+                            "type": "object",
+                            "description": "Thresholds for multi-unit activity (MUA) classification.",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "greater": {"type": ["number", "null"]},
+                                    "less": {"type": ["number", "null"]},
+                                    "abs": {"type": "boolean"}
+                                }
+                            }
+                        },
+                        "non-somatic": {
+                            "type": "object",
+                            "description": "Thresholds for non-somatic unit classification.",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "greater": {"type": ["number", "null"]},
+                                    "less": {"type": ["number", "null"]}
+                                }
+                            }
+                        }
+                    }
+                },
+                "noise_strategy": {
                     "type": "string",
-                    "default": "SpikeInterface/UnitRefine_sua_mua_classifier",
-                    "description": "Hugging Face model path for classifying neural units as single-unit (SUA) vs multi-unit (MUA)."
+                    "enum": ["bombcell", "unitrefine", "bombcell+unitrefine"],
+                    "default": "bombcell+unitrefine",
+                    "description": "Strategy for labeling noise units: bombcell, unitrefine, or both combined."
+                },
+                "slay": {
+                    "type": "object",
+                    "description": "SLAY auto-merging suggestion parameters.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "template_similarity": {
+                            "type": "object",
+                            "description": "Template similarity threshold for candidate merges.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "templates_diff": {
+                                    "type": "number",
+                                    "default": 0.35,
+                                    "minimum": 0,
+                                    "maximum": 1,
+                                    "description": "Maximum template difference for merge candidates."
+                                }
+                            }
+                        },
+                        "slay": {
+                            "type": "object",
+                            "description": "SLAY algorithm parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "k1": {
+                                    "type": "number",
+                                    "default": 0.25,
+                                    "description": "SLAY k1 parameter."
+                                },
+                                "k2": {
+                                    "type": "number",
+                                    "default": 1,
+                                    "description": "SLAY k2 parameter."
+                                },
+                                "slay_threshold": {
+                                    "type": "number",
+                                    "default": 0.4,
+                                    "minimum": 0,
+                                    "maximum": 1,
+                                    "description": "SLAY score threshold for merge suggestions."
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },

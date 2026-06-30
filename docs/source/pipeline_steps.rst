@@ -51,6 +51,7 @@ combined preprocessed recording and sorted data:
    * Waveforms extraction
    * Templates
    * Spike amplitudes
+   * Amplitude scalings
    * Unit locations
    * Principal Component Analysis (PCA) projections
    * Spike locations
@@ -58,6 +59,7 @@ combined preprocessed recording and sorted data:
    * Template similarity
    * Template metrics
    * Quality metrics
+   * Valid unit periods
 
 Curation
 --------
@@ -68,7 +70,9 @@ The `curation <https://github.com/AllenNeuralDynamics/aind-ephys-curation/>`_ st
    * ISI violation ratio
    * Presence ratio
    * Amplitude cutoff
-* Unit classification as noise, MUA, or SUA using pretrained classifier (`UnitRefine <https://www.biorxiv.org/content/10.1101/2025.03.30.645770v1.full>`_)
+* Unit classification as noise, MUA, or SUA using `UnitRefine <https://www.biorxiv.org/content/10.1101/2025.03.30.645770v1.full>`_ pretrained classifiers.
+* Unit classification as good, mua, or noise using `Bombcell <https://zenodo.org/records/8172822>`_
+* Automatic merging suggestions using `SLAy <https://www.biorxiv.org/content/10.1101/2025.06.20.660590v2>`_
 
 The *recipe* for quality metrics can be customized to suit your specific needs.
 
@@ -96,7 +100,6 @@ NWB Export
 
 The final step creates standardized NWB output files, including:
 
-* Session and subject information from `aind-subject-nwb <https://github.com/AllenNeuralDynamics/aind-subject-nwb>`_
 * Ecephys data from `aind-ecephys-nwb <https://github.com/AllenNeuralDynamics/aind-ecephys-nwb>`_
 * Unit data from `aind-units-nwb <https://github.com/AllenNeuralDynamics/aind-units-nwb>`_
 
