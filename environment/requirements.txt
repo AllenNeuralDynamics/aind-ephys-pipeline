@@ -1,6 +1,7 @@
 spikeinterface==0.104.7
 neo==0.14.5
 pyvips==2.2.1
+sortingview==0.14.2
 torch==2.6.0
 pynwb==4.0.0
 pytz==2025.2

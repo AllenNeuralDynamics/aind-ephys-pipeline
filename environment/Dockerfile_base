@@ -24,7 +24,7 @@ RUN apt-get install -y fonts-freefont-ttf
 #    accessible to any user regardless of UID at runtime.
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|aind-metadata-upgrader|aind-qcportal-schema|pyvips|wavpack-numcodecs|pynwb|hdmf-zarr|torch|hdbscan|s3fs|seaborn|scikit-learn|neo|scipy' /tmp/requirements.txt | xargs pip install
+    grep -E 'aind-data-schema|aind-metadata-upgrader|aind-qcportal-schema|pyvips|sortingview|wavpack-numcodecs|pynwb|hdmf-zarr|torch|hdbscan|s3fs|seaborn|scikit-learn|neo|scipy' /tmp/requirements.txt | xargs pip install
 
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full,widgets]==${SPIKEINTERFACE_VERSION}"
