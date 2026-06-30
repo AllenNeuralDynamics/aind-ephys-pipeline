@@ -464,6 +464,8 @@ process postprocessing {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
 
+    echo "[${task.tag}] /dev/shm size: \$(df -h /dev/shm | awk 'NR==2{print \$2}')"
+
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
     clone_repo "${params.versions['POSTPROCESSING_REPO']}" "${params.versions['POSTPROCESSING_COMMIT']}"
