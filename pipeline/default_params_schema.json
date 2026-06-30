@@ -627,11 +627,6 @@
                                     "minimum": 1,
                                     "description": "Factor for upsampling templates before computing metrics."
                                 },
-                                "sparsity": {
-                                    "type": ["object", "null"],
-                                    "default": null,
-                                    "description": "Sparsity parameters for template metrics. If null, uses the global sparsity."
-                                },
                                 "include_multi_channel_metrics": {
                                     "type": "boolean",
                                     "default": true,
