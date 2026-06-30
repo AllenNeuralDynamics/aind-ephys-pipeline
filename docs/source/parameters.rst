@@ -791,7 +791,7 @@ Here's an example of running the pipeline with custom parameters:
 .. code-block:: bash
 
    DATA_PATH=$DATA RESULTS_PATH=$RESULTS \
-   nextflow -C nextflow_local.config run main_multi_backend.nf \
+   nextflow -C nextflow_local.config run main.nf \
      --n_jobs 16 \
      --sorter kilosort4 \
      --job_dispatch_args="--input spikeglx --debug --debug-duration 120" \
