@@ -521,7 +521,7 @@ Parameter file section (``postprocessing``):
                    "sliding_rp_violation", "amplitude_cutoff",
                    "amplitude_median", "amplitude_cv",
                    "synchrony", "firing_range", "drift",
-                   "isolation_distance", "l_ratio", "d_prime",
+                   "mahalanobis", "l_ratio", "d_prime",
                    "nearest_neighbor", "silhouette"
                ],
                "metric_params": {

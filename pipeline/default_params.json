@@ -145,11 +145,12 @@
                     "amplitude_cutoff",
                     "amplitude_median",
                     "amplitude_cv",
+                    "noise_cutoff",
                     "synchrony",
                     "firing_range",
                     "drift",
-                    "isolation_distance",
-                    "l_ratio",
+                    "sd_ratio",
+                    "mahalanobis",
                     "d_prime",
                     "nearest_neighbor",
                     "silhouette"
@@ -159,7 +160,7 @@
                         "bin_duration_s": 60
                     },
                     "snr": {
-                        "peak_sign": "neg",
+                        "peak_sign": "both",
                         "peak_mode": "extremum"
                     },
                     "isi_violation": {
@@ -192,6 +193,17 @@
                         "min_num_bins": 10,
                         "amplitude_extension": "spike_amplitudes"
                     },
+                    "noise_cutoff": {
+                        "high_quantile": 0.25,
+                        "low_quantile": 0.1,
+                        "n_bins": 100
+                    },
+                    "sd_ratio": {
+                        "censored_period_ms": 4.0,
+                        "correct_for_drift": true,
+                        "correct_for_template_itself": true,
+                        "peak_sign": "neg"
+                    },
                     "firing_range": {
                         "bin_size_s": 5,
                         "percentiles": [5,95]
@@ -201,21 +213,7 @@
                     },
                     "nearest_neighbor": {
                         "max_spikes": 10000,
-                        "n_neighbors": 4
-                    },
-                    "nn_isolation": {
-                        "max_spikes": 10000,
-                        "min_spikes": 10,
-                        "n_neighbors": 4,
-                        "n_components": 10,
-                        "radius_um": 100
-                    },
-                    "nn_noise_overlap": {
-                        "max_spikes": 10000,
-                        "min_spikes": 10,
-                        "n_neighbors": 4,
-                        "n_components": 10,
-                        "radius_um": 100
+                        "n_neighbors": 5
                     },
                     "silhouette": {
                         "method": ["simplified"]

@@ -697,7 +697,9 @@
                                             "synchrony",
                                             "firing_range",
                                             "drift",
-                                            "isolation_distance",
+                                            "sd_ratio",
+                                            "noise_cutoff",
+                                            "mahalanobis",
                                             "l_ratio",
                                             "d_prime",
                                             "nearest_neighbor",
@@ -717,11 +719,12 @@
                                         "amplitude_cutoff",
                                         "amplitude_median",
                                         "amplitude_cv",
+                                        "noise_cutoff",
                                         "synchrony",
                                         "firing_range",
                                         "drift",
-                                        "isolation_distance",
-                                        "l_ratio",
+                                        "sd_ratio",
+                                        "mahalanobis",
                                         "d_prime",
                                         "nearest_neighbor",
                                         "silhouette"
@@ -939,6 +942,57 @@
                                                 }
                                             }
                                         },
+                                        "noise_cutoff": {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "high_quantile": {
+                                                    "type": "number",
+                                                    "default": 0.25,
+                                                    "minimum": 0,
+                                                    "maximum": 1,
+                                                    "description": "Upper quantile for noise cutoff estimation."
+                                                },
+                                                "low_quantile": {
+                                                    "type": "number",
+                                                    "default": 0.1,
+                                                    "minimum": 0,
+                                                    "maximum": 1,
+                                                    "description": "Lower quantile for noise cutoff estimation."
+                                                },
+                                                "n_bins": {
+                                                    "type": "integer",
+                                                    "default": 100,
+                                                    "minimum": 1,
+                                                    "description": "Number of bins for noise cutoff histogram."
+                                                }
+                                            }
+                                        },
+                                        "sd_ratio": {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "censored_period_ms": {
+                                                    "type": "number",
+                                                    "default": 4.0,
+                                                    "minimum": 0,
+                                                    "description": "Censored period in milliseconds around each spike."
+                                                },
+                                                "correct_for_drift": {
+                                                    "type": "boolean",
+                                                    "default": true,
+                                                    "description": "Whether to correct for drift when computing SD ratio."
+                                                },
+                                                "correct_for_template_itself": {
+                                                    "type": "boolean",
+                                                    "default": true,
+                                                    "description": "Whether to correct for the template signal when computing SD ratio."
+                                                },
+                                                "peak_sign": {
+                                                    "$ref": "#/$defs/peak_sign"
+                                                }
+                                            }
+                                        },
                                         "nearest_neighbor": {
                                             "type": "object",
                                             "additionalProperties": false,
@@ -951,7 +1005,7 @@
                                                 },
                                                 "n_neighbors": {
                                                     "type": "integer",
-                                                    "default": 4,
+                                                    "default": 5,
                                                     "minimum": 1,
                                                     "description": "Number of nearest neighbors."
                                                 }
