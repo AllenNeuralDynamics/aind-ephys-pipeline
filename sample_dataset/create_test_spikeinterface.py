@@ -14,6 +14,8 @@ this_folder = Path(__file__).parent
 
 si.set_global_job_kwargs(n_jobs=0.7)
 
+SEED = 2308
+
 def generate_spikeinterface():
     duration = 180
     short_duration = 10
@@ -26,6 +28,7 @@ def generate_spikeinterface():
         num_channels=num_channels,
         num_units=num_units,
         durations=[duration],
+        seed=SEED
     )
 
     # Also add one short recording that should be skipped
@@ -33,6 +36,7 @@ def generate_spikeinterface():
         num_channels=num_channels,
         num_units=num_units,
         durations=[short_duration],
+        seed=SEED+1
     )
 
     # Add unsigned electrical series
@@ -40,6 +44,7 @@ def generate_spikeinterface():
         num_channels=num_channels,
         num_units=num_units,
         durations=[duration],
+        seed=SEED+2
     )
     traces = recording.get_traces() 
     # add offset

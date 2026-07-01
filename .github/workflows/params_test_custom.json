@@ -107,9 +107,50 @@
             "chunk_duration": "1s",
             "progress_bar": false
         },
-        "query": "isi_violations_ratio < 0.5 and presence_ratio > 0.8 and amplitude_cutoff < 0.1",
-        "noise_neural_classifier": "SpikeInterface/UnitRefine_noise_neural_classifier",
-        "sua_mua_classifier": "SpikeInterface/UnitRefine_sua_mua_classifier"
+        "qc_thresholds": {
+            "rp_contamination": {"less": 0.5},
+            "presence_ratio": {"greater": 0.8},
+            "amplitude_cutoff": {"less": 0.1}
+        },
+        "unitrefine": {
+            "noise_neural_classifier": "SpikeInterface/UnitRefine_noise_neural_classifier",
+            "sua_mua_classifier": "SpikeInterface/UnitRefine_sua_mua_classifier"
+        },
+        "bombcell": {
+            "noise": {
+                "num_positive_peaks": {"greater": null, "less": 2},
+                "num_negative_peaks": {"greater": null, "less": 1},
+                "peak_to_trough_duration": {"greater": 0.0001, "less": 0.00115},
+                "waveform_baseline_flatness": {"greater": null, "less": 0.5},
+                "peak_after_to_trough_ratio": {"greater": null, "less": 0.8},
+                "exp_decay": {"greater": 0.01, "less": 0.1}
+            },
+            "mua": {
+                "amplitude_median": {"greater": 30, "less": null, "abs": true},
+                "snr": {"greater": 5, "less": null},
+                "amplitude_cutoff": {"greater": null, "less": 0.2},
+                "num_spikes": {"greater": 300, "less": null},
+                "rp_contamination": {"greater": null, "less": 0.1},
+                "presence_ratio": {"greater": 0.7, "less": null},
+                "drift_ptp": {"greater": null, "less": 100}
+            },
+            "non-somatic": {
+                "peak_before_to_trough_ratio": {"greater": null, "less": 3},
+                "peak_before_width": {"greater": 0.00015, "less": null},
+                "trough_width": {"greater": 0.0002, "less": null},
+                "peak_before_to_peak_after_ratio": {"greater": null, "less": 3},
+                "main_peak_to_trough_ratio": {"greater": null, "less": 0.8}
+            }
+        },
+        "noise_strategy": "bombcell+unitrefine",
+        "slay": {
+            "template_similarity": {"templates_diff": 0.35},
+            "slay": {
+                "k1": 0.25,
+                "k2": 1,
+                "slay_threshold": 0.4
+            }
+        }
     },
     "visualization": {
         "job_kwargs": {

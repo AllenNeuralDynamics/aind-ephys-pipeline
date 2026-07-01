@@ -19,6 +19,8 @@ this_folder = Path(__file__).parent
 
 si.set_global_job_kwargs(n_jobs=0.7)
 
+SEED = 2308
+
 def generate_nwb():
     duration = 180
     short_duration = 10
@@ -31,6 +33,7 @@ def generate_nwb():
         num_channels=num_channels,
         num_units=num_units,
         durations=[duration],
+        seed=SEED
     )
 
     nwbfile = mock_NWBFile()
@@ -47,6 +50,7 @@ def generate_nwb():
         num_channels=num_channels,
         num_units=num_units,
         durations=[short_duration],
+        seed=SEED+1
     )
     metadata = dict(Ecephys=dict())
     metadata['Ecephys']['ElectricalSeriesShort'] = dict(
@@ -60,6 +64,7 @@ def generate_nwb():
         num_channels=num_channels,
         num_units=num_units,
         durations=[duration],
+        seed=SEED+2
     )
     traces = recording.get_traces() 
     # add offset
