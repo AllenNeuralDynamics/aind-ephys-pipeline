@@ -2445,11 +2445,6 @@
                                     "default": 0.5,
                                     "minimum": 0,
                                     "description": "Memory limit as a fraction of available RAM."
-                                },
-                                "delete_cache": {
-                                    "type": "boolean",
-                                    "default": true,
-                                    "description": "Whether to delete cache after sorting."
                                 }
                             }
                         },
