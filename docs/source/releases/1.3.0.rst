@@ -8,6 +8,9 @@ Major release with new features and updated dependencies.
 Features:
 * Added `Lupin` spike sorter to the pipeline
 
+Tests:
+* Extended tests to check results against expected outputs for all streams
+
 Processing steps:
 * curation: add Bombcell labels and SLAy auto-merge suggestions
 * curation: package curation.json for each stream
