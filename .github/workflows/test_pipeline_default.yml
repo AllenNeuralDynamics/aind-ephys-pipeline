@@ -35,7 +35,7 @@ jobs:
         - name: Install packages
           run: |
             python -m pip install --upgrade pip
-            pip install spikeinterface neuroconv "pynwb<3" "hdmf<5"
+            pip install $(grep -E '^(spikeinterface|neuroconv|pynwb)==' environment/requirements.txt | tr '\n' ' ')
 
         - name: Generate test NWB files
           run: |
@@ -51,3 +51,7 @@ jobs:
             DATA_PATH="$(pwd)/sample_dataset/nwb" RESULTS_PATH="$(pwd)/sample_dataset/nwb_results" \
             nextflow  -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main_multi_backend.nf \
             --params_file "$(pwd)/.github/workflows/params_test_default.json"
+
+        - name: Check pipeline results
+          run: |
+            bash "$(pwd)/tests/check_pipeline_results.sh" --results-path "$(pwd)/sample_dataset/nwb_results" --num-streams 3 --num-success 2 --num-nwb 1

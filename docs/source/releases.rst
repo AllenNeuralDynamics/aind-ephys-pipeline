@@ -9,6 +9,7 @@ since the pipeline is mainly built on top of SpikeInterface.
 .. toctree::
     :maxdepth: 1
 
+    releases/1.3.0.rst
     releases/1.2.4.rst
     releases/1.2.3.rst
     releases/1.2.2.rst

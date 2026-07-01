@@ -228,6 +228,11 @@ https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-template
             max_duration_minutes,
             preprocessing_out.results
         )
+    } else if (sorter == 'lupin') {
+        spikesort_out = spikesort_lupin(
+            max_duration_minutes,
+            preprocessing_out.results
+        )
     } else if (sorter == 'newsorter') {
         spikesort_out = spikesort_newsorter(
             max_duration_minutes,

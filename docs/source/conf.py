@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'AIND Ephys Pipeline'
-copyright = '2025, AIND'
+copyright = '2025-2026, AIND'
 author = 'AIND'
 
 version = '1.0'
