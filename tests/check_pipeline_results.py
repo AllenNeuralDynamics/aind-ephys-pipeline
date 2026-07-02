@@ -123,7 +123,7 @@ def main():
         for dir in dirs:
             print(f"  - {dir.name}")
             try:
-                analyzer = si.load(dir, load_extensions=False)
+                analyzer = si.load(dir)
                 print(f"\t  - loaded postprocessed analyzer: {analyzer}")
             except Exception as e:
                 checker.error(f"failed to load postprocessed analyzer: {dir} ({e})")

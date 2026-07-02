@@ -35,7 +35,7 @@ jobs:
         - name: Install packages
           run: |
             python -m pip install --upgrade pip
-            pip install $(grep -E '^(spikeinterface|neuroconv|pynwb)==' environment/requirements.txt | tr '\n' ' ')
+            pip install $(grep -E '^(spikeinterface|neuroconv|pynwb)==' environment/requirements.txt | sed 's/^spikeinterface==/spikeinterface[full]==/' | tr '\n' ' ')
 
         - name: Generate test NWB files
           run: |
