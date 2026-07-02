@@ -25,10 +25,12 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 import spikeinterface as si
+from spikeinterface.curation.curation_model import Curation
 import pynwb
 
 
@@ -139,6 +141,18 @@ def main():
             try:
                 curated_sorting = si.load(dir)
                 print(f"\t  - loaded curated sorting: {curated_sorting}")
+                # load curation.json
+                curation_file = dir / "curation.json"
+                if curation_file.is_file():
+                    with open(curation_file, "r") as f:
+                        curation_data = json.load(f)
+                        curation = Curation.model_validate(curation_data)
+                        print(f"\t  - loaded curation data: {curation_data}")
+                        if set(curation.unit_ids) != set(curated_sorting.unit_ids):
+                            checker.error(
+                                f"curation unit_ids do not match curated sorting unit_ids: "
+                                f"{set(curation.unit_ids)} vs {set(curated_sorting.unit_ids)}"
+                            )
             except Exception as e:
                 checker.error(f"failed to load curated sorting: {dir} ({e})")
 
