@@ -301,7 +301,7 @@
         }
     },
     "nwb": {
-        "backend": "zarr",
+        "backend": "hdf5",
         "ecephys": {
             "stub": false,
             "stub_seconds": 10,

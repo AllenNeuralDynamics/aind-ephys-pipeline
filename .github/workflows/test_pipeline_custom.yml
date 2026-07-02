@@ -54,4 +54,4 @@ jobs:
 
         - name: Check pipeline results
           run: |
-            bash "$(pwd)/tests/check_pipeline_results.sh" --results-path "$(pwd)/sample_dataset/nwb/results" --num-streams 3 --num-success 2 --num-nwb 1
+            python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/sample_dataset/nwb/results" --num-streams 3 --num-success 2 --num-nwb 1
