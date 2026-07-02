@@ -185,12 +185,6 @@
                                     "default": 300.0,
                                     "minimum": 0,
                                     "description": "Minimum frequency cutoff in Hz."
-                                },
-                                "margin_ms": {
-                                    "type": "number",
-                                    "default": 5.0,
-                                    "minimum": 0,
-                                    "description": "Margin in milliseconds for edge effects."
                                 }
                             }
                         },
@@ -210,12 +204,6 @@
                                     "default": 6000.0,
                                     "minimum": 0,
                                     "description": "Maximum frequency cutoff in Hz."
-                                },
-                                "margin_ms": {
-                                    "type": "number",
-                                    "default": 5.0,
-                                    "minimum": 0,
-                                    "description": "Margin in milliseconds for edge effects."
                                 }
                             }
                         },
@@ -2394,8 +2382,20 @@
                                     "type": ["number", "null"],
                                     "default": null,
                                     "description": "Threshold for sparsification. If null, no sparsification."
+                                },
+                                "mean_sd_ratio_threshold": {
+                                    "type": "number",
+                                    "default": 3,
+                                    "minimum": 0,
+                                    "description": "Threshold on the mean-to-standard-deviation ratio for a cluster."
                                 }
                             }
+                        },
+                        "min_firing_rate": {
+                            "type": "number",
+                            "default": 0.1,
+                            "minimum": 0,
+                            "description": "Minimum firing rate in Hz to keep a unit."
                         },
                         "matching": {
                             "type": "object",

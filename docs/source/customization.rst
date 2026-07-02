@@ -73,7 +73,6 @@ you can specify:
         "bandpass_filter": {
             "freq_min": 300.0,
             "freq_max": 6000.0,
-            "margin_ms": 5.0
         },
         "detect_and_remove_bad_channels": {
             "method": "std_threshold",

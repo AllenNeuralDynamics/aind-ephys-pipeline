@@ -85,14 +85,15 @@ def main():
         checker.error(f"preprocessed directory not found: {preprocessed_dir}")
     else:
         jsons = sorted(preprocessed_dir.glob("*_recording.json"))
-        checker.check_count("preprocessed", jsons, args.num_streams)
+        checker.check_count("preprocessed", jsons, args.num_success)
         for json_file in jsons:
             print(f"\t- {json_file.name}")
             try:
                 recording = si.load(json_file, base_folder=data_path)
-                print(f"\t  - loaded recording: {recording}")
+                print(f"\t\t- loaded recording: {recording}")
             except Exception as e:
                 checker.error(f"failed to load preprocessed recording: {json_file} ({e})")
+                raise Exception
 
     # --- spikesorted ------------------------------------------------------
     print("\n[spikesorted]")
@@ -103,10 +104,10 @@ def main():
         dirs = subdirs(spikesorted_dir)
         checker.check_count("spikesorted", dirs, args.num_success)
         for dir in dirs:
-            print(f"  - {dir.name}")
+            print(f"\t- {dir.name}")
             try:
                 sorting = si.load(dir)
-                print(f"\t  - loaded sorting: {sorting}")
+                print(f"\t\t- loaded sorting: {sorting}")
             except Exception as e:
                 checker.error(f"failed to load spikesorted recording: {dir} ({e})")
 
@@ -121,10 +122,12 @@ def main():
         dirs = subdirs(postprocessed_dir)
         checker.check_count("postprocessed", dirs, args.num_success)
         for dir in dirs:
-            print(f"  - {dir.name}")
+            print(f"\t- {dir.name}")
             try:
                 analyzer = si.load(dir)
-                print(f"\t  - loaded postprocessed analyzer: {analyzer}")
+                print(f"\t\t- loaded postprocessed analyzer: {analyzer}")
+                if not analyzer.has_recording():
+                    checker.error(f"postprocessed analyzer has no recording: {dir}")
             except Exception as e:
                 checker.error(f"failed to load postprocessed analyzer: {dir} ({e})")
 
@@ -137,17 +140,17 @@ def main():
         dirs = subdirs(curated_dir)
         checker.check_count("curated", dirs, args.num_success)
         for dir in dirs:
-            print(f"  - {dir.name}")
+            print(f"\t- {dir.name}")
             try:
                 curated_sorting = si.load(dir)
-                print(f"\t  - loaded curated sorting: {curated_sorting}")
+                print(f"\t\t- loaded curated sorting: {curated_sorting}")
                 # load curation.json
                 curation_file = dir / "curation.json"
                 if curation_file.is_file():
                     with open(curation_file, "r") as f:
                         curation_data = json.load(f)
                         curation = Curation.model_validate(curation_data)
-                        print(f"\t  - loaded curation data: {curation_data}")
+                        print(f"\t\t- loaded curation data!")
                         if set(curation.unit_ids) != set(curated_sorting.unit_ids):
                             checker.error(
                                 f"curation unit_ids do not match curated sorting unit_ids: "
@@ -174,10 +177,10 @@ def main():
         nwb_files = sorted(nwb_dir.glob("*.nwb"))
         checker.check_count("nwb", nwb_files, args.num_nwb)
         for nwb_file in nwb_files:
-            print(f"  - {nwb_file.name}")
+            print(f"\t- {nwb_file.name}")
             try:
                 nwbfile = pynwb.read_nwb(nwb_file)
-                print(f"\t  - loaded NWB file: {nwbfile}")
+                print(f"\t\t- loaded NWB file: {nwbfile}")
             except Exception as e:
                 checker.error(f"failed to load NWB file: {nwb_file} ({e})")
 

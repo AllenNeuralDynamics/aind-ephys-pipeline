@@ -208,13 +208,11 @@ Preprocessing Parameters
        "denoising_strategy": "cmr",
        "filter_type": "highpass",
        "highpass_filter": {
-           "freq_min": 300.0,
-           "margin_ms": 5.0
+           "freq_min": 300.0
        },
        "bandpass_filter": {
            "freq_min": 300.0,
-           "freq_max": 6000.0,
-           "margin_ms": 5.0
+           "freq_max": 6000.0
        },
        "phase_shift": {
            "margin_ms": 100.0
