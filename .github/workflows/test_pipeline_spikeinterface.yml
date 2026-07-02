@@ -35,7 +35,7 @@ jobs:
         - name: Install packages
           run: |
             python -m pip install --upgrade pip
-            pip install $(grep -E '^(spikeinterface)==' environment/requirements.txt | tr '\n' ' ')
+            pip install $(grep -E '^(spikeinterface|pynwb)==' environment/requirements.txt | tr '\n' ' ')
 
 
         - name: Generate test SpikeInterface files
@@ -55,4 +55,5 @@ jobs:
 
         - name: Check pipeline results
           run: |
-            python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/sample_dataset/spikeinterface_results" --num-streams 3 --num-success 2 --num-nwb 3
+            python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/sample_dataset/spikeinterface_results" \
+            --data-path "$(pwd)/sample_dataset/spikeinterface" --num-streams 3 --num-success 2 --num-nwb 3

@@ -60,4 +60,5 @@ NXF_VER=$NXF_VERSION DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
     --params_file $PARAMS_FILE $ARGS
 
 # check results: 3 preprocessed entries and 2 successful spike sorting outputs
-python "$(dirname "$SCRIPT_PATH")/check_pipeline_results.py" --results-path "$RESULTS_PATH" --num-streams 3 --num-success 2 --num-nwb 1
+python "$(dirname "$SCRIPT_PATH")/check_pipeline_results.py" \
+--results-path "$RESULTS_PATH" --data-path "$DATA_PATH" --num-streams 3 --num-success 2 --num-nwb 1

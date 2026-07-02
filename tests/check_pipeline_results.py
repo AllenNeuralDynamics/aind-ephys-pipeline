@@ -20,7 +20,7 @@ checked by counting the entries it contains:
   - nwb/              : --num-nwb        ``*.nwb`` files/folders
 
 Usage:
-  check_pipeline_results.py --results-path PATH \
+  check_pipeline_results.py --results-path PATH --data-path PATH \
       [--num-streams N] [--num-success N] [--num-nwb N]
 """
 
@@ -57,12 +57,14 @@ def main():
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--results-path", required=True, type=Path)
+    parser.add_argument("--data-path", required=True, type=Path)
     parser.add_argument("--num-streams", type=int, default=3)
     parser.add_argument("--num-success", type=int, default=2)
     parser.add_argument("--num-nwb", type=int, default=1)
     args = parser.parse_args()
 
     results_path = args.results_path
+    data_path = args.data_path
     print(f"Checking pipeline results in: {results_path}")
     print(f"Expecting: {args.num_streams} preprocessed, "
           f"{args.num_success} spike sorted / postprocessed / curated, "
@@ -85,7 +87,7 @@ def main():
         for json_file in jsons:
             print(f"\t- {json_file.name}")
             try:
-                recording = si.load(json_file)
+                recording = si.load(json_file, base_folder=data_path)
                 print(f"\t  - loaded recording: {recording}")
             except Exception as e:
                 checker.error(f"failed to load preprocessed recording: {json_file} ({e})")
@@ -119,7 +121,7 @@ def main():
         for dir in dirs:
             print(f"  - {dir.name}")
             try:
-                analyzer = si.load(dir)
+                analyzer = si.load(dir, load_extensions=False)
                 print(f"\t  - loaded postprocessed analyzer: {analyzer}")
             except Exception as e:
                 checker.error(f"failed to load postprocessed analyzer: {dir} ({e})")
