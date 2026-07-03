@@ -1,7 +1,9 @@
-spikeinterface==0.104.7
+spikeinterface==0.104.8
 neo==0.14.5
 pyvips==2.2.1
 sortingview==0.14.2
+figpack==0.3.8
+figpack-spike-sorting==0.1.15
 matplotlib_venn==1.1.2
 torch==2.6.0
 pynwb==4.0.0
@@ -18,4 +20,4 @@ scikit-learn==1.6.1
 aind-data-schema==2.8.1
 aind-qcportal-schema==0.6.4
 aind-metadata-upgrader==0.17.1
-aind-nwb-utils==0.2.5
+aind-nwb-utils==0.2.6
