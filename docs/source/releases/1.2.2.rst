@@ -6,15 +6,18 @@
 Minor bugfix release with:
 
 General:
+
 * add pipeline version to JSON schema
 
 Processing steps:
+
 * job dispatch: raise if no recordings are found
 * job dispatch: handle empty debug duration if debug is false
 * preprocessing: automatically convert unsigned recordings to signed
 
 Package versions
 ----------------
+
 * ``spikeinterface`` version: 0.103.2
 * ``aind-data-schema`` version: 2.4.0
 * ``neo`` version 0.14.4

@@ -73,7 +73,6 @@ you can specify:
         "bandpass_filter": {
             "freq_min": 300.0,
             "freq_max": 6000.0,
-            "margin_ms": 5.0
         },
         "detect_and_remove_bad_channels": {
             "method": "std_threshold",
@@ -225,6 +224,11 @@ https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-template
         )
     } else if (sorter == 'spykingcircus2') {
         spikesort_out = spikesort_spykingcircus2(
+            max_duration_minutes,
+            preprocessing_out.results
+        )
+    } else if (sorter == 'lupin') {
+        spikesort_out = spikesort_lupin(
             max_duration_minutes,
             preprocessing_out.results
         )

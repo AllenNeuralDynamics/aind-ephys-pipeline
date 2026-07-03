@@ -6,13 +6,16 @@
 Minor bugfix release with:
 
 Testing:
+
 * Add unsigned stream for testing
 * Add workflow to test pipeline from spikeinterface Zarr format
 
 Parameters:
+
 * Add missing ``preprocessing/min_preprocessing_duration`` parameter to default parameters
 
 Processing steps:
+
 * job dispatch: skip NWB ElectricalSeries with no channel locations
 * preprocessing: clean up skip logic
 * spikesort spykingcircus2: remove ``is_merged`` property before saving sorting output
@@ -22,6 +25,7 @@ Processing steps:
 
 Package versions
 ----------------
+
 * ``spikeinterface`` version: 0.103.2
 * ``aind-data-schema`` version: 2.4.0
 * ``neo`` version 0.14.4

@@ -3,6 +3,12 @@
 
 Electrophysiology analysis pipeline with [SpikeInterface](https://github.com/SpikeInterface/spikeinterface).
 
+
+# News
+
+[Jul 3rd 2026]: New release 1.3.0 is out! Check out release notes [here](https://aind-ephys-pipeline.readthedocs.io/en/latest/releases/1.3.0.html)
+
+
 # Overview
 
 The pipeline is based on [Nextflow](https://www.nextflow.io/) and it includes the following steps:
