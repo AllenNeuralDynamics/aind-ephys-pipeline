@@ -18,6 +18,3 @@ since the pipeline is mainly built on top of SpikeInterface.
     releases/1.1.1.rst
     releases/1.1.0.rst
     releases/1.0.0.rst
-    releases/si-0.102.1.rst
-    releases/si-0.101.2.rst
-    releases/si-0.100.7.rst

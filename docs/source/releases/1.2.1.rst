@@ -11,6 +11,7 @@ Minor bugfix release and sync with the latest versions of processing steps.
 
 Package versions
 ----------------
+
 * ``spikeinterface`` version: 0.103.2
 * ``aind-data-schema`` version: 2.4.0
 * ``neo`` version 0.14.4
