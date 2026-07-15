@@ -1,4 +1,4 @@
-FROM spikeinterface/kilosort4-base:4.0.38_cuda-12.0.0
+FROM spikeinterface/kilosort4-base:4.1.7_cuda-12.0.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 

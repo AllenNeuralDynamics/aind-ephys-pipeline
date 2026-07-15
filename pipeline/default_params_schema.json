@@ -8,7 +8,7 @@
     "properties": {
         "pipeline_version": {
             "type": "string",
-            "pattern": "^1\\.2\\.[0-9]+$",
+            "pattern": "^1\\.3\\.[0-9]+$",
             "description": "Version of the pipeline the parameters are compatible with. This should be updated when default parameters are changed in a way that is not backward compatible."
         },
         "job_dispatch": {
@@ -185,12 +185,6 @@
                                     "default": 300.0,
                                     "minimum": 0,
                                     "description": "Minimum frequency cutoff in Hz."
-                                },
-                                "margin_ms": {
-                                    "type": "number",
-                                    "default": 5.0,
-                                    "minimum": 0,
-                                    "description": "Margin in milliseconds for edge effects."
                                 }
                             }
                         },
@@ -210,12 +204,6 @@
                                     "default": 6000.0,
                                     "minimum": 0,
                                     "description": "Maximum frequency cutoff in Hz."
-                                },
-                                "margin_ms": {
-                                    "type": "number",
-                                    "default": 5.0,
-                                    "minimum": 0,
-                                    "description": "Margin in milliseconds for edge effects."
                                 }
                             }
                         },
@@ -627,11 +615,6 @@
                                     "minimum": 1,
                                     "description": "Factor for upsampling templates before computing metrics."
                                 },
-                                "sparsity": {
-                                    "type": ["object", "null"],
-                                    "default": null,
-                                    "description": "Sparsity parameters for template metrics. If null, uses the global sparsity."
-                                },
                                 "include_multi_channel_metrics": {
                                     "type": "boolean",
                                     "default": true,
@@ -663,6 +646,16 @@
                                 }
                             }
                         },
+                        "amplitude_scalings": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Parameters for amplitude scaling computation. Uses SpikeInterface defaults when empty."
+                        },
+                        "valid_unit_periods": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Parameters for valid unit period detection. Uses SpikeInterface defaults when empty."
+                        },
                         "quality_metrics": {
                             "type": "object",
                             "description": "Parameters for quality metrics computation.",
@@ -687,7 +680,9 @@
                                             "synchrony",
                                             "firing_range",
                                             "drift",
-                                            "isolation_distance",
+                                            "sd_ratio",
+                                            "noise_cutoff",
+                                            "mahalanobis",
                                             "l_ratio",
                                             "d_prime",
                                             "nearest_neighbor",
@@ -707,11 +702,12 @@
                                         "amplitude_cutoff",
                                         "amplitude_median",
                                         "amplitude_cv",
+                                        "noise_cutoff",
                                         "synchrony",
                                         "firing_range",
                                         "drift",
-                                        "isolation_distance",
-                                        "l_ratio",
+                                        "sd_ratio",
+                                        "mahalanobis",
                                         "d_prime",
                                         "nearest_neighbor",
                                         "silhouette"
@@ -929,6 +925,57 @@
                                                 }
                                             }
                                         },
+                                        "noise_cutoff": {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "high_quantile": {
+                                                    "type": "number",
+                                                    "default": 0.25,
+                                                    "minimum": 0,
+                                                    "maximum": 1,
+                                                    "description": "Upper quantile for noise cutoff estimation."
+                                                },
+                                                "low_quantile": {
+                                                    "type": "number",
+                                                    "default": 0.1,
+                                                    "minimum": 0,
+                                                    "maximum": 1,
+                                                    "description": "Lower quantile for noise cutoff estimation."
+                                                },
+                                                "n_bins": {
+                                                    "type": "integer",
+                                                    "default": 100,
+                                                    "minimum": 1,
+                                                    "description": "Number of bins for noise cutoff histogram."
+                                                }
+                                            }
+                                        },
+                                        "sd_ratio": {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "censored_period_ms": {
+                                                    "type": "number",
+                                                    "default": 4.0,
+                                                    "minimum": 0,
+                                                    "description": "Censored period in milliseconds around each spike."
+                                                },
+                                                "correct_for_drift": {
+                                                    "type": "boolean",
+                                                    "default": true,
+                                                    "description": "Whether to correct for drift when computing SD ratio."
+                                                },
+                                                "correct_for_template_itself": {
+                                                    "type": "boolean",
+                                                    "default": true,
+                                                    "description": "Whether to correct for the template signal when computing SD ratio."
+                                                },
+                                                "peak_sign": {
+                                                    "$ref": "#/$defs/peak_sign"
+                                                }
+                                            }
+                                        },
                                         "nearest_neighbor": {
                                             "type": "object",
                                             "additionalProperties": false,
@@ -941,7 +988,7 @@
                                                 },
                                                 "n_neighbors": {
                                                     "type": "integer",
-                                                    "default": 4,
+                                                    "default": 5,
                                                     "minimum": 1,
                                                     "description": "Number of nearest neighbors."
                                                 }
@@ -1050,20 +1097,125 @@
                 "job_kwargs": {
                     "$ref": "#/$defs/job_kwargs"
                 },
-                "query": {
-                    "type": "string",
-                    "default": "isi_violations_ratio < 0.5 and presence_ratio > 0.8 and amplitude_cutoff < 0.1",
-                    "description": "Pandas query string for threshold-based unit filtering using quality metrics."
+                "qc_thresholds": {
+                    "type": "object",
+                    "description": "Threshold-based quality metric filters. Keys are metric names; values are objects with 'greater' and/or 'less' bounds.",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "greater": {"type": ["number", "null"]},
+                            "less": {"type": ["number", "null"]}
+                        }
+                    }
                 },
-                "noise_neural_classifier": {
-                    "type": "string",
-                    "default": "SpikeInterface/UnitRefine_noise_neural_classifier",
-                    "description": "Hugging Face model path for classifying units as noise vs neural."
+                "unitrefine": {
+                    "type": "object",
+                    "description": "UnitRefine ML classifier parameters.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "noise_neural_classifier": {
+                            "type": "string",
+                            "default": "SpikeInterface/UnitRefine_noise_neural_classifier",
+                            "description": "Hugging Face model path for classifying units as noise vs neural."
+                        },
+                        "sua_mua_classifier": {
+                            "type": "string",
+                            "default": "SpikeInterface/UnitRefine_sua_mua_classifier",
+                            "description": "Hugging Face model path for classifying neural units as single-unit (SUA) vs multi-unit (MUA)."
+                        }
+                    }
                 },
-                "sua_mua_classifier": {
+                "bombcell": {
+                    "type": "object",
+                    "description": "Bombcell labeling thresholds for noise, MUA, and non-somatic classification.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "noise": {
+                            "type": "object",
+                            "description": "Thresholds for noise unit classification.",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "greater": {"type": ["number", "null"]},
+                                    "less": {"type": ["number", "null"]}
+                                }
+                            }
+                        },
+                        "mua": {
+                            "type": "object",
+                            "description": "Thresholds for multi-unit activity (MUA) classification.",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "greater": {"type": ["number", "null"]},
+                                    "less": {"type": ["number", "null"]},
+                                    "abs": {"type": "boolean"}
+                                }
+                            }
+                        },
+                        "non-somatic": {
+                            "type": "object",
+                            "description": "Thresholds for non-somatic unit classification.",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "greater": {"type": ["number", "null"]},
+                                    "less": {"type": ["number", "null"]}
+                                }
+                            }
+                        }
+                    }
+                },
+                "noise_strategy": {
                     "type": "string",
-                    "default": "SpikeInterface/UnitRefine_sua_mua_classifier",
-                    "description": "Hugging Face model path for classifying neural units as single-unit (SUA) vs multi-unit (MUA)."
+                    "enum": ["bombcell", "unitrefine", "bombcell+unitrefine"],
+                    "default": "bombcell+unitrefine",
+                    "description": "Strategy for labeling noise units: bombcell, unitrefine, or both combined."
+                },
+                "slay": {
+                    "type": "object",
+                    "description": "SLAY auto-merging suggestion parameters.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "template_similarity": {
+                            "type": "object",
+                            "description": "Template similarity threshold for candidate merges.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "templates_diff": {
+                                    "type": "number",
+                                    "default": 0.35,
+                                    "minimum": 0,
+                                    "maximum": 1,
+                                    "description": "Maximum template difference for merge candidates."
+                                }
+                            }
+                        },
+                        "slay": {
+                            "type": "object",
+                            "description": "SLAY algorithm parameters.",
+                            "additionalProperties": false,
+                            "properties": {
+                                "k1": {
+                                    "type": "number",
+                                    "default": 0.25,
+                                    "description": "SLAY k1 parameter."
+                                },
+                                "k2": {
+                                    "type": "number",
+                                    "default": 1,
+                                    "description": "SLAY k2 parameter."
+                                },
+                                "slay_threshold": {
+                                    "type": "number",
+                                    "default": 0.4,
+                                    "minimum": 0,
+                                    "maximum": 1,
+                                    "description": "SLAY score threshold for merge suggestions."
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -1307,7 +1459,7 @@
             "properties": {
                 "sorter": {
                     "type": ["string", "null"],
-                    "enum": ["kilosort25", "kilosort4", "spykingcircus2", null],
+                    "enum": ["kilosort25", "kilosort4", "spykingcircus2", "lupin",null],
                     "default": null,
                     "description": "Spike sorter to use. If null, uses the --sorter command-line parameter."
                 },
@@ -1319,7 +1471,11 @@
                 },
                 "spykingcircus2": {
                     "$ref": "#/$defs/sorter_wrapper_spykingcircus2"
+                },
+                "lupin": {
+                    "$ref": "#/$defs/sorter_wrapper_lupin"
                 }
+
             }
         }
     },
@@ -1803,6 +1959,203 @@
                 }
             }
         },
+        "sorter_wrapper_lupin": {
+            "type": "object",
+            "description": "Lupin spike sorter configuration.",
+            "additionalProperties": false,
+            "properties": {
+                "job_kwargs": {
+                    "$ref": "#/$defs/job_kwargs"
+                },
+                "sorter": {
+                    "type": "object",
+                    "description": "Lupin algorithm-specific parameters.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "apply_preprocessing": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to apply internal preprocessing."
+                        },
+                        "preprocessing_dict": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Custom preprocessing pipeline configuration."
+                        },
+                        "apply_motion_correction": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to apply motion correction."
+                        },
+                        "motion_correction_preset": {
+                            "type": "string",
+                            "default": "dredge_fast",
+                            "description": "Motion correction preset."
+                        },
+                        "clustering_ms_before": {
+                            "type": "number",
+                            "default": 0.3,
+                            "minimum": 0,
+                            "description": "Time in ms before spike peak for clustering."
+                        },
+                        "clustering_ms_after": {
+                            "type": "number",
+                            "default": 1.3,
+                            "minimum": 0,
+                            "description": "Time in ms after spike peak for clustering."
+                        },
+                        "whitening_radius_um": {
+                            "type": "number",
+                            "default": 100.0,
+                            "minimum": 0,
+                            "description": "Radius in micrometers for whitening."
+                        },
+                        "detection_radius_um": {
+                            "type": "number",
+                            "default": 50.0,
+                            "minimum": 0,
+                            "description": "Radius in micrometers for spike detection."
+                        },
+                        "features_radius_um": {
+                            "type": "number",
+                            "default": 120.0,
+                            "minimum": 0,
+                            "description": "Radius in micrometers for feature extraction."
+                        },
+                        "split_radius_um": {
+                            "type": "number",
+                            "default": 60.0,
+                            "minimum": 0,
+                            "description": "Radius in micrometers for cluster splitting."
+                        },
+                        "template_radius_um": {
+                            "type": "number",
+                            "default": 100.0,
+                            "minimum": 0,
+                            "description": "Radius in micrometers for template computation."
+                        },
+                        "freq_min": {
+                            "type": "number",
+                            "default": 150.0,
+                            "minimum": 0,
+                            "description": "Minimum frequency in Hz for bandpass filter."
+                        },
+                        "freq_max": {
+                            "type": "number",
+                            "default": 7000.0,
+                            "minimum": 0,
+                            "description": "Maximum frequency in Hz for bandpass filter."
+                        },
+                        "cache_preprocessing_mode": {
+                            "type": "string",
+                            "enum": ["memory", "folder", "no-cache"],
+                            "default": "no-cache",
+                            "description": "Caching mode for preprocessing."
+                        },
+                        "peak_sign": {
+                            "$ref": "#/$defs/peak_sign"
+                        },
+                        "detect_threshold": {
+                            "type": "number",
+                            "default": 5.0,
+                            "minimum": 0,
+                            "description": "Spike detection threshold."
+                        },
+                        "n_peaks_per_channel": {
+                            "type": "integer",
+                            "default": 5000,
+                            "minimum": 1,
+                            "description": "Number of peaks per channel for spike selection."
+                        },
+                        "n_svd_components_per_channel": {
+                            "type": "integer",
+                            "default": 5,
+                            "minimum": 1,
+                            "description": "Number of SVD components per channel."
+                        },
+                        "n_pca_features": {
+                            "type": "integer",
+                            "default": 4,
+                            "minimum": 1,
+                            "description": "Number of PCA features for clustering."
+                        },
+                        "clustering_recursive_depth": {
+                            "type": "integer",
+                            "default": 3,
+                            "minimum": 0,
+                            "description": "Recursive depth for clustering."
+                        },
+                        "ms_before": {
+                            "type": "number",
+                            "default": 1.0,
+                            "minimum": 0,
+                            "description": "Time in ms before spike peak for template extraction."
+                        },
+                        "ms_after": {
+                            "type": "number",
+                            "default": 2.5,
+                            "minimum": 0,
+                            "description": "Time in ms after spike peak for template extraction."
+                        },
+                        "template_sparsify_threshold": {
+                            "type": "number",
+                            "default": 1.5,
+                            "minimum": 0,
+                            "description": "Threshold for template sparsification."
+                        },
+                        "template_min_snr_ptp": {
+                            "type": "number",
+                            "default": 4.0,
+                            "minimum": 0,
+                            "description": "Minimum peak-to-peak SNR for template acceptance."
+                        },
+                        "template_max_jitter_ms": {
+                            "type": "number",
+                            "default": 0.2,
+                            "minimum": 0,
+                            "description": "Maximum jitter in milliseconds for template acceptance."
+                        },
+                        "template_matching_engine": {
+                            "type": "string",
+                            "default": "circus-omp",
+                            "description": "Template matching engine."
+                        },
+                        "min_firing_rate": {
+                            "type": "number",
+                            "default": 0.1,
+                            "minimum": 0,
+                            "description": "Minimum firing rate in Hz to keep a unit."
+                        },
+                        "gather_mode": {
+                            "type": "string",
+                            "enum": ["memory", "disk"],
+                            "default": "memory",
+                            "description": "Mode for gathering results."
+                        },
+                        "job_kwargs": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Additional job keyword arguments for Lupin."
+                        },
+                        "seed": {
+                            "type": ["integer", "null"],
+                            "default": null,
+                            "description": "Random seed for reproducibility. If null, no seed is set."
+                        },
+                        "save_array": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to save intermediate arrays."
+                        },
+                        "debug": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to enable debug mode."
+                        }
+                    }
+                }
+            }
+        },
         "sorter_wrapper_spykingcircus2": {
             "type": "object",
             "description": "SpykingCircus2 spike sorter configuration.",
@@ -2029,8 +2382,20 @@
                                     "type": ["number", "null"],
                                     "default": null,
                                     "description": "Threshold for sparsification. If null, no sparsification."
+                                },
+                                "mean_sd_ratio_threshold": {
+                                    "type": "number",
+                                    "default": 3,
+                                    "minimum": 0,
+                                    "description": "Threshold on the mean-to-standard-deviation ratio for a cluster."
                                 }
                             }
+                        },
+                        "min_firing_rate": {
+                            "type": "number",
+                            "default": 0.1,
+                            "minimum": 0,
+                            "description": "Minimum firing rate in Hz to keep a unit."
                         },
                         "matching": {
                             "type": "object",
@@ -2080,11 +2445,6 @@
                                     "default": 0.5,
                                     "minimum": 0,
                                     "description": "Memory limit as a fraction of available RAM."
-                                },
-                                "delete_cache": {
-                                    "type": "boolean",
-                                    "default": true,
-                                    "description": "Whether to delete cache after sorting."
                                 }
                             }
                         },
