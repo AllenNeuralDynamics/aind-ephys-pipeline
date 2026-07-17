@@ -60,4 +60,4 @@ jobs:
         - name: Check pipeline results
           run: |
             python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/sample_dataset/spikeinterface_results" \
-            --data-path "$(pwd)/sample_dataset/spikeinterface" --num-streams 3 --num-success 2 --num-nwb 3
+            --data-path "$(pwd)/sample_dataset/spikeinterface" --num-streams 3 --num-success 2 --num-nwb 3 --num-segments 2

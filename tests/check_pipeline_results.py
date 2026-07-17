@@ -8,11 +8,15 @@ The sample dataset contains 3 recordings (main, short, unsigned):
     2 recordings produce a successful spike sorting output (and therefore
     only 2 postprocessed / curated outputs)
 
+In case of multiple segments per recording, the expected number of outputs is multiplied 
+by the number of segments, unless the ``--no-split-segments`` option is used, 
+in which case the expected number of outputs is the same as for a single segment.
+
 Failed/skipped recordings do NOT appear in the collected results (the result
 collector does not propagate ``error.txt`` markers), so each output folder is
 checked by counting the entries it contains:
 
-  - preprocessed/     : --num-streams   ``*_recording.json`` files
+  - preprocessed/     : --num-streams   ``*_recording.json`` / ``*_recording<N>.json`` files
   - spikesorted/      : --num-success   stream folders
   - postprocessed/    : --num-success   stream folders (zarr)
   - curated/          : --num-success   stream folders
@@ -61,16 +65,32 @@ def main():
     parser.add_argument("--results-path", required=True, type=Path)
     parser.add_argument("--data-path", required=True, type=Path)
     parser.add_argument("--num-streams", type=int, default=3)
+    parser.add_argument("--num-segments", type=int, default=1)
+    parser.add_argument("--no-split-segments", action="store_true", help="If set, do not split recordings into segments.")
     parser.add_argument("--num-success", type=int, default=2)
     parser.add_argument("--num-nwb", type=int, default=1)
     args = parser.parse_args()
 
     results_path = args.results_path
     data_path = args.data_path
+    num_success = args.num_success * args.num_segments
     print(f"Checking pipeline results in: {results_path}")
-    print(f"Expecting: {args.num_streams} preprocessed, "
-          f"{args.num_success} spike sorted / postprocessed / curated, "
-          f"{args.num_streams} quality control, {args.num_nwb} NWB file(s)")
+    print(f"Num streams: {args.num_streams}, Num segments per stream: {args.num_segments}, No split segments: {args.no_split_segments}")
+
+    if args.no_split_segments:
+        print("No split segments: one output per stream.")
+        num_success = args.num_success
+        num_streams = args.num_streams
+        num_nwb = args.num_nwb
+    else:
+        print("Split segments: one output per segment.")
+        num_success = args.num_success * args.num_segments
+        num_streams = args.num_streams * args.num_segments
+        num_nwb = args.num_nwb * args.num_segments
+
+    print(f"Expecting: {num_success} preprocessed, "
+          f"{num_success} spike sorted / postprocessed / curated, "
+          f"{num_streams} quality control, {num_nwb} NWB file(s)")
 
     checker = Checker()
 
@@ -84,8 +104,10 @@ def main():
     if not preprocessed_dir.is_dir():
         checker.error(f"preprocessed directory not found: {preprocessed_dir}")
     else:
-        jsons = sorted(preprocessed_dir.glob("*_recording.json"))
-        checker.check_count("preprocessed", jsons, args.num_success)
+        jsons = sorted(preprocessed_dir.glob("*_recording.json")) + sorted(
+            preprocessed_dir.glob("*_recording[0-9]*.json")
+        )
+        checker.check_count("preprocessed", jsons, num_success)
         for json_file in jsons:
             print(f"\t- {json_file.name}")
             try:
@@ -102,7 +124,7 @@ def main():
         checker.error(f"spikesorted directory not found: {spikesorted_dir}")
     else:
         dirs = subdirs(spikesorted_dir)
-        checker.check_count("spikesorted", dirs, args.num_success)
+        checker.check_count("spikesorted", dirs, num_success)
         for dir in dirs:
             print(f"\t- {dir.name}")
             try:
@@ -120,7 +142,7 @@ def main():
         checker.error(f"postprocessed directory not found: {postprocessed_dir}")
     else:
         dirs = subdirs(postprocessed_dir)
-        checker.check_count("postprocessed", dirs, args.num_success)
+        checker.check_count("postprocessed", dirs, num_success)
         for dir in dirs:
             print(f"\t- {dir.name}")
             try:
@@ -138,7 +160,7 @@ def main():
         checker.error(f"curated directory not found: {curated_dir}")
     else:
         dirs = subdirs(curated_dir)
-        checker.check_count("curated", dirs, args.num_success)
+        checker.check_count("curated", dirs, num_success)
         for dir in dirs:
             print(f"\t- {dir.name}")
             try:
@@ -166,7 +188,7 @@ def main():
         checker.error(f"quality_control directory not found: {qc_dir}")
     else:
         dirs = subdirs(qc_dir)
-        checker.check_count("quality_control", dirs, args.num_streams)
+        checker.check_count("quality_control", dirs, num_streams)
 
     # --- nwb --------------------------------------------------------------
     print("\n[nwb]")
@@ -175,7 +197,7 @@ def main():
         checker.error(f"nwb directory not found: {nwb_dir}")
     else:
         nwb_files = sorted(nwb_dir.glob("*.nwb"))
-        checker.check_count("nwb", nwb_files, args.num_nwb)
+        checker.check_count("nwb", nwb_files, num_nwb)
         for nwb_file in nwb_files:
             print(f"\t- {nwb_file.name}")
             try:
