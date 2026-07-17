@@ -1,0 +1,23 @@
+.. _1.3.1:
+
+1.3.1 - Jul 17th 2026
+=====================
+
+Minor release with bug fixes and updated dependencies.
+
+Bug fixes:
+
+* Fix visualization and QC steps to handle multi-segment recordings correctly when ``split_segments`` is set to ``False`` in the job dispatch parameters.
+
+Tests:
+
+* Extended tests multi-segment recordings
+
+Package versions
+----------------
+
+* ``spikeinterface`` version: 0.104.8
+* ``aind-data-schema`` version: 2.8.1
+* ``neo`` version: 0.14.5
+* ``pynwb`` version: 4.0.0
+* ``kilosort4`` version: 4.1.7
