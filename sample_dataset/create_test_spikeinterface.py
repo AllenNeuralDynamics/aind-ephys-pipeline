@@ -46,11 +46,14 @@ def generate_spikeinterface(num_segments=1):
         durations=[duration] * num_segments,
         seed=SEED+2
     )
-    traces = recording.get_traces() 
-    # add offset
-    traces_unsigned = traces + 2**15
-    traces_unsigned = traces_unsigned.astype('uint16')
-    recording_unsigned = si.NumpyRecording(traces_unsigned, sampling_frequency=recording.get_sampling_frequency())
+    traces_list = []
+    for segment_index in range(recording.get_num_segments()):
+        traces = recording.get_traces() 
+        # add offset
+        traces_unsigned = traces + 2**15
+        traces_unsigned = traces_unsigned.astype('uint16')
+        traces_list.append(traces_unsigned)
+    recording_unsigned = si.NumpyRecording(traces_list, sampling_frequency=recording.sampling_frequency)
     recording_unsigned.set_probe(recording.get_probe(), in_place=True)
     recording_unsigned.set_channel_gains(1)
     recording_unsigned.set_channel_offsets(0)

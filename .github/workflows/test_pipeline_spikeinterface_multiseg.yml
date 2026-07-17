@@ -1,4 +1,4 @@
-name: Test Pipeline from SpikeInterface
+name: Test Pipeline from SpikeInterface - multi-segment
 
 on:
   pull_request:
