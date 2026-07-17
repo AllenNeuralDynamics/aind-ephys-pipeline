@@ -1,4 +1,4 @@
-name: Test Pipeline from SpikeInterface for multi-segment recordings
+name: Test Pipeline from SpikeInterface - multi-segment + not split-segments
 
 on:
   pull_request:
