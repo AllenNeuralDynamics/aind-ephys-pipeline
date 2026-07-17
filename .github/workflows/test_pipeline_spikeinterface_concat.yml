@@ -1,4 +1,4 @@
-name: Test Pipeline from SpikeInterface
+name: Test Pipeline from SpikeInterface for multi-segment recordings
 
 on:
   pull_request:
@@ -44,7 +44,7 @@ jobs:
 
         - name: Generate test SpikeInterface files
           run: |
-            python sample_dataset/create_test_spikeinterface.py --num_segments 1
+            python sample_dataset/create_test_spikeinterface.py --num_segments 2
         
         - name: Set up Nextflow
           uses: nf-core/setup-nextflow@v1
@@ -55,7 +55,7 @@ jobs:
           run: |
             DATA_PATH="$(pwd)/sample_dataset/spikeinterface" RESULTS_PATH="$(pwd)/sample_dataset/spikeinterface_results" \
             nextflow  -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main_multi_backend.nf \
-            --params_file "$(pwd)/.github/workflows/params_test_si.json"
+            --params_file "$(pwd)/.github/workflows/params_test_si_concat.json"
 
         - name: Check pipeline results
           run: |
