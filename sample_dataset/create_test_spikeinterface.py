@@ -48,7 +48,7 @@ def generate_spikeinterface(num_segments=1):
     )
     traces_list = []
     for segment_index in range(recording.get_num_segments()):
-        traces = recording.get_traces() 
+        traces = recording.get_traces(segment_index=segment_index) 
         # add offset
         traces_unsigned = traces + 2**15
         traces_unsigned = traces_unsigned.astype('uint16')
