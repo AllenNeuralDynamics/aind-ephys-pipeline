@@ -11,7 +11,7 @@ Bug fixes:
 
 Tests:
 
-* Extended tests multi-segment recordings
+* Extended tests multi-segment recordings with/without ``split_segments``
 
 Package versions
 ----------------
