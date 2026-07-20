@@ -63,7 +63,7 @@ def generate_spikeinterface(num_segments=1):
         recording.save(folder=output_folder / f"sample_recording_{recording_name}.zarr", format="zarr", overwrite=True)
 
 parser = ArgumentParser()
-parser.add_argument("--num_segments", type=int, default=1, help="Number of segments to generate for the recordings.")
+parser.add_argument("--num-segments", type=int, default=1, help="Number of segments to generate for the recordings.")
 
 if __name__ == '__main__':
     args = parser.parse_args()

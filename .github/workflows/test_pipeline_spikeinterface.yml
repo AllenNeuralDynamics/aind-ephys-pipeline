@@ -44,7 +44,7 @@ jobs:
 
         - name: Generate test SpikeInterface files
           run: |
-            python sample_dataset/create_test_spikeinterface.py --num_segments 1
+            python sample_dataset/create_test_spikeinterface.py --num-segments 1
         
         - name: Set up Nextflow
           uses: nf-core/setup-nextflow@v1
