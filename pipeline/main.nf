@@ -138,7 +138,8 @@ def job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_ar
 def preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args")
 def postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args")
 def curation_args = buildStepArgs(json_params.curation, "curation_args")
-def visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs")
+def visualization_args = buildStepArgs(json_params.visualization, "visualization_args")
+def quality_control_args = buildStepArgs(json_params.quality_control, "quality_control_args")
 def nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args")
 
 // Spikesorting: resolve sorter-specific sub-map
@@ -563,7 +564,7 @@ process visualization {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${visualization_kwargs}
+    ./run ${visualization_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -701,7 +702,7 @@ process quality_control_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run
+    ./run ${quality_control_args}
 
     echo "[${task.tag}] completed!"
     """
