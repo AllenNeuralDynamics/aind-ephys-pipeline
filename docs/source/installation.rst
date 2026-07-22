@@ -102,7 +102,8 @@ Installation Steps
 
 
 Code Ocean Setup
-----------------
+Code Ocean Deployment
+---------------------
 
 To setup the pipeline in Code Ocean, you can simply "Create New" --> "Pipeline" --> "Clone from Git"
 and point to the repository URL: ``https://github.com/AllenNeuralDynamics/aind-ephys-pipeline.git``
