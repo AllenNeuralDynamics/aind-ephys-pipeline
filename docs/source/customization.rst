@@ -158,7 +158,7 @@ https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-template
    | Let's assume the new container image is called ``awesome-sorter/my-new-sorter-container:latest``.
 5. | Add the commit hash of the version of the sorter you want to use in the ``capsule_versions.env`` file: ``SPIKESORT_NEWSORTER=commit_hash``.
    | This file is used to define the versions of the sorter and the capsule. The commit hash should be the one you want to use for your sorter.
-6. | Add a new process to the ``main_multi_backend.nf`` file that defines how to run the new spike sorting algorithm using the capsule. 
+6. | Add a new process to the ``main.nf`` file that defines how to run the new spike sorting algorithm using the capsule. 
    | You can use the existing spike sorting processes (e.g., ``spikesort_kilosort25``, ``spikesort_kilosort4``, ``spikesort_spykingcircus2``)
    | as a template for how to implement this.
 
@@ -187,10 +187,9 @@ https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-template
         mkdir -p capsule/results
         mkdir -p capsule/scratch
 
+        export N_JOBS_EXT=${task.cpus}
         if [[ ${params.executor} == "slurm" ]]; then
             echo "[${task.tag}] allocated task time: ${task.time}"
-            # Make sure N_JOBS matches allocated CPUs on SLURM
-            export N_JOBS_EXT=${task.cpus}
         fi
 
         echo "[${task.tag}] cloning git repo..."
@@ -206,7 +205,7 @@ https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-template
         """
     }
 
-7. Modify the ``main_multi_backend.nf`` to add a new channel:
+7. Modify the ``main.nf`` to add a new channel:
 
 .. code:: bash
 

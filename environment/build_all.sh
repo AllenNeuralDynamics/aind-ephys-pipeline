@@ -1,7 +1,7 @@
 IMAGES_ARG="${1:-base,nwb,ks25,ks4}"
 IFS=',' read -r -a IMAGES_LIST <<< "$IMAGES_ARG"
 
-SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' requirements.txt | cut -d'=' -f3)
+SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' package_versions.txt | cut -d'=' -f3)
 
 if [[ " ${IMAGES_LIST[*]} " == *" base "* ]]; then
     echo "Building base image..."

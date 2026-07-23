@@ -58,7 +58,7 @@ Configuration
    DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
        -C $PIPELINE_PATH/pipeline/nextflow_slurm_custom.config \
        -log $RESULTS_PATH/nextflow/nextflow.log \
-       run $PIPELINE_PATH/pipeline/main_multi_backend.nf \
+       run $PIPELINE_PATH/pipeline/main.nf \
        -work-dir $WORKDIR \
        -resume
 
@@ -108,23 +108,22 @@ Running Locally
 
    DATA_PATH=$PWD/../data RESULTS_PATH=$PWD/../results \
        nextflow -C nextflow_local.config -log $RESULTS_PATH/nextflow/nextflow.log \
-       run main_multi_backend.nf \
+       run main.nf \
        --n_jobs 8 -resume
 
 
 Code Ocean Deployment (AIND)
 ----------------------------
 
-For AIND internal use, the pipeline is deployed on Code Ocean with different branches for various configurations:
+For AIND internal use, the pipeline is deployed on Code Ocean using a single ``main.nf`` pipeline on the ``main`` branch.
+The spike sorter and parameters are selected at runtime via environment variables or a JSON parameter file — no separate branches per sorter are required.
 
-Main Branches
+Configuration
 ~~~~~~~~~~~~~
-* ``main``/``co_kilosort4``: Kilosort4 sorter
-* ``co_kilosort25``: Kilosort2.5 sorter
-* ``co_spykingcircus2``: Spyking Circus 2 sorter
 
-Optogenetics Branches
-~~~~~~~~~~~~~~~~~~~~~
-* ``co_kilosort25_opto``: Kilosort2.5 with opto artifact removal
-* ``co_kilosort4_opto``: Kilosort4 with opto artifact removal
-* ``co_spykingcircus2_opto``: Spyking Circus 2 with opto artifact removal
+The following environment variables can be set in the Code Ocean pipeline configuration:
+
+* ``SORTER`` — spike sorter to use (``kilosort4``, ``kilosort25``, ``spykingcircus2``). Defaults to ``kilosort4``.
+* ``PARAMS_FILE`` — path to a JSON parameter file (e.g. ``params_co.json``). When set, all step-specific parameters are read from this file.
+
+These can also be overridden at run time with the ``--sorter`` and ``--params_file`` CLI arguments.

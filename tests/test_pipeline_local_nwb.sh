@@ -56,7 +56,7 @@ PARAMS_FILE="$PIPELINE_PATH/.github/workflows/params_test_default.json"
 # run pipeline
 NXF_VER=$NXF_VERSION DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
     -C $CONFIG_FILE -log $RESULTS_PATH/nextflow/nextflow.log \
-    run $PIPELINE_PATH/pipeline/main_multi_backend.nf \
+    run $PIPELINE_PATH/pipeline/main.nf \
     --params_file $PARAMS_FILE $ARGS
 
 # check results: 3 preprocessed entries and 2 successful spike sorting outputs

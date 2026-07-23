@@ -10,11 +10,11 @@ RUN apt-get update \
 
 # 2. Install Python packages as root so they land in the system (conda) site-packages,
 #    accessible to any user regardless of UID at runtime.
-COPY requirements.txt /tmp/requirements.txt
+COPY package_versions.txt /tmp/package_versions.txt
 RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|aind-nwb-utils|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs|neo' /tmp/requirements.txt | xargs pip install
+    grep -E 'aind-data-schema|aind-nwb-utils|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs|neo' /tmp/package_versions.txt | xargs pip install
 
-RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cut -d'=' -f3) && \
+RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package_versions.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
 
 # 3. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
