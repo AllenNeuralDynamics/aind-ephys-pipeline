@@ -1,4 +1,4 @@
-name: Test Pipeline from SpikeInterface - single-segment
+name: Test Pipeline from SpikeInterface - multi-segment
 
 on:
   pull_request:
@@ -44,7 +44,7 @@ jobs:
 
         - name: Generate test SpikeInterface files
           run: |
-            python sample_dataset/create_test_spikeinterface.py --num-segments 1
+            python sample_dataset/create_test_spikeinterface.py --num-segments 2
         
         - name: Set up Nextflow
           uses: nf-core/setup-nextflow@v1
@@ -60,4 +60,4 @@ jobs:
         - name: Check pipeline results
           run: |
             python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/sample_dataset/spikeinterface_results" \
-            --data-path "$(pwd)/sample_dataset/spikeinterface" --num-streams 3 --num-success 2 --num-nwb 3
+            --data-path "$(pwd)/sample_dataset/spikeinterface" --num-streams 3 --num-success 2 --num-nwb 3 --num-segments 2

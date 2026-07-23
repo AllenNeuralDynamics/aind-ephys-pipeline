@@ -1,6 +1,6 @@
 {
     "job_dispatch": {
-        "concatenate": false,
+        "split_segments": true,
         "split_groups": true,
         "debug": false,
         "debug_duration": 30,
