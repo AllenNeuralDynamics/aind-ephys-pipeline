@@ -1,4 +1,4 @@
-name: Test Pipeline Customization
+name: Test Pipeline from NWB with multi-shank probe
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ concurrency:  # Cancel previous workflows on the same pull request
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env: 
+env:
   NXF_SYNTAX_PARSER: v1
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
           uses: actions/setup-python@v5
           with:
             python-version: "3.11"
-        
+
         - name: Free up disk space
           run: |
             echo "Before cleanup:"
@@ -43,8 +43,8 @@ jobs:
 
         - name: Generate test NWB files
           run: |
-            python sample_dataset/create_test_nwb.py
-        
+            python sample_dataset/create_test_nwb.py --multi-shank
+
         - name: Set up Nextflow
           uses: nf-core/setup-nextflow@v1
           with:
@@ -52,12 +52,12 @@ jobs:
 
         - name: Run Nextflow pipeline
           run: |
-            DATA_PATH="$(pwd)/sample_dataset/nwb" RESULTS_PATH="$(pwd)/sample_dataset/nwb/results" \
+            DATA_PATH="$(pwd)/sample_dataset/nwb_multishank" RESULTS_PATH="$(pwd)/sample_dataset/nwb_multishank_results" \
             nextflow  -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main_multi_backend.nf \
-            --params_file "$(pwd)/.github/workflows/params_test_custom.json"
+            --params_file "$(pwd)/.github/workflows/params_test_default.json"
 
         - name: Check pipeline results
           run: |
-            python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/sample_dataset/nwb/results" \
-            --data-path "$(pwd)/sample_dataset/nwb" --num-streams 3 --num-success 2 --num-nwb 1 \
+            python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/sample_dataset/nwb_multishank_results" \
+            --data-path "$(pwd)/sample_dataset/nwb_multishank" --num-streams 5 --num-success 4 --num-nwb 1 \
             --check-nwb-devices
