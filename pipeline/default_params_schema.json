@@ -716,7 +716,6 @@
                                 "metric_params": {
                                     "type": "object",
                                     "description": "Detailed configuration for each quality metric.",
-                                    "additionalProperties": false,
                                     "properties": {
                                         "presence_ratio": {
                                             "type": "object",
@@ -823,9 +822,6 @@
                                             "type": "object",
                                             "additionalProperties": false,
                                             "properties": {
-                                                "peak_sign": {
-                                                    "$ref": "#/$defs/peak_sign"
-                                                },
                                                 "num_histogram_bins": {
                                                     "type": "integer",
                                                     "default": 100,
@@ -843,15 +839,6 @@
                                                     "default": 5,
                                                     "minimum": 0,
                                                     "description": "Minimum ratio of amplitudes to bins."
-                                                }
-                                            }
-                                        },
-                                        "amplitude_median": {
-                                            "type": "object",
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "peak_sign": {
-                                                    "$ref": "#/$defs/peak_sign"
                                                 }
                                             }
                                         },
