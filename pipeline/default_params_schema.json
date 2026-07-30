@@ -820,7 +820,6 @@
                                         },
                                         "amplitude_cutoff": {
                                             "type": "object",
-                                            "additionalProperties": false,
                                             "properties": {
                                                 "num_histogram_bins": {
                                                     "type": "integer",
@@ -894,21 +893,6 @@
                                                     },
                                                     "default": [5, 95],
                                                     "description": "Percentiles for firing range computation."
-                                                }
-                                            }
-                                        },
-                                        "synchrony": {
-                                            "type": "object",
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "synchrony_sizes": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "integer",
-                                                        "minimum": 2
-                                                    },
-                                                    "default": [2, 4, 8],
-                                                    "description": "Sizes of synchrony groups to compute."
                                                 }
                                             }
                                         },

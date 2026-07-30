@@ -540,7 +540,6 @@ Parameter file section (``postprocessing``):
                        "min_num_bins": 10, "amplitude_extension": "spike_amplitudes"
                    },
                    "firing_range": { "bin_size_s": 5, "percentiles": [5, 95] },
-                   "synchrony": { "synchrony_sizes": [2, 4, 8] },
                    "nearest_neighbor": { "max_spikes": 10000, "n_neighbors": 4 },
                    "silhouette": { "method": ["simplified"] }
                }
