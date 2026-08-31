@@ -532,16 +532,14 @@ Parameter file section (``postprocessing``):
                        "contamination_values": null
                    },
                    "amplitude_cutoff": {
-                       "peak_sign": "neg", "num_histogram_bins": 100,
+                       "num_histogram_bins": 100,
                        "histogram_smoothing_value": 3, "amplitudes_bins_min_ratio": 5
                    },
-                   "amplitude_median": { "peak_sign": "neg" },
                    "amplitude_cv": {
                        "average_num_spikes_per_bin": 50, "percentiles": [5, 95],
                        "min_num_bins": 10, "amplitude_extension": "spike_amplitudes"
                    },
                    "firing_range": { "bin_size_s": 5, "percentiles": [5, 95] },
-                   "synchrony": { "synchrony_sizes": [2, 4, 8] },
                    "nearest_neighbor": { "max_spikes": 10000, "n_neighbors": 4 },
                    "silhouette": { "method": ["simplified"] }
                }

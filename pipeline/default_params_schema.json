@@ -716,7 +716,6 @@
                                 "metric_params": {
                                     "type": "object",
                                     "description": "Detailed configuration for each quality metric.",
-                                    "additionalProperties": false,
                                     "properties": {
                                         "presence_ratio": {
                                             "type": "object",
@@ -821,11 +820,7 @@
                                         },
                                         "amplitude_cutoff": {
                                             "type": "object",
-                                            "additionalProperties": false,
                                             "properties": {
-                                                "peak_sign": {
-                                                    "$ref": "#/$defs/peak_sign"
-                                                },
                                                 "num_histogram_bins": {
                                                     "type": "integer",
                                                     "default": 100,
@@ -843,15 +838,6 @@
                                                     "default": 5,
                                                     "minimum": 0,
                                                     "description": "Minimum ratio of amplitudes to bins."
-                                                }
-                                            }
-                                        },
-                                        "amplitude_median": {
-                                            "type": "object",
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "peak_sign": {
-                                                    "$ref": "#/$defs/peak_sign"
                                                 }
                                             }
                                         },
@@ -907,21 +893,6 @@
                                                     },
                                                     "default": [5, 95],
                                                     "description": "Percentiles for firing range computation."
-                                                }
-                                            }
-                                        },
-                                        "synchrony": {
-                                            "type": "object",
-                                            "additionalProperties": false,
-                                            "properties": {
-                                                "synchrony_sizes": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "integer",
-                                                        "minimum": 2
-                                                    },
-                                                    "default": [2, 4, 8],
-                                                    "description": "Sizes of synchrony groups to compute."
                                                 }
                                             }
                                         },
