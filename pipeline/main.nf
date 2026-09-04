@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-// hash:sha256:e69dd99d556fdb8176e78e070e3a5093d47b1f1bd80bb6fac3546865b41d4845
+// hash:sha256:ef692366eb9ffb24a6b1c970417ee9aa90546424635175f4d92e6a288ec6d0f2
 
 // capsule - Job Dispatch Ecephys
 process capsule_aind_ephys_job_dispatch_4 {
@@ -301,10 +301,10 @@ process capsule_aind_ephys_curation_2 {
 // capsule - Visualize Ecephys
 process capsule_aind_ephys_visualization_6 {
 	tag 'capsule-6869873'
-	container "$REGISTRY_HOST/published/e7af8ddc-08ca-418b-9e36-8249e363404e:v11"
+	container "$REGISTRY_HOST/published/e7af8ddc-08ca-418b-9e36-8249e363404e:v12"
 
 	cpus 8
-	memory '120 GB'
+	memory '60 GB'
 
 	input:
 	path 'capsule/data/'
@@ -324,7 +324,7 @@ process capsule_aind_ephys_visualization_6 {
 
 	export CO_CAPSULE_ID=e7af8ddc-08ca-418b-9e36-8249e363404e
 	export CO_CPUS=8
-	export CO_MEMORY=128849018880
+	export CO_MEMORY=64424509440
 
 	mkdir -p capsule
 	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
@@ -333,9 +333,9 @@ process capsule_aind_ephys_visualization_6 {
 
 	echo "[${task.tag}] cloning git repo..."
 	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v11.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6869873.git" capsule-repo
+		git -c credential.helper= clone --filter=tree:0 --branch v12.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6869873.git" capsule-repo
 	else
-		git -c credential.helper= clone --branch v11.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6869873.git" capsule-repo
+		git -c credential.helper= clone --branch v12.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6869873.git" capsule-repo
 	fi
 	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
 	rm -rf capsule-repo
