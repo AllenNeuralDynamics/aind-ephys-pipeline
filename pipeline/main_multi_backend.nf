@@ -58,7 +58,7 @@ def parse_capsule_versions() {
     if (!versionsFile.exists()) {
         versionsFile = file("${baseDir}/capsule_versions.env")
     }
-    capsule_versions = versionsFile.toString()
+    def capsule_versions = versionsFile.toString()
     println "Using custom capsule versions file at: ${capsule_versions}"
 
     // Read versions from main_sorters_slurm.nf - this needs to be accessible by included workflows too.
@@ -78,12 +78,12 @@ def parse_capsule_versions() {
     versions
 }
 
-params.versions = parse_capsule_versions()
+def versions = parse_capsule_versions()
 
 // container tag
-params.container_tag = "si-${params.versions['SPIKEINTERFACE_VERSION']}"
+params.container_tag = "si-${versions['SPIKEINTERFACE_VERSION']}"
 println "CONTAINER TAG: ${params.container_tag}"
-params.extra_installs = params.versions['EXTRA_INSTALLS'] ?: ""
+params.extra_installs = versions['EXTRA_INSTALLS'] ?: ""
 if (params.extra_installs) {
     println "Extra installs specified: ${params.extra_installs}"
 } else {
@@ -202,7 +202,7 @@ process job_dispatch {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['JOB_DISPATCH_REPO']}" "${params.versions['JOB_DISPATCH_COMMIT']}"
+    clone_repo "${versions['JOB_DISPATCH_REPO']}" "${versions['JOB_DISPATCH_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -253,7 +253,7 @@ process preprocessing {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['PREPROCESSING_REPO']}" "${params.versions['PREPROCESSING_COMMIT']}"
+    clone_repo "${versions['PREPROCESSING_REPO']}" "${versions['PREPROCESSING_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -294,7 +294,7 @@ process spikesort_kilosort25 {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['SPIKESORT_KS25_REPO']}" "${params.versions['SPIKESORT_KS25_COMMIT']}"
+    clone_repo "${versions['SPIKESORT_KS25_REPO']}" "${versions['SPIKESORT_KS25_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -335,7 +335,7 @@ process spikesort_kilosort4 {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['SPIKESORT_KS4_REPO']}" "${params.versions['SPIKESORT_KS4_COMMIT']}"
+    clone_repo "${versions['SPIKESORT_KS4_REPO']}" "${versions['SPIKESORT_KS4_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -376,7 +376,7 @@ process spikesort_spykingcircus2 {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['SPIKESORT_SC2_REPO']}" "${params.versions['SPIKESORT_SC2_COMMIT']}"
+    clone_repo "${versions['SPIKESORT_SC2_REPO']}" "${versions['SPIKESORT_SC2_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -417,7 +417,7 @@ process spikesort_lupin {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['SPIKESORT_LUPIN_REPO']}" "${params.versions['SPIKESORT_LUPIN_COMMIT']}"
+    clone_repo "${versions['SPIKESORT_LUPIN_REPO']}" "${versions['SPIKESORT_LUPIN_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -464,7 +464,7 @@ process postprocessing {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['POSTPROCESSING_REPO']}" "${params.versions['POSTPROCESSING_COMMIT']}"
+    clone_repo "${versions['POSTPROCESSING_REPO']}" "${versions['POSTPROCESSING_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -505,7 +505,7 @@ process curation {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['CURATION_REPO']}" "${params.versions['CURATION_COMMIT']}"
+    clone_repo "${versions['CURATION_REPO']}" "${versions['CURATION_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -554,7 +554,7 @@ process visualization {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['VISUALIZATION_REPO']}" "${params.versions['VISUALIZATION_COMMIT']}"
+    clone_repo "${versions['VISUALIZATION_REPO']}" "${versions['VISUALIZATION_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -606,7 +606,7 @@ process results_collector {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['RESULTS_COLLECTOR_REPO']}" "${params.versions['RESULTS_COLLECTOR_COMMIT']}"
+    clone_repo "${versions['RESULTS_COLLECTOR_REPO']}" "${versions['RESULTS_COLLECTOR_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -652,7 +652,7 @@ process quality_control {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['QUALITY_CONTROL_REPO']}" "${params.versions['QUALITY_CONTROL_COMMIT']}"
+    clone_repo "${versions['QUALITY_CONTROL_REPO']}" "${versions['QUALITY_CONTROL_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -693,7 +693,7 @@ process quality_control_collector {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['QUALITY_CONTROL_COLLECTOR_REPO']}" "${params.versions['QUALITY_CONTROL_COLLECTOR_COMMIT']}"
+    clone_repo "${versions['QUALITY_CONTROL_COLLECTOR_REPO']}" "${versions['QUALITY_CONTROL_COLLECTOR_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -739,7 +739,7 @@ process nwb_ecephys {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['NWB_ECEPHYS_REPO']}" "${params.versions['NWB_ECEPHYS_COMMIT']}"
+    clone_repo "${versions['NWB_ECEPHYS_REPO']}" "${versions['NWB_ECEPHYS_COMMIT']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -782,7 +782,7 @@ process nwb_units {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${params.versions['NWB_UNITS_REPO']}" "${params.versions['NWB_UNITS_COMMIT']}"
+    clone_repo "${versions['NWB_UNITS_REPO']}" "${versions['NWB_UNITS_COMMIT']}"
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
