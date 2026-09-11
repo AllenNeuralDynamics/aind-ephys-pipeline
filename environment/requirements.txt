@@ -1,4 +1,4 @@
-spikeinterface==0.104.8
+spikeinterface==0.104.9
 neo==0.14.5
 pyvips==2.2.1
 sortingview==0.14.2
