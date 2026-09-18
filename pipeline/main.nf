@@ -1,10 +1,10 @@
 #!/usr/bin/env nextflow
-// hash:sha256:6ae8532d1de570a661fea42c5962d7ef4a3faa040699f90e521ae7e1319381b2
+// hash:sha256:8e68210cb606549f62cdd344449aed4e8c422050712960970b9631ccbd8b26af
 
 // capsule - Job Dispatch Ecephys
 process capsule_aind_ephys_job_dispatch_4 {
 	tag 'capsule-6237826'
-	container "$REGISTRY_HOST/published/d75d79c4-8f21-4d17-83ec-13b2a43dcaa0:v11"
+	container "$REGISTRY_HOST/published/d75d79c4-8f21-4d17-83ec-13b2a43dcaa0:v12"
 
 	cpus 4
 	memory '30 GB'
@@ -37,9 +37,9 @@ process capsule_aind_ephys_job_dispatch_4 {
 
 	echo "[${task.tag}] cloning git repo..."
 	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v11.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6237826.git" capsule-repo
+		git -c credential.helper= clone --filter=tree:0 --branch v12.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6237826.git" capsule-repo
 	else
-		git -c credential.helper= clone --branch v11.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6237826.git" capsule-repo
+		git -c credential.helper= clone --branch v12.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6237826.git" capsule-repo
 	fi
 	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
 	rm -rf capsule-repo
@@ -56,7 +56,7 @@ process capsule_aind_ephys_job_dispatch_4 {
 // capsule - Preprocess Ecephys
 process capsule_aind_ephys_preprocessing_1 {
 	tag 'capsule-0331265'
-	container "$REGISTRY_HOST/published/49b76676-d1f6-4202-9473-c763b2b83563:v14"
+	container "$REGISTRY_HOST/published/49b76676-d1f6-4202-9473-c763b2b83563:v15"
 
 	cpus 16
 	memory '60 GB'
@@ -87,9 +87,9 @@ process capsule_aind_ephys_preprocessing_1 {
 
 	echo "[${task.tag}] cloning git repo..."
 	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v14.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0331265.git" capsule-repo
+		git -c credential.helper= clone --filter=tree:0 --branch v15.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0331265.git" capsule-repo
 	else
-		git -c credential.helper= clone --branch v14.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0331265.git" capsule-repo
+		git -c credential.helper= clone --branch v15.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0331265.git" capsule-repo
 	fi
 	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
 	rm -rf capsule-repo
@@ -408,9 +408,9 @@ process capsule_aind_ephys_results_collector_9 {
 // capsule - NWB Packaging Units
 process capsule_nwb_packaging_units_11 {
 	tag 'capsule-5841110'
-	container "$REGISTRY_HOST/published/b9333ffe-ae7c-4b67-882f-ea71054889dd:v16"
+	container "$REGISTRY_HOST/published/b9333ffe-ae7c-4b67-882f-ea71054889dd:v17"
 
-	cpus 4
+	cpus 8
 	memory '60 GB'
 
 	publishDir "$RESULTS_PATH/nwb", mode: 'copy', saveAs: { filename -> new File(filename).getName() }
@@ -430,7 +430,7 @@ process capsule_nwb_packaging_units_11 {
 	set -e
 
 	export CO_CAPSULE_ID=b9333ffe-ae7c-4b67-882f-ea71054889dd
-	export CO_CPUS=4
+	export CO_CPUS=8
 	export CO_MEMORY=64424509440
 
 	mkdir -p capsule
@@ -440,9 +440,9 @@ process capsule_nwb_packaging_units_11 {
 
 	echo "[${task.tag}] cloning git repo..."
 	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v16.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-5841110.git" capsule-repo
+		git -c credential.helper= clone --filter=tree:0 --branch v17.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-5841110.git" capsule-repo
 	else
-		git -c credential.helper= clone --branch v16.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-5841110.git" capsule-repo
+		git -c credential.helper= clone --branch v17.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-5841110.git" capsule-repo
 	fi
 	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
 	rm -rf capsule-repo
