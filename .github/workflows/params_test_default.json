@@ -97,9 +97,7 @@
                 "dtype": null
             },
             "templates": {},
-            "spike_amplitudes": {
-                "peak_sign": "neg"
-            },
+            "spike_amplitudes": {},
             "template_similarity": {
                 "method": "l1"
             },
