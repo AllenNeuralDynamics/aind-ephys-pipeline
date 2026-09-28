@@ -10,6 +10,13 @@
 **/.nextflow*
 /docs/build/
 tests/.nfs*
+tests/*.sh
+tests/*.json
+tests/sample_dataset/nwb/
+tests/sample_dataset/spikeinterface/
+tests/sample_dataset/nwb_*/
+tests/sample_dataset/spikeinterface_*/
+tests/sample_dataset/**results
 
 # External repositories
 /external/

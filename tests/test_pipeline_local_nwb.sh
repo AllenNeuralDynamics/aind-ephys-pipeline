@@ -16,7 +16,7 @@ fi
 SCRIPT_PATH="$(realpath "$0")"
 echo "Running script at: $SCRIPT_PATH"
 
-SAMPLE_DATASET_PATH="$(realpath $(dirname "$SCRIPT_PATH")/../sample_dataset)"
+SAMPLE_DATASET_PATH="$(realpath $(dirname "$SCRIPT_PATH")/sample_dataset)"
 echo "Sample dataset path: $SAMPLE_DATASET_PATH"
 
 PIPELINE_PATH="$(realpath $(dirname "$SCRIPT_PATH")/..)"

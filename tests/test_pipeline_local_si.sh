@@ -14,7 +14,7 @@ fi
 SCRIPT_PATH="$(realpath "$0")"
 echo "Running script at: $SCRIPT_PATH"
 
-SAMPLE_DATASET_PATH="$(realpath $(dirname "$SCRIPT_PATH")/../sample_dataset)"
+SAMPLE_DATASET_PATH="$(realpath $(dirname "$SCRIPT_PATH")/sample_dataset)"
 echo "Sample dataset path: $SAMPLE_DATASET_PATH"
 
 PIPELINE_PATH="$(realpath $(dirname "$SCRIPT_PATH")/..)"
@@ -24,7 +24,7 @@ python $SAMPLE_DATASET_PATH/create_test_spikeinterface.py
 
 # define INPUT and OUTPUT directories
 DATA_PATH="$SAMPLE_DATASET_PATH/spikeinterface"
-RESULTS_PATH="$SAMPLE_DATASET_PATH/si_results"
+RESULTS_PATH="$SAMPLE_DATASET_PATH/spikeinterface_results"
 
 # check if nextflow_local_custom.config exists
 if [ -f "$PIPELINE_PATH/pipeline/nextflow_local_custom.config" ]; then

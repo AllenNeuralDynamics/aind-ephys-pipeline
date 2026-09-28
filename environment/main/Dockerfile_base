@@ -1,0 +1,53 @@
+FROM continuumio/miniconda3:23.9.0-0
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# 1. Install system dependencies as root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+        fonts-freefont-ttf=20120503-10 \
+    && rm -rf /var/lib/apt/lists/*
+
+# correct mapping to make libvips work
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libffi.so.7
+
+# install libvips
+RUN apt-get update \
+    && apt-get install -y libvips libvips-dev libvips-tools libtiff5-dev
+
+# install default fonts
+RUN apt-get install -y fonts-freefont-ttf
+
+# 2. Install Python packages as root so they land in the system (conda) site-packages,
+#    accessible to any user regardless of UID at runtime.
+COPY package-versions.txt /tmp/package-versions.txt
+RUN pip install --upgrade pip && \
+    grep -E 'aind-data-schema|aind-metadata-upgrader|aind-qcportal-schema|pyvips|sortingview|figpack|figpack-spike-sorting|matplotlib_venn|wavpack-numcodecs|pynwb|hdmf-zarr|torch|hdbscan|s3fs|seaborn|scikit-learn|neo|scipy' \
+        /tmp/package-versions.txt | xargs pip install
+
+RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
+    pip install "spikeinterface[full,widgets]==${SPIKEINTERFACE_VERSION}"
+
+# 3. Redirect cache dirs to a writable location (numba, matplotlib, huggingface).
+#    Numba defaults to caching next to the .py source files, which live in the
+#    root-owned conda site-packages and are not writable when the container is
+#    run with --user $(id -u):$(id -g) (UID != 1000).
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+ENV MPLCONFIGDIR=/tmp/matplotlib_cache
+ENV HF_HOME=/tmp/huggingface_cache
+
+# 4. Create non-root user for runtime, with home dir writable by any UID.
+#    This lets tools that write to ~/.something (kachery, huggingface tokens,
+#    pip caches, etc.) work even when the container is launched with
+#    --user $(id -u):$(id -g) where the host UID isn't in /etc/passwd and
+#    HOME would otherwise fall back to '/'.
+RUN useradd -m -u 1000 pipelineuser && chmod 777 /home/pipelineuser
+ENV HOME=/home/pipelineuser
+
+# 5. Setup work area
+WORKDIR /home/pipelineuser
+
+# 6. Switch to non-root user
+USER pipelineuser

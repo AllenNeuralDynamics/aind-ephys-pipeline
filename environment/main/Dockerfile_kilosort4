@@ -1,0 +1,26 @@
+FROM spikeinterface/kilosort4-base:4.1.7_cuda-12.0.0
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# 1. Install Python packages as root so they land in the system site-packages,
+#    accessible to any user regardless of UID at runtime.
+COPY package-versions.txt /tmp/package-versions.txt
+RUN pip install --upgrade pip && \
+    grep -E 'aind-data-schema|scipy' /tmp/package-versions.txt | xargs pip install
+
+RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
+    pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
+
+# 2. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+
+# 3. Create non-root user for runtime, with home dir writable by any UID
+#    (see Dockerfile_base for context).
+RUN useradd -m -u 1000 pipelineuser && chmod 777 /home/pipelineuser
+ENV HOME=/home/pipelineuser
+
+# 4. Setup work area
+WORKDIR /home/pipelineuser
+
+# 5. Switch to non-root user
+USER pipelineuser

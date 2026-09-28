@@ -42,11 +42,16 @@ def buildStepArgs(Map json_section, String cli_param_name) {
 println "DATA_PATH: ${DATA_PATH}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
-// Load parameters from JSON file if provided
+// Load parameters from custom JSON file, or default_params
 def json_params = [:]
 if (params.params_file) {
     json_params = new groovy.json.JsonSlurper().parseText(new File(params.params_file).text)
     println "Loaded parameters from ${params.params_file}"
+}
+else {
+    params.params_file = "${baseDir}/default_params.json"
+    json_params = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text)
+    println "Loaded parameters from DEFAULT_PARAMS"
 }
 
 println "PARAMS: ${params}"
@@ -80,8 +85,10 @@ def parse_capsule_versions() {
 
 def versions = parse_capsule_versions()
 
+println "PIPELINE VERSION: ${versions['PIPELINE_VERSION']}"
+
 // container tag
-params.container_tag = "si-${versions['SPIKEINTERFACE_VERSION']}"
+params.container_tag = "${versions['CONTAINER_TAG']}"
 println "CONTAINER TAG: ${params.container_tag}"
 params.extra_installs = versions['EXTRA_INSTALLS'] ?: ""
 if (params.extra_installs) {
@@ -128,7 +135,7 @@ println "Using RUNMODE: ${runmode}"
 if (params.params_file) {
     println "Using parameters from JSON file: ${params.params_file}"
 } else {
-    println "No parameters file provided, using command line arguments."
+    println "No parameters file provided, using default parameters."
 }
 
 // Build params: merge CLI overrides, stringify once
@@ -168,6 +175,27 @@ if (runmode == 'fast'){
 }
 
 // Process definitions
+process validate_params {
+    tag 'validate_params'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    input:
+    path params_file
+    path schema_file
+    output:
+    path 'validation.ok', emit: ok
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    validate_params.py ${params_file} ${schema_file}
+    touch validation.ok
+    """
+}
+
+
 process job_dispatch {
     tag 'job-dispatch'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
@@ -175,6 +203,7 @@ process job_dispatch {
 
     input:
     path input_folder, stageAs: 'capsule/data/ecephys_session'
+    path validation_ok
     
     output:
     path 'capsule/results/*', emit: results
@@ -801,8 +830,13 @@ workflow {
     // Input channel from ecephys path
     ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
 
+    params_file = file(params.params_file)
+    schema_file = file("${projectDir}/default_params_schema.json")
+
+    validation_out = validate_params(params_file, schema_file)
+
     // Job dispatch
-    job_dispatch_out = job_dispatch(ecephys_ch.collect())
+    job_dispatch_out = job_dispatch(ecephys_ch.collect(), validation_out.ok)
 
     max_duration_file = job_dispatch_out.max_duration_file
     max_duration_minutes = max_duration_file.map { it.text.trim() }
