@@ -526,16 +526,6 @@
                             "default": {},
                             "description": "Parameters for template computation."
                         },
-                        "spike_amplitudes": {
-                            "type": "object",
-                            "description": "Parameters for spike amplitude computation.",
-                            "additionalProperties": false,
-                            "properties": {
-                                "peak_sign": {
-                                    "$ref": "#/$defs/peak_sign"
-                                }
-                            }
-                        },
                         "template_similarity": {
                             "type": "object",
                             "description": "Parameters for template similarity computation.",
