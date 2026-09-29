@@ -101,6 +101,7 @@
                 "dtype": null
             },
             "templates": {},
+            "spike_amplitudes": {},
             "template_similarity": {
                 "method": "l1"
             },

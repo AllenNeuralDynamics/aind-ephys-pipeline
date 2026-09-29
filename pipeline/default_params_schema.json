@@ -526,6 +526,11 @@
                             "default": {},
                             "description": "Parameters for template computation."
                         },
+                        "spike_amplitudes": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Parameters for spike amplitude computation."
+                        },
                         "template_similarity": {
                             "type": "object",
                             "description": "Parameters for template similarity computation.",
