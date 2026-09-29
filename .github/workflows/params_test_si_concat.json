@@ -295,8 +295,8 @@
         }
     },
     "nwb": {
-        "backend": "zarr",
         "ecephys": {
+            "backend": "hdf5",
             "stub": false,
             "stub_seconds": 10,
             "write_lfp": true,
