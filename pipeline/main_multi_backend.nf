@@ -85,7 +85,18 @@ def parse_capsule_versions() {
 
 def versions = parse_capsule_versions()
 
-println "PIPELINE VERSION: ${versions['PIPELINE_VERSION']}"
+// Read pipeline version and URL from pipeline_version.txt
+def pipelineVersion = ""
+def pipelineVersionFile = file("${baseDir}/pipeline_version.txt")
+if (pipelineVersionFile.exists()) {
+    pipelineVersion = pipelineVersionFile.text.trim()
+    println "Loaded PIPELINE VERSION from pipeline_version.txt: ${pipelineVersion}"
+} else {
+    println "Warning: pipeline_version.txt not found at ${baseDir}/pipeline_version.txt"
+}
+def pipelineUrl = "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline"
+
+println "PIPELINE VERSION: ${pipelineVersion}"
 
 // container tag
 params.container_tag = "${versions['CONTAINER_TAG']}"
@@ -632,6 +643,10 @@ process results_collector {
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
+
+    // set pipeline version and URL
+    export PIPELINE_VERSION=${pipelineVersion}
+    export PIPELINE_URL=${pipelineUrl}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
