@@ -97,6 +97,7 @@ if (pipelineVersionFile.exists()) {
 def pipelineUrl = "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline"
 
 println "PIPELINE VERSION: ${pipelineVersion}"
+println "PIPELINE URL: ${pipelineUrl}"
 
 // container tag
 params.container_tag = "${versions['CONTAINER_TAG']}"
@@ -644,7 +645,6 @@ process results_collector {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
 
-    // set pipeline version and URL
     export PIPELINE_VERSION=${pipelineVersion}
     export PIPELINE_URL=${pipelineUrl}
 
