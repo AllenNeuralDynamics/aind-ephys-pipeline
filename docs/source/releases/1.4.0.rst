@@ -22,8 +22,9 @@ Deprecations:
 Refactor:
 
 * Container tags now track the pipeline version
-* Added dev/main folders in environment and targets for build/push containers
-* Rename requirements.txt to package-versions.txt
+* Added dev/main targets targets for build/push containers
+* Add explicit ``CONTAINER_TAG`` entry in ``capsule_versions.env``
+* Rename ``requirements.txt`` to ``package-versions.txt``
 * Moved sample_data under tests
 
 

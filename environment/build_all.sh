@@ -20,9 +20,6 @@ fi
 if [[ "$TARGET_ARG" == "dev" ]]; then
     echo "Building in dev mode..."
     CONTAINER_TAG_ARG="$CONTAINER_TAG_ARG-dev"
-    cd dev
-else
-    cd main
 fi
 
 IFS=',' read -r -a IMAGES_LIST <<< "$IMAGES_ARG"
@@ -47,5 +44,3 @@ if [[ " ${IMAGES_LIST[*]} " == *" ks4 "* ]]; then
     echo "Building Kilosort 4 image..."
     docker build -t ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort4:$CONTAINER_TAG_ARG -f Dockerfile_kilosort4 .
 fi
-
-cd ..
