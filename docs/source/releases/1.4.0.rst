@@ -1,0 +1,40 @@
+.. _1.4.0:
+
+1.4.0 - Oct 1st 2026
+====================
+
+Major release with new features and updated dependencies.
+You should update your parameter files to be compatible with the new schema.
+
+Features:
+
+* Updated SpikeInterface to version 0.105.0
+* Added parameter validation as a pipeline process
+
+Tests:
+
+* Extended tests to check results against expected outputs for all streams
+
+Deprecations:
+
+* Default schema updated to 1.4.* and incompatible with previous versions
+
+Refactor:
+
+* Container tags now track the pipeline version
+* Added dev/main folders in environment and targets for build/push containers
+* Rename requirements.txt to package-versions.txt
+* Moved sample_data under tests
+
+
+Package versions
+----------------
+
+**Container tag: 1.4.0**
+
+* ``spikeinterface`` version: 0.105.0
+* ``aind-data-schema`` version: 2.8.1
+* ``neo`` version: 0.14.5
+* ``pynwb`` version: 4.0.0
+* ``kilosort4`` version: 4.1.7
+
