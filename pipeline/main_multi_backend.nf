@@ -8,7 +8,7 @@ params.params_file = null
 params.git_repo_prefix = System.getenv('GIT_REPO_PREFIX') ?: 'https://github.com/AllenNeuralDynamics/aind-'
 
 // Helper function for git cloning
-def gitCloneFunction = '''
+gitCloneFunction = '''
 clone_repo() {
     local repo_url="$1"
     local commit_hash="$2"
@@ -39,7 +39,7 @@ def buildStepArgs(Map json_section, String cli_param_name, Map logging_params = 
             }
         }
     }
-    return args_map ? "--params '${groovy.json.JsonOutput.toJson(args_map)}'" : ""
+    return args_map ? "--params '${groovy.json.JsonOutput.toJson(args_map)}'" : "--params '{}'"
 }
 
 println "DATA_PATH: ${DATA_PATH}"
@@ -67,7 +67,7 @@ def parse_capsule_versions() {
         versionsFile = file("${baseDir}/capsule_versions.env")
     }
     def capsule_versions = versionsFile.toString()
-    println "Using custom capsule versions file at: ${capsule_versions}"
+    println "Using capsule versions file at: ${capsule_versions}"
 
     // Read versions from main_sorters_slurm.nf - this needs to be accessible by included workflows too.
     def versions = [:]
@@ -86,10 +86,10 @@ def parse_capsule_versions() {
     versions
 }
 
-def versions = parse_capsule_versions()
+versions = parse_capsule_versions()
 
 // Read pipeline version and URL from pipeline_version.txt
-def pipelineVersion = ""
+pipelineVersion = ""
 def pipelineVersionFile = file("${baseDir}/pipeline_version.txt")
 if (pipelineVersionFile.exists()) {
     pipelineVersion = pipelineVersionFile.text.trim()
@@ -97,7 +97,7 @@ if (pipelineVersionFile.exists()) {
 } else {
     println "Warning: pipeline_version.txt not found at ${baseDir}/pipeline_version.txt"
 }
-def pipelineUrl = "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline"
+pipelineUrl = "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline"
 
 println "PIPELINE VERSION: ${pipelineVersion}"
 println "PIPELINE URL: ${pipelineUrl}"
@@ -112,8 +112,8 @@ if (params.extra_installs) {
     println "No extra installs specified."
 }
 def extra_installs_list = params.extra_installs ? params.extra_installs.split(',').collect { it.trim() }.findAll { it } : []
-def extra_installs_cmd = extra_installs_list ? "pip install " + extra_installs_list.collect { "'" + it + "'" }.join(' ') : ""
-def extra_installs_echo = extra_installs_list ? "echo 'installing extra packages: " + extra_installs_list.join(', ') + "'" : ""
+extra_installs_cmd = extra_installs_list ? "pip install " + extra_installs_list.collect { "'" + it + "'" }.join(' ') : ""
+extra_installs_echo = extra_installs_list ? "echo 'installing extra packages: " + extra_installs_list.join(', ') + "'" : ""
 
 // params keys on the outer level were loaded via CLI flags (the `json_params` are from the `params_file`)
 params_keys = params.keySet()
@@ -154,16 +154,16 @@ if (params.params_file) {
 }
 
 // Build params: merge CLI overrides, stringify once
-def job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_args", json_params.logging)
-def preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args", json_params.logging)
-def postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args", json_params.logging)
-def curation_args = buildStepArgs(json_params.curation, "curation_args", json_params.logging)
-def visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs", json_params.logging)
-def result_collector_args = buildStepArgs(json_params.result_collector, "result_collector_args", json_params.logging)
-def nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args", json_params.logging)
-def nwb_units_args = buildStepArgs(json_params.nwb?.units, "nwb_units_args", json_params.logging)
-def quality_control_args = buildStepArgs(json_params.quality_control, "quality_control_args", json_params.logging)
-def quality_control_collector_args = buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args", json_params.logging)
+job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_args", json_params.logging)
+preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args", json_params.logging)
+postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args", json_params.logging)
+curation_args = buildStepArgs(json_params.curation, "curation_args", json_params.logging)
+visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs", json_params.logging)
+result_collector_args = buildStepArgs(json_params.result_collector, "result_collector_args", json_params.logging)
+nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args", json_params.logging)
+nwb_units_args = buildStepArgs(json_params.nwb?.units, "nwb_units_args", json_params.logging)
+quality_control_args = buildStepArgs(json_params.quality_control, "quality_control_args", json_params.logging)
+quality_control_collector_args = buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args", json_params.logging)
 
 
 // Spikesorting: resolve sorter-specific sub-map
@@ -178,7 +178,7 @@ if (sorter == null) {
     println "No sorter specified, defaulting to kilosort4"
     sorter = "kilosort4"
 }
-def spikesorting_args = buildStepArgs(
+spikesorting_args = buildStepArgs(
     json_params.spikesorting ? json_params.spikesorting[sorter] : null,
     "spikesorting_args",
     json_params.logging
@@ -664,6 +664,7 @@ process results_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
+    echo ${result_collector_args}
     ./run --pipeline-data-path ${DATA_PATH} --pipeline-results-path ${RESULTS_PATH} ${result_collector_args}
 
     echo "[${task.tag}] completed!"
