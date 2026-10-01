@@ -11,6 +11,23 @@
             "pattern": "^1\\.4\\.[0-9]+$",
             "description": "Version of the pipeline the parameters are compatible with. This should be updated when default parameters are changed in a way that is not backward compatible."
         },
+        "logging": {
+            "type": "object",
+            "description": "Logging configuration for the pipeline.",
+            "additionalProperties": false,
+            "properties": {
+                "package": {
+                    "type": "string",
+                    "default": "logging",
+                    "description": "The package name for which to configure logging."
+                },
+                "logging_cfg": {
+                    "type": "object",
+                    "description": "Logging configuration for the pipeline.",
+                    "default": {}
+                }
+            }
+        },
         "job_dispatch": {
             "type": "object",
             "description": "Parameters for the job dispatch step, which generates JSON job files for parallel processing.",
@@ -1328,6 +1345,10 @@
                 }
             }
         },
+        "result_collector": {
+            "type": "object",
+            "description": "Parameters for result collector."
+        },
         "nwb": {
             "type": "object",
             "description": "Parameters for NWB (Neurodata Without Borders) export.",
@@ -1421,8 +1442,20 @@
                             }
                         }
                     }
+                },
+                "units": {
+                    "type": "object",
+                    "description": "Parameters for Units NWB export."
                 }
             }
+        },
+        "quality_control": {
+            "type": "object",
+            "description": "Parameters for quality control."
+        },
+        "quality_control_collector": {
+            "type": "object",
+            "description": "Parameters for quality control collector."
         },
         "spikesorting": {
             "type": "object",

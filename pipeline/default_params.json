@@ -1,5 +1,12 @@
 {
     "pipeline_version": "1.4.0",
+    "logging": {
+        "package": "logging",
+        "logging_cfg": {
+            "level": "INFO",
+            "format": "%(message)s"
+        }
+    },
     "job_dispatch": {
         "split_segments": true,
         "split_groups": true,

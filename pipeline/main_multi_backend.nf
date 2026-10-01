@@ -23,8 +23,11 @@ clone_repo() {
 }
 '''
 
-def buildStepArgs(Map json_section, String cli_param_name) {
+def buildStepArgs(Map json_section, String cli_param_name, Map logging_params = null) {
     def args_map = json_section ? new LinkedHashMap(json_section) : [:]
+    if (logging_params && !args_map.containsKey('logging')) {
+        args_map['logging'] = logging_params
+    }
     if (cli_param_name in params_keys && params[cli_param_name] instanceof String) {
         println "Merging ${cli_param_name} from JSON with CLI args: ${params[cli_param_name]}"
         def cli_tokens = params[cli_param_name].trim().split(/\s+/) as List
@@ -151,12 +154,17 @@ if (params.params_file) {
 }
 
 // Build params: merge CLI overrides, stringify once
-def job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_args")
-def preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args")
-def postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args")
-def curation_args = buildStepArgs(json_params.curation, "curation_args")
-def visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs")
-def nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args")
+def job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_args", json_params.logging)
+def preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args", json_params.logging)
+def postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args", json_params.logging)
+def curation_args = buildStepArgs(json_params.curation, "curation_args", json_params.logging)
+def visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs", json_params.logging)
+def result_collector_args = buildStepArgs(json_params.result_collector, "result_collector_args", json_params.logging)
+def nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args", json_params.logging)
+def nwb_units_args = buildStepArgs(json_params.nwb?.units, "nwb_units_args", json_params.logging)
+def quality_control_args = buildStepArgs(json_params.quality_control, "quality_control_args", json_params.logging)
+def quality_control_collector_args = buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args", json_params.logging)
+
 
 // Spikesorting: resolve sorter-specific sub-map
 def sorter = null
@@ -172,7 +180,8 @@ if (sorter == null) {
 }
 def spikesorting_args = buildStepArgs(
     json_params.spikesorting ? json_params.spikesorting[sorter] : null,
-    "spikesorting_args"
+    "spikesorting_args",
+    json_params.logging
 )
 println "Using SORTER: ${sorter} with args: ${spikesorting_args}"
 
@@ -655,7 +664,7 @@ process results_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run --pipeline-data-path ${DATA_PATH} --pipeline-results-path ${RESULTS_PATH}
+    ./run --pipeline-data-path ${DATA_PATH} --pipeline-results-path ${RESULTS_PATH} ${result_collector_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -701,7 +710,7 @@ process quality_control {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run --pipeline-data-path ${DATA_PATH}
+    ./run --pipeline-data-path ${DATA_PATH} ${quality_control_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -742,7 +751,7 @@ process quality_control_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run
+    ./run ${quality_control_collector_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -835,7 +844,7 @@ process nwb_units {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run
+    ./run ${nwb_units_args}
 
     echo "[${task.tag}] completed!"
     """
