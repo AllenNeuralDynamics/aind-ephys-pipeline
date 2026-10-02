@@ -1,6 +1,6 @@
 .. _1.4.0:
 
-1.4.0 - Oct 1st 2026
+1.4.0 - Oct 2nd 2026
 ====================
 
 Major release with new features and updated dependencies.
