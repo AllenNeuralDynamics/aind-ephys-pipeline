@@ -21,11 +21,16 @@ Deprecations:
 
 Refactor:
 
-* Container tags now track the pipeline version
-* Added dev/main targets targets for build/push containers
-* Add explicit ``CONTAINER_TAG`` entry in ``capsule_versions.env``
+* Added dev/main targets for building/pushing containers
 * Rename ``requirements.txt`` to ``package-versions.txt``
-* Moved sample_data under tests
+* Added parameter validation as a process
+* Add ``pipeline/pipeline_version.txt``
+* Add explicit ``CONTAINER_TAG`` in ``capsule_versions.env``
+* Moved ``sample_data`` under ``tests``
+* Move ``pull_pipeline_images.sh`` under ``scripts``
+* Add optional ``logging`` section to params to control logging across processes
+* Add option to override process repo/commit via CLI (important to customize runs, e.g. swapping to a remove artifact preprocessing without needing to write other files)
+* Add option to override ``CONTAINER_TAG`` via config or CLI
 
 
 Package versions
