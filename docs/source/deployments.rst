@@ -62,11 +62,16 @@ Configuration
        -work-dir $WORKDIR \
        -resume
 
+If your data is not in the the AIND dataformat, you should include `--job_dispatch_args="--input <FORMAT>"` 
+in the arguments of the command above, where <FORMAT> is one of `aind` (the default), `spikeglx`, `openephys`, 
+`nwb`, or `spikeinterface`. See `pipeline parameters <https://aind-ephys-pipeline.readthedocs.io/en/latest/parameters.html>`_ 
+for additional parameters.
+
 5. (Optional) Pre-build required Apptainer/Singularity/Apptainer images for faster startup:
 
 .. code-block:: bash
 
-   ./pull_pipeline_images.sh --sorter kilosort4
+   ./scripts/pull_pipeline_images.sh --sorter kilosort4
 
 This will pull and build the necessary Apptainer/Singularity images for the Kilosort4 sorter. Adjust the ``--sorter`` argument as
 needed (e.g., to ``kilosort25`` or ``spykingcircus2`` or ``all``).

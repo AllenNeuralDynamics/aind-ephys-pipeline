@@ -1,12 +1,5 @@
 {
     "pipeline_version": "1.4.0",
-    "logging": {
-        "package": "logging",
-        "logging_cfg": {
-            "level": "INFO",
-            "format": "%(message)s"
-        }
-    },
     "job_dispatch": {
         "split_segments": true,
         "split_groups": true,
@@ -22,7 +15,7 @@
             "progress_bar": false,
             "mp_context": "spawn"
         },
-        "filter_type": "highpass",
+        "filter_type": "hello",
         "remove_out_channels": true,
         "remove_bad_channels": true,
         "min_preprocessing_duration": 120,

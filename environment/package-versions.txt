@@ -1,4 +1,4 @@
-spikeinterface==0.104.8
+spikeinterface==0.105.0
 neo==0.14.5
 pyvips==2.2.1
 sortingview==0.14.2
@@ -9,7 +9,7 @@ torch==2.6.0
 pynwb==4.0.0
 pytz==2025.2
 hdbscan==0.8.41
-neuroconv==0.9.3
+neuroconv==0.10.2
 wavpack-numcodecs==0.2.2
 hdmf==6.1.0
 hdmf-zarr==0.13.0
@@ -21,3 +21,4 @@ aind-data-schema==2.8.1
 aind-qcportal-schema==0.6.4
 aind-metadata-upgrader==0.17.1
 aind-nwb-utils==0.2.6
+log-schema==0.2.10.dev1

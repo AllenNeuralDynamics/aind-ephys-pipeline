@@ -482,9 +482,6 @@ Parameter file section (``postprocessing``):
                "dtype": null
            },
            "templates": {},
-           "spike_amplitudes": {
-               "peak_sign": "neg"
-           },
            "template_similarity": {
                "method": "l1"
            },
