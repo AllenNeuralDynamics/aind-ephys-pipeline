@@ -893,7 +893,7 @@ workflow {
     // Input channel from ecephys path
     ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
 
-    params_file = file(params.params_file)
+    params_file = params.params_file ? file(params.params_file) : file("${projectDir}/default_params.json")
     schema_file = file("${projectDir}/default_params_schema.json")
 
     validation_out = validate_params(params_file, schema_file)
