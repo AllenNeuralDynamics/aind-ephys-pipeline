@@ -39,11 +39,11 @@ jobs:
         - name: Install packages
           run: |
             python -m pip install --upgrade pip
-            pip install $(grep -E '^(spikeinterface|neuroconv|pynwb|hdmf-zarr)==' environment/requirements.txt | sed 's/^spikeinterface==/spikeinterface[full]==/' | tr '\n' ' ')
+            pip install $(grep -E '^(spikeinterface|neuroconv|pynwb|hdmf-zarr)==' environment/package-versions.txt | sed 's/^spikeinterface==/spikeinterface[full]==/' | tr '\n' ' ')
 
         - name: Generate test NWB files
           run: |
-            python sample_dataset/create_test_nwb.py
+            python tests/sample_dataset/create_test_nwb.py
         
         - name: Set up Nextflow
           uses: nf-core/setup-nextflow@v1
@@ -52,12 +52,12 @@ jobs:
 
         - name: Run Nextflow pipeline
           run: |
-            DATA_PATH="$(pwd)/sample_dataset/nwb" RESULTS_PATH="$(pwd)/sample_dataset/nwb_results" \
+            DATA_PATH="$(pwd)/tests/sample_dataset/nwb" RESULTS_PATH="$(pwd)/tests/sample_dataset/nwb_results" \
             nextflow  -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main_multi_backend.nf \
             --params_file "$(pwd)/.github/workflows/params_test_default.json"
 
         - name: Check pipeline results
           run: |
-            python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/sample_dataset/nwb_results" \
-            --data-path "$(pwd)/sample_dataset/nwb" --num-streams 3 --num-success 2 --num-nwb 1 \
+            python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/tests/sample_dataset/nwb_results" \
+            --data-path "$(pwd)/tests/sample_dataset/nwb" --num-streams 3 --num-success 2 --num-nwb 1 \
             --check-nwb-devices

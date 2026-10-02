@@ -8,7 +8,7 @@ params.params_file = null
 params.git_repo_prefix = System.getenv('GIT_REPO_PREFIX') ?: 'https://github.com/AllenNeuralDynamics/aind-'
 
 // Helper function for git cloning
-def gitCloneFunction = '''
+gitCloneFunction = '''
 clone_repo() {
     local repo_url="$1"
     local commit_hash="$2"
@@ -23,8 +23,11 @@ clone_repo() {
 }
 '''
 
-def buildStepArgs(Map json_section, String cli_param_name) {
+def buildStepArgs(Map json_section, String cli_param_name, Map logging_params = null) {
     def args_map = json_section ? new LinkedHashMap(json_section) : [:]
+    if (logging_params && !args_map.containsKey('logging')) {
+        args_map['logging'] = logging_params
+    }
     if (cli_param_name in params_keys && params[cli_param_name] instanceof String) {
         println "Merging ${cli_param_name} from JSON with CLI args: ${params[cli_param_name]}"
         def cli_tokens = params[cli_param_name].trim().split(/\s+/) as List
@@ -36,17 +39,22 @@ def buildStepArgs(Map json_section, String cli_param_name) {
             }
         }
     }
-    return args_map ? "--params '${groovy.json.JsonOutput.toJson(args_map)}'" : ""
+    return args_map ? "--params '${groovy.json.JsonOutput.toJson(args_map)}'" : "--params '{}'"
 }
 
 println "DATA_PATH: ${DATA_PATH}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
-// Load parameters from JSON file if provided
+// Load parameters from custom JSON file, or default_params
 def json_params = [:]
 if (params.params_file) {
     json_params = new groovy.json.JsonSlurper().parseText(new File(params.params_file).text)
     println "Loaded parameters from ${params.params_file}"
+}
+else {
+    params.params_file = "${baseDir}/default_params.json"
+    json_params = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text)
+    println "Loaded parameters from DEFAULT_PARAMS"
 }
 
 println "PARAMS: ${params}"
@@ -59,7 +67,7 @@ def parse_capsule_versions() {
         versionsFile = file("${baseDir}/capsule_versions.env")
     }
     def capsule_versions = versionsFile.toString()
-    println "Using custom capsule versions file at: ${capsule_versions}"
+    println "Using capsule versions file at: ${capsule_versions}"
 
     // Read versions from main_sorters_slurm.nf - this needs to be accessible by included workflows too.
     def versions = [:]
@@ -78,11 +86,63 @@ def parse_capsule_versions() {
     versions
 }
 
-def versions = parse_capsule_versions()
+versions = parse_capsule_versions()
 
-// container tag
-params.container_tag = "si-${versions['SPIKEINTERFACE_VERSION']}"
-println "CONTAINER TAG: ${params.container_tag}"
+// Allow CLI/config to override individual step repos and commits.
+// Usage: --preprocessing_repo <url> --preprocessing_commit <hash>
+// (Nextflow converts --foo-bar to params.foo_bar automatically)
+def step_version_keys = [
+    'job_dispatch':              ['JOB_DISPATCH_REPO',              'JOB_DISPATCH_COMMIT'],
+    'preprocessing':             ['PREPROCESSING_REPO',             'PREPROCESSING_COMMIT'],
+    'spikesort_ks25':            ['SPIKESORT_KS25_REPO',            'SPIKESORT_KS25_COMMIT'],
+    'spikesort_ks4':             ['SPIKESORT_KS4_REPO',             'SPIKESORT_KS4_COMMIT'],
+    'spikesort_sc2':             ['SPIKESORT_SC2_REPO',             'SPIKESORT_SC2_COMMIT'],
+    'spikesort_lupin':           ['SPIKESORT_LUPIN_REPO',           'SPIKESORT_LUPIN_COMMIT'],
+    'postprocessing':            ['POSTPROCESSING_REPO',            'POSTPROCESSING_COMMIT'],
+    'curation':                  ['CURATION_REPO',                  'CURATION_COMMIT'],
+    'visualization':             ['VISUALIZATION_REPO',             'VISUALIZATION_COMMIT'],
+    'results_collector':         ['RESULTS_COLLECTOR_REPO',         'RESULTS_COLLECTOR_COMMIT'],
+    'quality_control':           ['QUALITY_CONTROL_REPO',           'QUALITY_CONTROL_COMMIT'],
+    'quality_control_collector': ['QUALITY_CONTROL_COLLECTOR_REPO', 'QUALITY_CONTROL_COLLECTOR_COMMIT'],
+    'nwb_ecephys':               ['NWB_ECEPHYS_REPO',               'NWB_ECEPHYS_COMMIT'],
+    'nwb_units':                 ['NWB_UNITS_REPO',                 'NWB_UNITS_COMMIT'],
+]
+step_version_keys.each { step, keys ->
+    if (params.containsKey("${step}_repo")) {
+        versions[keys[0]] = params["${step}_repo"]
+        println "OVERRIDE ${keys[0]} (from CLI): ${versions[keys[0]]}"
+    }
+    if (params.containsKey("${step}_commit")) {
+        versions[keys[1]] = params["${step}_commit"]
+        println "OVERRIDE ${keys[1]} (from CLI): ${versions[keys[1]]}"
+    }
+}
+
+// Read pipeline version and URL from pipeline_version.txt
+pipelineVersion = ""
+def pipelineVersionFile = file("${baseDir}/pipeline_version.txt")
+if (pipelineVersionFile.exists()) {
+    pipelineVersion = pipelineVersionFile.text.trim()
+    println "Loaded PIPELINE VERSION from pipeline_version.txt: ${pipelineVersion}"
+} else {
+    println "Warning: pipeline_version.txt not found at ${baseDir}/pipeline_version.txt"
+}
+pipelineUrl = "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline"
+
+println "PIPELINE VERSION: ${pipelineVersion}"
+println "PIPELINE URL: ${pipelineUrl}"
+
+// container tag: CLI/config > CONTAINER_TAG env var > capsule_versions.env
+def env_container_tag = System.getenv('CONTAINER_TAG')
+if (params.containsKey('container_tag')) {
+    println "CONTAINER TAG (from CLI/config): ${params.container_tag}"
+} else if (env_container_tag) {
+    params.container_tag = env_container_tag
+    println "CONTAINER TAG (from ENV): ${params.container_tag}"
+} else {
+    params.container_tag = "${versions['CONTAINER_TAG']}"
+    println "CONTAINER TAG (from versions file): ${params.container_tag}"
+}
 params.extra_installs = versions['EXTRA_INSTALLS'] ?: ""
 if (params.extra_installs) {
     println "Extra installs specified: ${params.extra_installs}"
@@ -90,8 +150,8 @@ if (params.extra_installs) {
     println "No extra installs specified."
 }
 def extra_installs_list = params.extra_installs ? params.extra_installs.split(',').collect { it.trim() }.findAll { it } : []
-def extra_installs_cmd = extra_installs_list ? "pip install " + extra_installs_list.collect { "'" + it + "'" }.join(' ') : ""
-def extra_installs_echo = extra_installs_list ? "echo 'installing extra packages: " + extra_installs_list.join(', ') + "'" : ""
+extra_installs_cmd = extra_installs_list ? "pip install " + extra_installs_list.collect { "'" + it + "'" }.join(' ') : ""
+extra_installs_echo = extra_installs_list ? "echo 'installing extra packages: " + extra_installs_list.join(', ') + "'" : ""
 
 // params keys on the outer level were loaded via CLI flags (the `json_params` are from the `params_file`)
 params_keys = params.keySet()
@@ -128,16 +188,21 @@ println "Using RUNMODE: ${runmode}"
 if (params.params_file) {
     println "Using parameters from JSON file: ${params.params_file}"
 } else {
-    println "No parameters file provided, using command line arguments."
+    println "No parameters file provided, using default parameters."
 }
 
 // Build params: merge CLI overrides, stringify once
-def job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_args")
-def preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args")
-def postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args")
-def curation_args = buildStepArgs(json_params.curation, "curation_args")
-def visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs")
-def nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args")
+job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_args", json_params.logging)
+preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args", json_params.logging)
+postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args", json_params.logging)
+curation_args = buildStepArgs(json_params.curation, "curation_args", json_params.logging)
+visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs", json_params.logging)
+result_collector_args = buildStepArgs(json_params.result_collector, "result_collector_args", json_params.logging)
+nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args", json_params.logging)
+nwb_units_args = buildStepArgs(json_params.nwb?.units, "nwb_units_args", json_params.logging)
+quality_control_args = buildStepArgs(json_params.quality_control, "quality_control_args", json_params.logging)
+quality_control_collector_args = buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args", json_params.logging)
+
 
 // Spikesorting: resolve sorter-specific sub-map
 def sorter = null
@@ -151,9 +216,10 @@ if (sorter == null) {
     println "No sorter specified, defaulting to kilosort4"
     sorter = "kilosort4"
 }
-def spikesorting_args = buildStepArgs(
+spikesorting_args = buildStepArgs(
     json_params.spikesorting ? json_params.spikesorting[sorter] : null,
-    "spikesorting_args"
+    "spikesorting_args",
+    json_params.logging
 )
 println "Using SORTER: ${sorter} with args: ${spikesorting_args}"
 
@@ -168,6 +234,27 @@ if (runmode == 'fast'){
 }
 
 // Process definitions
+process validate_params {
+    tag 'validate_params'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    input:
+    path params_file
+    path schema_file
+    output:
+    path 'validation.ok', emit: ok
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    validate_params.py ${params_file} ${schema_file}
+    touch validation.ok
+    """
+}
+
+
 process job_dispatch {
     tag 'job-dispatch'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
@@ -175,6 +262,7 @@ process job_dispatch {
 
     input:
     path input_folder, stageAs: 'capsule/data/ecephys_session'
+    path validation_ok
     
     output:
     path 'capsule/results/*', emit: results
@@ -604,6 +692,9 @@ process results_collector {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
 
+    export PIPELINE_VERSION=${pipelineVersion}
+    export PIPELINE_URL=${pipelineUrl}
+
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
     clone_repo "${versions['RESULTS_COLLECTOR_REPO']}" "${versions['RESULTS_COLLECTOR_COMMIT']}"
@@ -611,7 +702,8 @@ process results_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run --pipeline-data-path ${DATA_PATH} --pipeline-results-path ${RESULTS_PATH}
+    echo ${result_collector_args}
+    ./run --pipeline-data-path ${DATA_PATH} --pipeline-results-path ${RESULTS_PATH} ${result_collector_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -657,7 +749,7 @@ process quality_control {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run --pipeline-data-path ${DATA_PATH}
+    ./run --pipeline-data-path ${DATA_PATH} ${quality_control_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -698,7 +790,7 @@ process quality_control_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run
+    ./run ${quality_control_collector_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -791,7 +883,7 @@ process nwb_units {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run
+    ./run ${nwb_units_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -801,8 +893,13 @@ workflow {
     // Input channel from ecephys path
     ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
 
+    params_file = file(params.params_file)
+    schema_file = file("${projectDir}/default_params_schema.json")
+
+    validation_out = validate_params(params_file, schema_file)
+
     // Job dispatch
-    job_dispatch_out = job_dispatch(ecephys_ch.collect())
+    job_dispatch_out = job_dispatch(ecephys_ch.collect(), validation_out.ok)
 
     max_duration_file = job_dispatch_out.max_duration_file
     max_duration_minutes = max_duration_file.map { it.text.trim() }

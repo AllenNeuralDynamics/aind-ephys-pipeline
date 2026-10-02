@@ -28,9 +28,9 @@ jobs:
 
       - name: Validate default params
         run: |
-          python tests/validate_params.py \
-            --params pipeline/default_params.json \
-            --schema pipeline/default_params_schema.json
+          python pipeline/bin/validate_params.py \
+            pipeline/default_params.json \
+            pipeline/default_params_schema.json
 
   sorter-defaults:
     name: Check sorter params against SpikeInterface defaults
@@ -48,9 +48,9 @@ jobs:
       - name: Install packages
         run: |
           python -m pip install --upgrade pip
-          pip install $(grep -E '^spikeinterface==' environment/requirements.txt | sed 's/^spikeinterface==/spikeinterface[full]==/')
+          pip install $(grep -E '^spikeinterface==' environment/package-versions.txt | sed 's/^spikeinterface==/spikeinterface[full]==/')
           KS_VERSION=$(grep -oP 'kilosort4-base:\K[0-9.]+' environment/Dockerfile_kilosort4)
-          echo "Installing kilosort==${KS_VERSION} (from Dockerfile_kilosort4)"
+          echo "Installing kilosort==${KS_VERSION} (from environment/Dockerfile_kilosort4)"
           pip install "kilosort==${KS_VERSION}"
 
       - name: Check sorter params
