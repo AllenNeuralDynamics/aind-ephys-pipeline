@@ -46,15 +46,12 @@ println "DATA_PATH: ${DATA_PATH}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
 // Load parameters from custom JSON file, or default_params
-// Priority: --params_file CLI/config param > PARAMS_FILE env var > default_params.json
-def resolved_params_file = params.params_file ?: System.getenv('PARAMS_FILE') ?: null
 def json_params = [:]
-if (resolved_params_file) {
-    json_params = new groovy.json.JsonSlurper().parseText(new File(resolved_params_file).text)
-    println "Loaded parameters from ${resolved_params_file}"
+if (params.params_file) {
+    json_params = new groovy.json.JsonSlurper().parseText(new File(params.params_file).text)
+    println "Loaded parameters from ${params.params_file}"
 }
 else {
-    resolved_params_file = "${baseDir}/default_params.json"
     json_params = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text)
     println "Loaded parameters from DEFAULT_PARAMS"
 }
@@ -187,8 +184,8 @@ else {
 }
 println "Using RUNMODE: ${runmode}"
 
-if (resolved_params_file != "${baseDir}/default_params.json") {
-    println "Using parameters from JSON file: ${resolved_params_file}"
+if (params.params_file) {
+    println "Using parameters from JSON file: ${params.params_file}"
 } else {
     println "No parameters file provided, using default parameters."
 }
@@ -208,7 +205,7 @@ quality_control_collector_args = buildStepArgs(json_params.quality_control_colle
 
 // Spikesorting: resolve sorter-specific sub-map
 def sorter = null
-if (resolved_params_file && json_params.spikesorting) {
+if (params.params_file && json_params.spikesorting) {
     sorter = json_params.spikesorting.sorter ?: null
 }
 if (sorter == null && "sorter" in params_keys) {
@@ -895,7 +892,7 @@ workflow {
     // Input channel from ecephys path
     ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
 
-    params_file = file(resolved_params_file)
+    params_file = params.params_file ? file(params.params_file) : file("${projectDir}/default_params.json")
     schema_file = file("${projectDir}/default_params_schema.json")
 
     validation_out = validate_params(params_file, schema_file)
