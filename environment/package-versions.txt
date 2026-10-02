@@ -21,3 +21,4 @@ aind-data-schema==2.8.1
 aind-qcportal-schema==0.6.4
 aind-metadata-upgrader==0.17.1
 aind-nwb-utils==0.2.6
+log-schema==0.2.10.dev1

@@ -26,6 +26,83 @@ Then, you would create a ``capsule_versions_custom.env`` file with the following
     PREPROCESSING_COMMIT=commit_hash_of_your_custom_version
 
 
+Overriding versions from the command line
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Instead of (or in addition to) editing a ``capsule_versions_custom.env`` file, you can override the repo URL,
+commit hash, or container tag for any step directly on the Nextflow command line. This is convenient for
+one-off tests or CI runs where you do not want to persist a custom env file.
+
+**Container tag**
+
+The container tag follows this precedence: CLI/config > ``CONTAINER_TAG`` environment variable > ``capsule_versions.env``.
+
+.. code:: bash
+
+    nextflow run pipeline/main_multi_backend.nf --container_tag 1.5.0-rc1 ...
+
+**Per-step repo and commit**
+
+Each step exposes two parameters: ``<step>_repo`` and ``<step>_commit``.
+Either can be overridden independently — you can pin a different commit of the official repo without
+changing the URL, or point to a fork without changing the commit.
+
+.. code:: bash
+
+    # Override just the commit (keeps the default repo URL)
+    nextflow run pipeline/main_multi_backend.nf \
+        --preprocessing_commit abc123def ...
+
+    # Override both repo and commit (e.g. a personal fork)
+    nextflow run pipeline/main_multi_backend.nf \
+        --preprocessing_repo https://github.com/your_username/aind-ephys-preprocessing \
+        --preprocessing_commit abc123def ...
+
+The full list of step names is:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Step name (``<step>``)
+     - Default repository
+   * - ``job_dispatch``
+     - ``aind-ephys-job-dispatch``
+   * - ``preprocessing``
+     - ``aind-ephys-preprocessing``
+   * - ``spikesort_ks25``
+     - ``aind-ephys-spikesort-kilosort25``
+   * - ``spikesort_ks4``
+     - ``aind-ephys-spikesort-kilosort4``
+   * - ``spikesort_sc2``
+     - ``aind-ephys-spikesort-spykingcircus2``
+   * - ``spikesort_lupin``
+     - ``aind-ephys-spikesort-lupin``
+   * - ``postprocessing``
+     - ``aind-ephys-postprocessing``
+   * - ``curation``
+     - ``aind-ephys-curation``
+   * - ``visualization``
+     - ``aind-ephys-visualization``
+   * - ``results_collector``
+     - ``aind-ephys-results-collector``
+   * - ``quality_control``
+     - ``aind-ephys-processing-qc``
+   * - ``quality_control_collector``
+     - ``aind-ephys-qc-collector``
+   * - ``nwb_ecephys``
+     - ``aind-ecephys-nwb``
+   * - ``nwb_units``
+     - ``aind-units-nwb``
+
+.. note::
+
+    Nextflow automatically converts dashes to underscores in parameter names, so
+    ``--preprocessing-repo`` and ``--preprocessing_repo`` are equivalent.
+
+CLI overrides take precedence over both ``capsule_versions.env`` and ``capsule_versions_custom.env``.
+
+
 Custom Data Ingestion (``job_dispatch``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

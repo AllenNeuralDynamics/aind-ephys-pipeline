@@ -6,7 +6,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 #    accessible to any user regardless of UID at runtime.
 COPY package-versions.txt /tmp/package-versions.txt
 RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|scipy' /tmp/package-versions.txt | xargs pip install
+    grep -E 'log-schema|aind-data-schema|scipy' /tmp/package-versions.txt | xargs pip install
 
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"

@@ -88,6 +88,36 @@ def parse_capsule_versions() {
 
 versions = parse_capsule_versions()
 
+// Allow CLI/config to override individual step repos and commits.
+// Usage: --preprocessing_repo <url> --preprocessing_commit <hash>
+// (Nextflow converts --foo-bar to params.foo_bar automatically)
+def step_version_keys = [
+    'job_dispatch':              ['JOB_DISPATCH_REPO',              'JOB_DISPATCH_COMMIT'],
+    'preprocessing':             ['PREPROCESSING_REPO',             'PREPROCESSING_COMMIT'],
+    'spikesort_ks25':            ['SPIKESORT_KS25_REPO',            'SPIKESORT_KS25_COMMIT'],
+    'spikesort_ks4':             ['SPIKESORT_KS4_REPO',             'SPIKESORT_KS4_COMMIT'],
+    'spikesort_sc2':             ['SPIKESORT_SC2_REPO',             'SPIKESORT_SC2_COMMIT'],
+    'spikesort_lupin':           ['SPIKESORT_LUPIN_REPO',           'SPIKESORT_LUPIN_COMMIT'],
+    'postprocessing':            ['POSTPROCESSING_REPO',            'POSTPROCESSING_COMMIT'],
+    'curation':                  ['CURATION_REPO',                  'CURATION_COMMIT'],
+    'visualization':             ['VISUALIZATION_REPO',             'VISUALIZATION_COMMIT'],
+    'results_collector':         ['RESULTS_COLLECTOR_REPO',         'RESULTS_COLLECTOR_COMMIT'],
+    'quality_control':           ['QUALITY_CONTROL_REPO',           'QUALITY_CONTROL_COMMIT'],
+    'quality_control_collector': ['QUALITY_CONTROL_COLLECTOR_REPO', 'QUALITY_CONTROL_COLLECTOR_COMMIT'],
+    'nwb_ecephys':               ['NWB_ECEPHYS_REPO',               'NWB_ECEPHYS_COMMIT'],
+    'nwb_units':                 ['NWB_UNITS_REPO',                 'NWB_UNITS_COMMIT'],
+]
+step_version_keys.each { step, keys ->
+    if (params.containsKey("${step}_repo")) {
+        versions[keys[0]] = params["${step}_repo"]
+        println "OVERRIDE ${keys[0]} (from CLI): ${versions[keys[0]]}"
+    }
+    if (params.containsKey("${step}_commit")) {
+        versions[keys[1]] = params["${step}_commit"]
+        println "OVERRIDE ${keys[1]} (from CLI): ${versions[keys[1]]}"
+    }
+}
+
 // Read pipeline version and URL from pipeline_version.txt
 pipelineVersion = ""
 def pipelineVersionFile = file("${baseDir}/pipeline_version.txt")
@@ -102,9 +132,17 @@ pipelineUrl = "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline"
 println "PIPELINE VERSION: ${pipelineVersion}"
 println "PIPELINE URL: ${pipelineUrl}"
 
-// container tag
-params.container_tag = "${versions['CONTAINER_TAG']}"
-println "CONTAINER TAG: ${params.container_tag}"
+// container tag: CLI/config > CONTAINER_TAG env var > capsule_versions.env
+def env_container_tag = System.getenv('CONTAINER_TAG')
+if (params.containsKey('container_tag')) {
+    println "CONTAINER TAG (from CLI/config): ${params.container_tag}"
+} else if (env_container_tag) {
+    params.container_tag = env_container_tag
+    println "CONTAINER TAG (from ENV): ${params.container_tag}"
+} else {
+    params.container_tag = "${versions['CONTAINER_TAG']}"
+    println "CONTAINER TAG (from versions file): ${params.container_tag}"
+}
 params.extra_installs = versions['EXTRA_INSTALLS'] ?: ""
 if (params.extra_installs) {
     println "Extra installs specified: ${params.extra_installs}"

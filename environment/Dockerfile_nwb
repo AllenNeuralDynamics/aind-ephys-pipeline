@@ -12,7 +12,7 @@ RUN apt-get update \
 #    accessible to any user regardless of UID at runtime.
 COPY package-versions.txt /tmp/package-versions.txt
 RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|aind-nwb-utils|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs|neo' /tmp/package-versions.txt | xargs pip install
+    grep -E 'log-schema|aind-data-schema|aind-nwb-utils|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs|neo' /tmp/package-versions.txt | xargs pip install
 
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
