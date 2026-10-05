@@ -89,10 +89,13 @@ def make_recording(spec):
         recording_unsigned = si.NumpyRecording(
             traces_unsigned, sampling_frequency=recording.get_sampling_frequency()
         )
-        recording_unsigned.set_probe(recording.get_probe(), in_place=True)
+        recording_unsigned.set_probe(recording.get_probe())
         recording_unsigned.set_channel_gains(1)
         recording_unsigned.set_channel_offsets(0)
         recording = recording_unsigned
+
+    recording.set_property("rel_x", recording.get_channel_locations()[:, 0])
+    recording.set_property("rel_y", recording.get_channel_locations()[:, 1])
 
     # string channel groups are written to the electrodes table as group_name, which is what the
     # NWB reader gives back as channel groups

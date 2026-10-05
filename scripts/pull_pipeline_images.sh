@@ -2,12 +2,12 @@
 # Pre-pull AIND ephys pipeline containers into a Nextflow Singularity cache dir
 #
 # Usage:
-#   pull_aind_images.sh [--cache CACHE_DIR] [--tag si-X.Y.Z] [--sorter SORTER]
+#   pull_aind_images.sh [--cache CACHE_DIR] [--tag X.Y.Z] [--sorter SORTER]
 #
 # Defaults:
 #   --cache   : $NXF_SINGULARITY_CACHEDIR
-#   --tag     : resolved from pipeline/capsule_versions.env (SPIKEINTERFACE_VERSION)
-#               or defaults to si-0.103.0
+#   --tag     : resolved from pipeline/capsule_versions.env (PIPELINE_VERSION)
+#               or defaults to 1.4.0
 #   --sorter  : kilosort4   (options: kilosort25, kilosort4, spykingcircus2, all)
 #
 
@@ -43,15 +43,15 @@ fi
 # ------------------------------
 if [[ -z "$TAG" ]]; then
   if [[ -f "pipeline/capsule_versions.env" ]]; then
-    SPIKEINTERFACE_VERSION=$(grep -E '^SPIKEINTERFACE_VERSION=' pipeline/capsule_versions.env | cut -d= -f2 | tr -d '[:space:]')
-    if [[ -n "$SPIKEINTERFACE_VERSION" ]]; then
-      TAG="si-$SPIKEINTERFACE_VERSION"
+    PIPELINE_VERSION=$(grep -E '^PIPELINE_VERSION=' pipeline/capsule_versions.env | cut -d= -f2 | tr -d '[:space:]')
+    if [[ -n "$PIPELINE_VERSION" ]]; then
+      TAG="$PIPELINE_VERSION"
     fi
   fi
 fi
 
 if [[ -z "$TAG" ]]; then
-  TAG="si-0.103.0"
+  TAG="1.4.0"
 fi
 
 # ------------------------------

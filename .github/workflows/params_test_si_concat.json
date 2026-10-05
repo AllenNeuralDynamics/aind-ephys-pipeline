@@ -1,4 +1,5 @@
 {
+    "pipeline_version": "1.4.0",
     "job_dispatch": {
         "split_segments": false,
         "split_groups": true,
@@ -90,9 +91,11 @@
                 "seed": null
             },
             "noise_levels": {
-                "num_chunks_per_segment": 20,
-                "chunk_size": 10000,
-                "seed": null
+                "random_slices_kwargs": {
+                    "num_chunks_per_segment": 20,
+                    "chunk_size": 10000,
+                    "seed": null
+                }
             },
             "waveforms": {
                 "ms_before": 2.0,
@@ -100,9 +103,7 @@
                 "dtype": null
             },
             "templates": {},
-            "spike_amplitudes": {
-                "peak_sign": "neg"
-            },
+            "spike_amplitudes": {},
             "template_similarity": {
                 "method": "l1"
             },
@@ -295,8 +296,8 @@
         }
     },
     "nwb": {
-        "backend": "zarr",
         "ecephys": {
+            "backend": "hdf5",
             "stub": false,
             "stub_seconds": 10,
             "write_lfp": true,

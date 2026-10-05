@@ -71,7 +71,7 @@ for additional parameters.
 
 .. code-block:: bash
 
-   ./pull_pipeline_images.sh --sorter kilosort4
+   ./scripts/pull_pipeline_images.sh --sorter kilosort4
 
 This will pull and build the necessary Apptainer/Singularity images for the Kilosort4 sorter. Adjust the ``--sorter`` argument as
 needed (e.g., to ``kilosort25`` or ``spykingcircus2`` or ``all``).
