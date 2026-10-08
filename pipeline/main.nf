@@ -939,6 +939,8 @@ process nwb_units {
 // Provenance: record pipeline version, repos + commits and effective parameters
 process save_provenance {
     tag 'provenance'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
     publishDir "$RESULTS_PATH", mode: 'copy'
 
     input:
@@ -947,11 +949,15 @@ process save_provenance {
     output:
     path 'provenance.json'
 
-    exec:
-    def out = new File(task.workDir.toString(), 'provenance.json')
-    out.text = groovy.json.JsonOutput.prettyPrint(provenance_json)
-    // exec returns its last value to stdout: return nothing to keep the log clean
-    return null
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    cat > provenance.json <<'PROVENANCE_EOF'
+${groovy.json.JsonOutput.prettyPrint(provenance_json)}
+PROVENANCE_EOF
+    """
 }
 
 workflow {
