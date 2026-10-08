@@ -1,581 +1,1118 @@
 #!/usr/bin/env nextflow
-// hash:sha256:65fe8500e23f30aabe331c40b8f5ee7a82547a20428ec7fde0ece8727fc4f960
+nextflow.enable.dsl = 2
 
-// capsule - Job Dispatch Ecephys
-process capsule_aind_ephys_job_dispatch_4 {
-	tag 'capsule-6237826'
-	container "$REGISTRY_HOST/published/d75d79c4-8f21-4d17-83ec-13b2a43dcaa0:v13"
+params.ecephys_path = DATA_PATH
+params.params_file = null
 
-	cpus 4
-	memory '30 GB'
+// Git repository prefix - can be overridden via command line or environment variable
+params.git_repo_prefix = System.getenv('GIT_REPO_PREFIX') ?: 'https://github.com/AllenNeuralDynamics/aind-'
 
-	input:
-	path 'capsule/data/ecephys_session'
+// Helper function for git cloning
+gitCloneFunction = '''
+clone_repo() {
+    local repo_url="$1"
+    local commit_hash="$2"
 
-	output:
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_preprocessing_1_1
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_postprocessing_5_8
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_visualization_6_9
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_results_collector_9_16
-	path 'capsule/results/*', emit: to_capsule_nwb_packaging_units_11_23
-	path 'capsule/results/*', emit: to_capsule_nwb_packaging_ecephys_capsule_12_27
-	path 'capsule/results/*', emit: to_capsule_quality_control_ecephys_13_29
+    echo "cloning git repo: \${repo_url} (commit: \${commit_hash})..."
 
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
+    git clone "\${repo_url}" capsule-repo
+    git -C capsule-repo -c core.fileMode=false checkout "\${commit_hash}" --quiet
 
-	export CO_CAPSULE_ID=d75d79c4-8f21-4d17-83ec-13b2a43dcaa0
-	export CO_CPUS=4
-	export CO_MEMORY=32212254720
+    mv capsule-repo/code capsule/code
+    rm -rf capsule-repo
+}
+'''
 
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
-
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v13.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6237826.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v13.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6237826.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
-
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run ${params.capsule_aind_ephys_job_dispatch_4_args}
-
-	echo "[${task.tag}] completed!"
-	"""
+def buildStepArgs(Map json_section, String cli_param_name, Map logging_params = null) {
+    def args_map = json_section ? new LinkedHashMap(json_section) : [:]
+    if (logging_params && !args_map.containsKey('logging')) {
+        args_map['logging'] = logging_params
+    }
+    if (cli_param_name in params_keys && params[cli_param_name] instanceof String) {
+        println "Merging ${cli_param_name} from JSON with CLI args: ${params[cli_param_name]}"
+        def cli_tokens = params[cli_param_name].trim().split(/\s+/) as List
+        for (int i = 0; i < cli_tokens.size(); i++) {
+            if (cli_tokens[i].startsWith('--')) {
+                def key = cli_tokens[i].substring(2).replace('-', '_')
+                def value = (i + 1 < cli_tokens.size() && !cli_tokens[i + 1].startsWith('--')) ? cli_tokens[++i] : true
+                args_map[key] = value
+            }
+        }
+    }
+    return args_map ? "--params '${groovy.json.JsonOutput.toJson(args_map)}'" : "--params '{}'"
 }
 
-// capsule - Preprocess Ecephys
-process capsule_aind_ephys_preprocessing_1 {
-	tag 'capsule-0331265'
-	container "$REGISTRY_HOST/published/49b76676-d1f6-4202-9473-c763b2b83563:v16"
+println "DATA_PATH: ${DATA_PATH}"
+println "RESULTS_PATH: ${RESULTS_PATH}"
 
-	cpus 16
-	memory '60 GB'
-
-	input:
-	path 'capsule/data/'
-	path 'capsule/data/ecephys_session'
-
-	output:
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_postprocessing_5_7
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_visualization_6_10
-	path 'capsule/results/*', emit: to_capsule_spikesort_kilosort_4_ecephys_7_15
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_results_collector_9_17
-
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
-
-	export CO_CAPSULE_ID=49b76676-d1f6-4202-9473-c763b2b83563
-	export CO_CPUS=16
-	export CO_MEMORY=64424509440
-
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
-
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v16.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0331265.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v16.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0331265.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
-
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run ${params.capsule_aind_ephys_preprocessing_1_args}
-
-	echo "[${task.tag}] completed!"
-	"""
+// Load parameters from custom JSON file, or default_params
+def json_params = [:]
+if (params.params_file) {
+    json_params = new groovy.json.JsonSlurper().parseText(new File(params.params_file).text)
+    println "Loaded parameters from ${params.params_file}"
+}
+else {
+    json_params = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text)
+    println "Loaded parameters from DEFAULT_PARAMS"
 }
 
-// capsule - NWB Packaging Ecephys
-process capsule_nwb_packaging_ecephys_capsule_12 {
-	tag 'capsule-3438484'
-	container "$REGISTRY_HOST/published/b16dfc92-eab4-425d-978f-0ba61632c413:v16"
+println "PARAMS: ${params}"
 
-	cpus 8
-	memory '60 GB'
+// get commit hashes for capsules
+def parse_capsule_versions() {
+    // Check for custom versions file first, fall back to default
+    def versionsFile = file("${baseDir}/capsule_versions_custom.env")
+    if (!versionsFile.exists()) {
+        versionsFile = file("${baseDir}/capsule_versions.env")
+    }
+    def capsule_versions = versionsFile.toString()
+    println "Using capsule versions file at: ${capsule_versions}"
 
-	input:
-	path 'capsule/data/'
-	path 'capsule/data/ecephys_session'
-
-	output:
-	path 'capsule/results/*', emit: to_capsule_nwb_packaging_units_11_24
-
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
-
-	export CO_CAPSULE_ID=b16dfc92-eab4-425d-978f-0ba61632c413
-	export CO_CPUS=8
-	export CO_MEMORY=64424509440
-
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
-
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v16.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-3438484.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v16.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-3438484.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
-
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run ${params.capsule_nwb_packaging_ecephys_capsule_12_args}
-
-	echo "[${task.tag}] completed!"
-	"""
+    // Read versions from main_sorters_slurm.nf - this needs to be accessible by included workflows too.
+    def versions = [:]
+    if (file(capsule_versions).exists()) {
+        file(capsule_versions).eachLine { line ->
+            if (line.contains('=')) {
+                def idx = line.indexOf('=')
+                def key = line.substring(0, idx).trim()
+                def value = line.substring(idx + 1).trim().replaceAll(/^["']|["']$/, '')
+                versions[key] = value
+            }
+        }
+    } else {
+        println "Warning: Capsule versions file not found at ${capsule_versions}. Using empty versions map."
+    }
+    versions
 }
 
-// capsule - Spikesort Kilosort4 Ecephys
-process capsule_spikesort_kilosort_4_ecephys_7 {
-	tag 'capsule-4110207'
-	container "$REGISTRY_HOST/published/3372ccfd-0388-4e1e-8c4f-46b470fcf871:v14"
+versions = parse_capsule_versions()
 
-	cpus 16
-	memory '60 GB'
-	accelerator 1
-	label 'gpu'
-
-	input:
-	path 'capsule/data/'
-
-	output:
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_postprocessing_5_6
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_visualization_6_12
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_results_collector_9_18
-
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
-
-	export CO_CAPSULE_ID=3372ccfd-0388-4e1e-8c4f-46b470fcf871
-	export CO_CPUS=16
-	export CO_MEMORY=64424509440
-
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
-
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v14.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-4110207.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v14.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-4110207.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
-
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run ${params.capsule_spikesort_kilosort_4_ecephys_7_args}
-
-	echo "[${task.tag}] completed!"
-	"""
+// Allow CLI/config to override individual step repos and commits.
+// Usage: --preprocessing_repo <url> --preprocessing_commit <hash>
+// (Nextflow converts --foo-bar to params.foo_bar automatically)
+def step_version_keys = [
+    'job_dispatch':              ['JOB_DISPATCH_REPO',              'JOB_DISPATCH_COMMIT'],
+    'preprocessing':             ['PREPROCESSING_REPO',             'PREPROCESSING_COMMIT'],
+    'spikesort_ks25':            ['SPIKESORT_KS25_REPO',            'SPIKESORT_KS25_COMMIT'],
+    'spikesort_ks4':             ['SPIKESORT_KS4_REPO',             'SPIKESORT_KS4_COMMIT'],
+    'spikesort_sc2':             ['SPIKESORT_SC2_REPO',             'SPIKESORT_SC2_COMMIT'],
+    'spikesort_lupin':           ['SPIKESORT_LUPIN_REPO',           'SPIKESORT_LUPIN_COMMIT'],
+    'postprocessing':            ['POSTPROCESSING_REPO',            'POSTPROCESSING_COMMIT'],
+    'curation':                  ['CURATION_REPO',                  'CURATION_COMMIT'],
+    'visualization':             ['VISUALIZATION_REPO',             'VISUALIZATION_COMMIT'],
+    'results_collector':         ['RESULTS_COLLECTOR_REPO',         'RESULTS_COLLECTOR_COMMIT'],
+    'quality_control':           ['QUALITY_CONTROL_REPO',           'QUALITY_CONTROL_COMMIT'],
+    'quality_control_collector': ['QUALITY_CONTROL_COLLECTOR_REPO', 'QUALITY_CONTROL_COLLECTOR_COMMIT'],
+    'nwb_ecephys':               ['NWB_ECEPHYS_REPO',               'NWB_ECEPHYS_COMMIT'],
+    'nwb_units':                 ['NWB_UNITS_REPO',                 'NWB_UNITS_COMMIT'],
+]
+step_version_keys.each { step, keys ->
+    if (params.containsKey("${step}_repo")) {
+        versions[keys[0]] = params["${step}_repo"]
+        println "OVERRIDE ${keys[0]} (from CLI): ${versions[keys[0]]}"
+    }
+    if (params.containsKey("${step}_commit")) {
+        versions[keys[1]] = params["${step}_commit"]
+        println "OVERRIDE ${keys[1]} (from CLI): ${versions[keys[1]]}"
+    }
 }
 
-// capsule - Postprocess Ecephys
-process capsule_aind_ephys_postprocessing_5 {
-	tag 'capsule-5473620'
-	container "$REGISTRY_HOST/capsule/6020e947-d8ea-4b64-998b-37404eb5ea51:2001f681bfc3a2c5fe4419c1f6b56ded"
+// Read pipeline version and URL from pipeline_version.txt
+pipelineVersion = ""
+def pipelineVersionFile = file("${baseDir}/pipeline_version.txt")
+if (pipelineVersionFile.exists()) {
+    pipelineVersion = pipelineVersionFile.text.trim()
+    println "Loaded PIPELINE VERSION from pipeline_version.txt: ${pipelineVersion}"
+} else {
+    println "Warning: pipeline_version.txt not found at ${baseDir}/pipeline_version.txt"
+}
+pipelineUrl = "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline"
 
-	cpus 16
-	memory '60 GB'
+println "PIPELINE VERSION: ${pipelineVersion}"
+println "PIPELINE URL: ${pipelineUrl}"
 
-	input:
-	path 'capsule/data/ecephys_session'
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/'
+// Pass pipeline data/results paths to the collector (disabled on Code Ocean, where
+// RESULTS_PATH is unique per run and would invalidate the task cache)
+params.pass_pipeline_paths = true
+pipeline_paths_args = params.pass_pipeline_paths ? "--pipeline-data-path ${DATA_PATH} --pipeline-results-path ${RESULTS_PATH}" : ""
+println "PASS PIPELINE PATHS: ${params.pass_pipeline_paths}"
 
-	output:
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_curation_2_3
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_visualization_6_13
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_results_collector_9_19
+// container tag: CLI/config > CONTAINER_TAG env var > capsule_versions.env
+def env_container_tag = System.getenv('CONTAINER_TAG')
+if (params.containsKey('container_tag')) {
+    println "CONTAINER TAG (from CLI/config): ${params.container_tag}"
+} else if (env_container_tag) {
+    params.container_tag = env_container_tag
+    println "CONTAINER TAG (from ENV): ${params.container_tag}"
+} else {
+    params.container_tag = "${versions['CONTAINER_TAG']}"
+    println "CONTAINER TAG (from versions file): ${params.container_tag}"
+}
+params.extra_installs = versions['EXTRA_INSTALLS'] ?: ""
+if (params.extra_installs) {
+    println "Extra installs specified: ${params.extra_installs}"
+} else {
+    println "No extra installs specified."
+}
+def extra_installs_list = params.extra_installs ? params.extra_installs.split(',').collect { it.trim() }.findAll { it } : []
+extra_installs_cmd = extra_installs_list ? "pip install " + extra_installs_list.collect { "'" + it + "'" }.join(' ') : ""
+extra_installs_echo = extra_installs_list ? "echo 'installing extra packages: " + extra_installs_list.join(', ') + "'" : ""
 
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
+// params keys on the outer level were loaded via CLI flags (the `json_params` are from the `params_file`)
+params_keys = params.keySet()
 
-	export CO_CAPSULE_ID=6020e947-d8ea-4b64-998b-37404eb5ea51
-	export CO_CPUS=16
-	export CO_MEMORY=64424509440
-
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
-
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-5473620.git" capsule-repo
-	else
-		git -c credential.helper= clone "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-5473620.git" capsule-repo
-	fi
-	git -C capsule-repo checkout 8e81e7f114f4dde67fe6c23c96c8201021713f45 --quiet
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
-
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run
-
-	echo "[${task.tag}] completed!"
-	"""
+// if not specified, assume local executor
+if (!params_keys.contains('executor')) {
+    params.executor = "local"
+}
+// set global n_jobs for local executor
+if (params.executor == "local") 
+{
+    if ("n_jobs" in params_keys) {
+        n_jobs = params.n_jobs
+    }
+    else {
+        n_jobs = -1
+    }
+    println "N JOBS: ${n_jobs}"
+    job_args=" --n-jobs ${n_jobs}"
+}
+else {
+    job_args=""
 }
 
-// capsule - Curate Ecephys
-process capsule_aind_ephys_curation_2 {
-	tag 'capsule-3565647'
-	container "$REGISTRY_HOST/published/da74428e-26f9-4f08-a9bf-898dfca44722:v10"
+// set runmode
+if ("runmode" in params_keys) {
+    runmode = params.runmode
+}
+else {
+    runmode = "full"
+}
+println "Using RUNMODE: ${runmode}"
 
-	cpus 8
-	memory '60 GB'
-
-	input:
-	path 'capsule/data/'
-
-	output:
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_visualization_6_11
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_results_collector_9_20
-
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
-
-	export CO_CAPSULE_ID=da74428e-26f9-4f08-a9bf-898dfca44722
-	export CO_CPUS=8
-	export CO_MEMORY=64424509440
-
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
-
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v10.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-3565647.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v10.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-3565647.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
-
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run ${params.capsule_aind_ephys_curation_2_args}
-
-	echo "[${task.tag}] completed!"
-	"""
+if (params.params_file) {
+    println "Using parameters from JSON file: ${params.params_file}"
+} else {
+    println "No parameters file provided, using default parameters."
 }
 
-// capsule - Visualize Ecephys
-process capsule_aind_ephys_visualization_6 {
-	tag 'capsule-6869873'
-	container "$REGISTRY_HOST/published/e7af8ddc-08ca-418b-9e36-8249e363404e:v14"
+// Build params: merge CLI overrides, stringify once
+job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_args", json_params.logging)
+preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args", json_params.logging)
+postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args", json_params.logging)
+curation_args = buildStepArgs(json_params.curation, "curation_args", json_params.logging)
+visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs", json_params.logging)
+result_collector_args = buildStepArgs(json_params.result_collector, "result_collector_args", json_params.logging)
+nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args", json_params.logging)
+nwb_units_args = buildStepArgs(json_params.nwb?.units, "nwb_units_args", json_params.logging)
+quality_control_args = buildStepArgs(json_params.quality_control, "quality_control_args", json_params.logging)
+quality_control_collector_args = buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args", json_params.logging)
 
-	cpus 8
-	memory '60 GB'
 
-	input:
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/ecephys_session'
+// Spikesorting: resolve sorter-specific sub-map
+def sorter = null
+if (params.params_file && json_params.spikesorting) {
+    sorter = json_params.spikesorting.sorter ?: null
+}
+if (sorter == null && "sorter" in params_keys) {
+    sorter = params.sorter ?: "kilosort4"
+}
+if (sorter == null) {
+    println "No sorter specified, defaulting to kilosort4"
+    sorter = "kilosort4"
+}
+spikesorting_args = buildStepArgs(
+    json_params.spikesorting ? json_params.spikesorting[sorter] : null,
+    "spikesorting_args",
+    json_params.logging
+)
+println "Using SORTER: ${sorter} with args: ${spikesorting_args}"
 
-	output:
-	path 'capsule/results/*', emit: to_capsule_aind_ephys_results_collector_9_21
-
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
-
-	export CO_CAPSULE_ID=e7af8ddc-08ca-418b-9e36-8249e363404e
-	export CO_CPUS=8
-	export CO_MEMORY=64424509440
-
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
-
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v14.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6869873.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v14.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-6869873.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
-
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run
-
-	echo "[${task.tag}] completed!"
-	"""
+if (runmode == 'fast'){
+    preprocessing_args = "--motion skip"
+    postprocessing_args = "--skip-extensions spike_locations,principal_components"
+    nwb_ecephys_args = "--skip-lfp"
+    println "Running in fast mode. Setting parameters:"
+    println "preprocessing_args: ${preprocessing_args}"
+    println "postprocessing_args: ${postprocessing_args}"
+    println "nwb_ecephys_args: ${nwb_ecephys_args}"
 }
 
-// capsule - Collect Results Ecephys
-process capsule_aind_ephys_results_collector_9 {
-	tag 'capsule-0338545'
-	container "$REGISTRY_HOST/published/5b7e48bb-8123-4b4c-b7bf-ebaa2de8555e:v16"
+// Process definitions
+process validate_params {
+    tag 'validate_params'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
 
-	cpus 4
-	memory '30 GB'
+    input:
+    path params_file
+    path schema_file
+    output:
+    path 'validation.ok', emit: ok
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
 
-	publishDir "$RESULTS_PATH", mode: 'copy', saveAs: { filename -> new File(filename).getName() }
-
-	input:
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/ecephys_session'
-
-	output:
-	path 'capsule/results/*'
-	path 'capsule/results/*', emit: to_capsule_nwb_packaging_units_11_25
-	path 'capsule/results/*', emit: to_capsule_quality_control_ecephys_13_30
-
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
-
-	export CO_CAPSULE_ID=5b7e48bb-8123-4b4c-b7bf-ebaa2de8555e
-	export CO_CPUS=4
-	export CO_MEMORY=32212254720
-
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
-
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v16.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0338545.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v16.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0338545.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
-
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run ${params.capsule_aind_ephys_results_collector_9_args}
-
-	echo "[${task.tag}] completed!"
-	"""
+    validate_params.py ${params_file} ${schema_file}
+    touch validation.ok
+    """
 }
 
-// capsule - NWB Packaging Units
-process capsule_nwb_packaging_units_11 {
-	tag 'capsule-5841110'
-	container "$REGISTRY_HOST/published/b9333ffe-ae7c-4b67-882f-ea71054889dd:v18"
 
-	cpus 8
-	memory '60 GB'
+process job_dispatch {
+    tag 'job-dispatch'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
 
-	publishDir "$RESULTS_PATH/nwb", mode: 'copy', saveAs: { filename -> new File(filename).getName() }
+    input:
+    path input_folder, stageAs: 'capsule/data/ecephys_session'
+    val validation_ok
 
-	input:
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/ecephys_session'
+    output:
+    path 'capsule/results/*', emit: results
+    path 'max_duration.txt', emit: max_duration_file  // file containing the value
 
-	output:
-	path 'capsule/results/*'
 
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
 
-	export CO_CAPSULE_ID=b9333ffe-ae7c-4b67-882f-ea71054889dd
-	export CO_CPUS=8
-	export CO_MEMORY=64424509440
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
 
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
+    export CODE_REPO="${versions['JOB_DISPATCH_REPO']}"
+    export CODE_VERSION="${versions['JOB_DISPATCH_COMMIT']}"
 
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v18.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-5841110.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v18.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-5841110.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
 
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run ${params.capsule_nwb_packaging_units_11_args}
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+    fi
 
-	echo "[${task.tag}] completed!"
-	"""
+    TASK_DIR=\$(pwd)
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['JOB_DISPATCH_REPO']}" "${versions['JOB_DISPATCH_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${job_dispatch_args}
+
+    MAX_DURATION_MIN=\$(python get_max_recording_duration_min.py)
+
+    cd \$TASK_DIR
+    echo "\$MAX_DURATION_MIN" > max_duration.txt
+
+    echo "[${task.tag}] completed!"
+
+    """
 }
 
-// capsule - Quality Control Ecephys
-process capsule_quality_control_ecephys_13 {
-	tag 'capsule-0625308'
-	container "$REGISTRY_HOST/published/56a55c84-3013-4683-be83-14d607d2cfe6:v20"
+process preprocessing {
+    tag 'preprocessing'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
 
-	cpus 8
-	memory '60 GB'
+    input:
+    val max_duration_minutes
+    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path job_dispatch_results, stageAs: 'capsule/data/*'
 
-	input:
-	path 'capsule/data/'
-	path 'capsule/data/'
-	path 'capsule/data/ecephys_session'
+    output:
+    path 'capsule/results/*', emit: results
 
-	output:
-	path 'capsule/results/*', emit: to_capsule_quality_control_collector_ecephys_14_32
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
 
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
 
-	export CO_CAPSULE_ID=56a55c84-3013-4683-be83-14d607d2cfe6
-	export CO_CPUS=8
-	export CO_MEMORY=64424509440
+    export CODE_REPO="${versions['PREPROCESSING_REPO']}"
+    export CODE_VERSION="${versions['PREPROCESSING_COMMIT']}"
 
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
 
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v20.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0625308.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v20.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-0625308.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
 
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run ${params.capsule_quality_control_ecephys_13_args}
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['PREPROCESSING_REPO']}" "${versions['PREPROCESSING_COMMIT']}"
 
-	echo "[${task.tag}] completed!"
-	"""
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${preprocessing_args} ${job_args}
+
+    echo "[${task.tag}] completed!"
+    """
 }
 
-// capsule - Quality Control Collector Ecephys
-process capsule_quality_control_collector_ecephys_14 {
-	tag 'capsule-8310834'
-	container "$REGISTRY_HOST/published/324399bc-41bd-43f2-8da4-954bd243973f:v4"
+process spikesort_kilosort25 {
+    tag 'spikesort-kilosort25'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort25:${params.container_tag}"
+    container container_name
 
-	cpus 1
-	memory '7.5 GB'
+    input:
+    val max_duration_minutes
+    path preprocessing_results, stageAs: 'capsule/data/*'
 
-	publishDir "$RESULTS_PATH", mode: 'copy', saveAs: { filename -> new File(filename).getName() }
+    output:
+    path 'capsule/results/*', emit: results
 
-	input:
-	path 'capsule/data/'
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
 
-	output:
-	path 'capsule/results/*'
+    export CODE_REPO="${versions['SPIKESORT_KS25_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_KS25_COMMIT']}"
 
-	script:
-	"""
-	#!/usr/bin/env bash
-	set -e
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
 
-	export CO_CAPSULE_ID=324399bc-41bd-43f2-8da4-954bd243973f
-	export CO_CPUS=1
-	export CO_MEMORY=8053063680
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
 
-	mkdir -p capsule
-	mkdir -p capsule/data && ln -s \$PWD/capsule/data /data
-	mkdir -p capsule/results && ln -s \$PWD/capsule/results /results
-	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['SPIKESORT_KS25_REPO']}" "${versions['SPIKESORT_KS25_COMMIT']}"
 
-	echo "[${task.tag}] cloning git repo..."
-	if [[ "\$(printf '%s\n' "2.20.0" "\$(git version | awk '{print \$3}')" | sort -V | head -n1)" = "2.20.0" ]]; then
-		git -c credential.helper= clone --filter=tree:0 --branch v4.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-8310834.git" capsule-repo
-	else
-		git -c credential.helper= clone --branch v4.0 "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-8310834.git" capsule-repo
-	fi
-	mv capsule-repo/code capsule/code && ln -s \$PWD/capsule/code /code
-	rm -rf capsule-repo
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${spikesorting_args} ${job_args}
 
-	echo "[${task.tag}] running capsule..."
-	cd capsule/code
-	chmod +x run
-	./run
-
-	echo "[${task.tag}] completed!"
-	"""
+    echo "[${task.tag}] completed!"
+    """
 }
 
-params.ecephys_url = 's3://aind-ephys-data/ecephys_713593_2024-02-08_14-10-37'
+process spikesort_kilosort4 {
+    tag 'spikesort-kilosort4'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort4:${params.container_tag}"
+    container container_name
+
+    input:
+    val max_duration_minutes
+    path preprocessing_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    export CODE_REPO="${versions['SPIKESORT_KS4_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_KS4_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['SPIKESORT_KS4_REPO']}" "${versions['SPIKESORT_KS4_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${spikesorting_args} ${job_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process spikesort_spykingcircus2 {
+    tag 'spikesort-spykingcircus2'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    input:
+    val max_duration_minutes
+    path preprocessing_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    export CODE_REPO="${versions['SPIKESORT_SC2_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_SC2_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['SPIKESORT_SC2_REPO']}" "${versions['SPIKESORT_SC2_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${spikesorting_args} ${job_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process spikesort_lupin {
+    tag 'spikesort-lupin'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    input:
+    val max_duration_minutes
+    path preprocessing_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    export CODE_REPO="${versions['SPIKESORT_LUPIN_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_LUPIN_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['SPIKESORT_LUPIN_REPO']}" "${versions['SPIKESORT_LUPIN_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${spikesorting_args} ${job_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process postprocessing {
+    tag 'postprocessing'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    input:
+    val max_duration_minutes
+    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path job_dispatch_results, stageAs: 'capsule/data/*'
+    path preprocessing_results, stageAs: 'capsule/data/*'
+    path spikesort_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
+    export CODE_REPO="${versions['POSTPROCESSING_REPO']}"
+    export CODE_VERSION="${versions['POSTPROCESSING_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['POSTPROCESSING_REPO']}" "${versions['POSTPROCESSING_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${postprocessing_args} ${job_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process curation {
+    tag 'curation'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    input:
+    val max_duration_minutes
+    path postprocessing_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    export CODE_REPO="${versions['CURATION_REPO']}"
+    export CODE_VERSION="${versions['CURATION_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['CURATION_REPO']}" "${versions['CURATION_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${curation_args} ${job_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process visualization {
+    tag 'visualization'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    input:
+    val max_duration_minutes
+    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path job_dispatch_results, stageAs: 'capsule/data/*'
+    path preprocessing_results, stageAs: 'capsule/data/*'
+    path spikesort_results, stageAs: 'capsule/data/*'
+    path postprocessing_results, stageAs: 'capsule/data/*'
+    path curation_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
+    export CODE_REPO="${versions['VISUALIZATION_REPO']}"
+    export CODE_VERSION="${versions['VISUALIZATION_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['VISUALIZATION_REPO']}" "${versions['VISUALIZATION_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${visualization_kwargs}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process results_collector {
+    tag 'result-collector'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    publishDir "$RESULTS_PATH", saveAs: { filename -> new File(filename).getName() }, mode: 'copy'
+
+    input:
+    val max_duration_minutes
+    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path job_dispatch_results, stageAs: 'capsule/data/*'
+    path preprocessing_results, stageAs: 'capsule/data/*'
+    path spikesort_results, stageAs: 'capsule/data/*'
+    path postprocessing_results, stageAs: 'capsule/data/*'
+    path curation_results, stageAs: 'capsule/data/*'
+    path visualization_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+    path 'capsule/results/*', emit: nwb_data
+    path 'capsule/results/*', emit: qc_data
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
+    export CODE_REPO="${versions['RESULTS_COLLECTOR_REPO']}"
+    export CODE_VERSION="${versions['RESULTS_COLLECTOR_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+    fi
+
+    export PIPELINE_VERSION=${pipelineVersion}
+    export PIPELINE_URL=${pipelineUrl}
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['RESULTS_COLLECTOR_REPO']}" "${versions['RESULTS_COLLECTOR_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    echo ${result_collector_args}
+    ./run ${pipeline_paths_args} ${result_collector_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process quality_control {
+    tag 'quality-control'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    input:
+    val max_duration_minutes
+    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path job_dispatch_results, stageAs: 'capsule/data/*'
+    path results_data, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
+    export CODE_REPO="${versions['QUALITY_CONTROL_REPO']}"
+    export CODE_VERSION="${versions['QUALITY_CONTROL_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['QUALITY_CONTROL_REPO']}" "${versions['QUALITY_CONTROL_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run --pipeline-data-path ${DATA_PATH} ${quality_control_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process quality_control_collector {
+    tag 'qc-collector'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+
+    publishDir "$RESULTS_PATH", saveAs: { filename -> new File(filename).getName() }, mode: 'copy'
+
+    input:
+    val max_duration_minutes
+    path quality_control_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*'
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    export CODE_REPO="${versions['QUALITY_CONTROL_COLLECTOR_REPO']}"
+    export CODE_VERSION="${versions['QUALITY_CONTROL_COLLECTOR_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['QUALITY_CONTROL_COLLECTOR_REPO']}" "${versions['QUALITY_CONTROL_COLLECTOR_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${quality_control_collector_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+
+process nwb_ecephys {
+    tag 'nwb-ecephys'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${params.container_tag}"
+    container container_name
+
+    input:
+    val max_duration_minutes
+    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path job_dispatch_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
+    export CODE_REPO="${versions['NWB_ECEPHYS_REPO']}"
+    export CODE_VERSION="${versions['NWB_ECEPHYS_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+        # Make sure N_JOBS matches allocated CPUs on SLURM
+        export N_JOBS_EXT=${task.cpus}
+    fi
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['NWB_ECEPHYS_REPO']}" "${versions['NWB_ECEPHYS_COMMIT']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${nwb_ecephys_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process nwb_units {
+    tag 'nwb-units'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${params.container_tag}"
+    container container_name
+
+    publishDir "$RESULTS_PATH/nwb", saveAs: { filename -> new File(filename).getName() }, mode: 'copy'
+
+    input:
+    val max_duration_minutes
+    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path job_dispatch_results, stageAs: 'capsule/data/*'
+    path results_data, stageAs: 'capsule/data/*'
+    path nwb_ecephys_results, stageAs: 'capsule/data/*'
+
+    output:
+    path 'capsule/results/*'
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    ${extra_installs_echo}
+    ${extra_installs_cmd}
+
+    export CODE_REPO="${versions['NWB_UNITS_REPO']}"
+    export CODE_VERSION="${versions['NWB_UNITS_COMMIT']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['NWB_UNITS_REPO']}" "${versions['NWB_UNITS_COMMIT']}"
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+    fi
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run ${nwb_units_args}
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+// Provenance: record pipeline version, repos + commits and effective parameters
+process save_provenance {
+    tag 'provenance'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
+    container container_name
+    publishDir "$RESULTS_PATH", mode: 'copy'
+
+    input:
+    val provenance_json
+
+    output:
+    path 'provenance.json'
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    cat > provenance.json <<'PROVENANCE_EOF'
+${groovy.json.JsonOutput.prettyPrint(provenance_json)}
+PROVENANCE_EOF
+    """
+}
 
 workflow {
-	// input data
-	ecephys_to_preprocess_ecephys_2 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
-	ecephys_to_job_dispatch_ecephys_4 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
-	ecephys_to_postprocess_ecephys_5 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
-	ecephys_to_visualize_ecephys_14 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
-	ecephys_to_collect_results_ecephys_22 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
-	ecephys_to_nwb_packaging_units_26 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
-	ecephys_to_nwb_packaging_ecephys_28 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
-	ecephys_to_quality_control_ecephys_31 = Channel.fromPath(params.ecephys_url + "/", type: 'any')
+    // Input channel from ecephys path
+    ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
 
-	// run processes
-	capsule_aind_ephys_job_dispatch_4(ecephys_to_job_dispatch_ecephys_4.collect())
-	capsule_aind_ephys_preprocessing_1(capsule_aind_ephys_job_dispatch_4.out.to_capsule_aind_ephys_preprocessing_1_1.flatten(), ecephys_to_preprocess_ecephys_2.collect())
-	capsule_nwb_packaging_ecephys_capsule_12(capsule_aind_ephys_job_dispatch_4.out.to_capsule_nwb_packaging_ecephys_capsule_12_27.collect(), ecephys_to_nwb_packaging_ecephys_28.collect())
-	capsule_spikesort_kilosort_4_ecephys_7(capsule_aind_ephys_preprocessing_1.out.to_capsule_spikesort_kilosort_4_ecephys_7_15)
-	capsule_aind_ephys_postprocessing_5(ecephys_to_postprocess_ecephys_5.collect(), capsule_spikesort_kilosort_4_ecephys_7.out.to_capsule_aind_ephys_postprocessing_5_6.collect(), capsule_aind_ephys_preprocessing_1.out.to_capsule_aind_ephys_postprocessing_5_7.collect(), capsule_aind_ephys_job_dispatch_4.out.to_capsule_aind_ephys_postprocessing_5_8.flatten())
-	capsule_aind_ephys_curation_2(capsule_aind_ephys_postprocessing_5.out.to_capsule_aind_ephys_curation_2_3)
-	capsule_aind_ephys_visualization_6(capsule_aind_ephys_job_dispatch_4.out.to_capsule_aind_ephys_visualization_6_9.collect(), capsule_aind_ephys_preprocessing_1.out.to_capsule_aind_ephys_visualization_6_10, capsule_aind_ephys_curation_2.out.to_capsule_aind_ephys_visualization_6_11.collect(), capsule_spikesort_kilosort_4_ecephys_7.out.to_capsule_aind_ephys_visualization_6_12.collect(), capsule_aind_ephys_postprocessing_5.out.to_capsule_aind_ephys_visualization_6_13.collect(), ecephys_to_visualize_ecephys_14.collect())
-	capsule_aind_ephys_results_collector_9(capsule_aind_ephys_job_dispatch_4.out.to_capsule_aind_ephys_results_collector_9_16.collect(), capsule_aind_ephys_preprocessing_1.out.to_capsule_aind_ephys_results_collector_9_17.collect(), capsule_spikesort_kilosort_4_ecephys_7.out.to_capsule_aind_ephys_results_collector_9_18.collect(), capsule_aind_ephys_postprocessing_5.out.to_capsule_aind_ephys_results_collector_9_19.collect(), capsule_aind_ephys_curation_2.out.to_capsule_aind_ephys_results_collector_9_20.collect(), capsule_aind_ephys_visualization_6.out.to_capsule_aind_ephys_results_collector_9_21.collect(), ecephys_to_collect_results_ecephys_22.collect())
-	capsule_nwb_packaging_units_11(capsule_aind_ephys_job_dispatch_4.out.to_capsule_nwb_packaging_units_11_23.collect(), capsule_nwb_packaging_ecephys_capsule_12.out.to_capsule_nwb_packaging_units_11_24.collect(), capsule_aind_ephys_results_collector_9.out.to_capsule_nwb_packaging_units_11_25.collect(), ecephys_to_nwb_packaging_units_26.collect())
-	capsule_quality_control_ecephys_13(capsule_aind_ephys_job_dispatch_4.out.to_capsule_quality_control_ecephys_13_29.flatten(), capsule_aind_ephys_results_collector_9.out.to_capsule_quality_control_ecephys_13_30.collect(), ecephys_to_quality_control_ecephys_31.collect())
-	capsule_quality_control_collector_ecephys_14(capsule_quality_control_ecephys_13.out.to_capsule_quality_control_collector_ecephys_14_32.collect())
+    params_file = params.params_file ? file(params.params_file) : file("${projectDir}/default_params.json")
+    schema_file = file("${projectDir}/default_params_schema.json")
+
+    validation_out = validate_params(params_file, schema_file)
+
+    // Provenance: only the selected sorter's repo/commit is recorded
+    def sorter_keys = ['kilosort25': 'spikesort_ks25', 'kilosort4': 'spikesort_ks4',
+                       'spykingcircus2': 'spikesort_sc2', 'lupin': 'spikesort_lupin']
+    def used_steps = step_version_keys.findAll { step, keys ->
+        !step.startsWith('spikesort_') || step == sorter_keys[sorter]
+    }
+    def provenance = [
+        pipeline_url: pipelineUrl,
+        pipeline_version: pipelineVersion,
+        container_tag: params.container_tag,
+        extra_installs: params.extra_installs,
+        sorter: sorter,
+        runmode: runmode,
+        command_line: workflow.commandLine,
+        steps: used_steps.collectEntries { step, keys ->
+            [(step): [repo: versions[keys[0]], commit: versions[keys[1]]]]
+        },
+        parameters: [
+            params_file: params.params_file ?: 'default_params.json',
+            params_file_content: json_params,
+            effective_args: [
+                job_dispatch: job_dispatch_args,
+                preprocessing: preprocessing_args,
+                spikesorting: spikesorting_args,
+                postprocessing: postprocessing_args,
+                curation: curation_args,
+                visualization: visualization_kwargs,
+                result_collector: result_collector_args,
+                nwb_ecephys: nwb_ecephys_args,
+                nwb_units: nwb_units_args,
+                quality_control: quality_control_args,
+                quality_control_collector: quality_control_collector_args
+            ]
+        ]
+    ]
+    save_provenance(groovy.json.JsonOutput.toJson(provenance))
+
+    // Job dispatch
+    // validation_out.ok is mapped to a constant so that it only acts as a gate and
+    // does not invalidate the job_dispatch cache hash when validate_params re-runs
+    job_dispatch_out = job_dispatch(ecephys_ch.collect(), validation_out.ok.map { true })
+
+    max_duration_file = job_dispatch_out.max_duration_file
+    max_duration_minutes = max_duration_file.map { it.text.trim() }
+    max_duration_minutes.view { "Max recording duration: ${it}min" }
+
+    // Preprocessing
+    preprocessing_out = preprocessing(
+        max_duration_minutes,
+        ecephys_ch.collect(),
+        job_dispatch_out.results.flatten()
+    )
+
+    // Spike sorting based on selected sorter
+    // def spikesort
+    if (sorter == 'kilosort25') {
+        spikesort_out = spikesort_kilosort25(
+            max_duration_minutes,
+            preprocessing_out.results
+        )
+    } else if (sorter == 'kilosort4') {
+        spikesort_out = spikesort_kilosort4(
+            max_duration_minutes,
+            preprocessing_out.results
+        )
+    } else if (sorter == 'spykingcircus2') {
+        spikesort_out = spikesort_spykingcircus2(
+            max_duration_minutes,
+            preprocessing_out.results
+        )
+    } else if (sorter == 'lupin') {
+        spikesort_out = spikesort_lupin(
+            max_duration_minutes,
+            preprocessing_out.results
+        )
+    } else {
+        error "Unsupported sorter: ${sorter}"
+    }
+
+    // Postprocessing
+    postprocessing_out = postprocessing(
+        max_duration_minutes,
+        ecephys_ch.collect(),
+        job_dispatch_out.results.flatten(),
+        preprocessing_out.results.collect(),
+        spikesort_out.results.collect()
+    )
+
+    // Curation
+    curation_out = curation(
+        max_duration_minutes,
+        postprocessing_out.results
+    )
+
+    // Visualization
+    visualization_out = visualization(
+        max_duration_minutes,
+        ecephys_ch.collect(),
+        job_dispatch_out.results.collect(),
+        preprocessing_out.results,
+        spikesort_out.results.collect(),
+        postprocessing_out.results.collect(),
+        curation_out.results.collect()
+    )
+
+    // Results collection
+    results_collector_out = results_collector(
+        max_duration_minutes,
+        ecephys_ch.collect(),
+        job_dispatch_out.results.collect(),
+        preprocessing_out.results.collect(),
+        spikesort_out.results.collect(),
+        postprocessing_out.results.collect(),
+        curation_out.results.collect(),
+        visualization_out.results.collect()
+    )
+
+    // Quality control
+    quality_control_out = quality_control(
+        max_duration_minutes,
+        ecephys_ch.collect(),
+        job_dispatch_out.results.flatten(),
+        results_collector_out.qc_data.collect()
+    )
+
+    // Quality control collection
+    quality_control_collector(
+        max_duration_minutes,
+        quality_control_out.results.collect()
+    )
+
+    // NWB ecephys
+    nwb_ecephys_out = nwb_ecephys(
+        max_duration_minutes,
+        ecephys_ch.collect(),
+        job_dispatch_out.results.collect(),
+    )
+
+    // NWB units
+    nwb_units(
+        max_duration_minutes,
+        ecephys_ch.collect(),
+        job_dispatch_out.results.collect(),
+        results_collector_out.nwb_data.collect(),
+        nwb_ecephys_out.results.collect()
+    )
 }

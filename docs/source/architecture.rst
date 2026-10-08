@@ -18,16 +18,9 @@ Detailed Architecture Diagram
 
    flowchart TD
        %% Deployment paths
-       subgraph code_ocean["🌊 Code Ocean Deployment"]
+       subgraph slurm_local["🖥️ Code Ocean / SLURM / Local Deployment"]
            direction TB
-           co_main["<b><a href='https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/blob/main/pipeline/main.nf'>pipeline/main.nf</a></b><br/>(Nextflow DSL1)<br/>Code Ocean Platform"]
-           co_branches["Branch Selection:<br/>• co_kilosort4 (main)<br/>• co_kilosort25<br/>• co_spykingcircus2<br/>• co_*_opto variants"]
-           co_main -.->|"Branch determines<br/>sorter"| co_branches
-       end
-
-       subgraph slurm_local["🖥️ SLURM/Local Deployment"]
-           direction TB
-           mb_main["<b><a href='https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/blob/main/pipeline/main_multi_backend.nf'>pipeline/main_multi_backend.nf</a></b><br/>(Nextflow DSL2)<br/>Multi-backend Support"]
+           mb_main["<b><a href='https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/blob/main/pipeline/main.nf'>pipeline/main.nf</a></b><br/>(Nextflow DSL2)<br/>Multi-backend Support"]
 
            subgraph executor["⚙️ Executor"]
                direction LR
@@ -37,8 +30,6 @@ Detailed Architecture Diagram
 
            mb_main -->|"Submitted to"| executor
        end
-
-       co_main -->|"Copied from ➜"| mb_main
 
        %% Input/Output data
        input[("📥 Input Data<br/>(Ephys Session)")]
@@ -71,6 +62,7 @@ Detailed Architecture Diagram
            step3a["<b>3a. Kilosort2.5</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort25'>aind-ephys-spikesort-kilosort25</a>"]
            step3b["<b>3b. Kilosort4</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort4'>aind-ephys-spikesort-kilosort4</a><br/>(GPU required)"]
            step3c["<b>3c. SpykingCircus2</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-spykingcircus2'>aind-ephys-spikesort-spykingcircus2</a>"]
+           step3d["<b>3d. Lupin</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-lupin'>aind-ephys-spikesort-lupin</a>"]
 
            step4["<b>4. Postprocessing</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-postprocessing'>aind-ephys-postprocessing</a><br/>Amplitudes • Locations • PCA<br/>Correlograms • Quality metrics"]
 
@@ -89,11 +81,11 @@ Detailed Architecture Diagram
            step11["<b>11. NWB Units</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-units-nwb'>aind-units-nwb</a><br/>Export spike sorting results"]
 
            step1 --> step2
-           step2 --> step3a & step3b & step3c
-           step3a & step3b & step3c --> step4
+           step2 --> step3a & step3b & step3c & step3d
+           step3a & step3b & step3c & step3d --> step4
            step4 --> step5
            step5 --> step6
-           step2 & step3a & step3b & step3c & step4 & step5 & step6 --> step7
+           step2 & step3a & step3b & step3c & step3d & step4 & step5 & step6 --> step7
            step1 & step7 --> step8
            step8 --> step9
            step1 --> step10
@@ -118,12 +110,12 @@ Detailed Architecture Diagram
        base -.->|"used by"| step8
        base -.->|"used by"| step9
        base -.->|"used by"| step3c
+       base -.->|"used by"| step3d
        ks25 -.->|"used by"| step3a
        ks4 -.->|"used by"| step3b
        nwb -.->|"used by"| step10
        nwb -.->|"used by"| step11
 
-       co_main -.->|"Executes"| pipeline
        executor -.->|"Executes"| pipeline
 
        %% Version control
@@ -138,9 +130,9 @@ Detailed Architecture Diagram
        classDef container fill:#fce4ec,stroke:#e91e63,stroke-width:2px
        classDef ml_model fill:#fff9e6,stroke:#ffc107,stroke-width:2px
 
-       class co_main,mb_main,co_branches,slurm_exec,local_exec deployment
+       class mb_main,slurm_exec,local_exec deployment
        class step1,step2,step4,step5,step6,step7,step8,step9,step10,step11 pipeline_step
-       class step3a,step3b,step3c sorter
+       class step3a,step3b,step3c,step3d sorter
        class input,output data
        class base,ks25,ks4,nwb container
        class noise_model,sua_mua_model ml_model
@@ -151,21 +143,13 @@ Architecture Components
 Deployment Modes
 ~~~~~~~~~~~~~~~~
 
-The pipeline supports two deployment strategies:
+The pipeline main Nextflow script ``main.nf`` can be deployed to several different execution 
+environments, including Code Ocean, SLURM clusters, and local machines. 
+The deployment mode determines how the pipeline is executed and how spike sorters are selected.
 
-**Code Ocean Deployment**
-   - Uses ``pipeline/main.nf`` (Nextflow DSL1)
-   - Branch-based sorter selection
-   - Separate branches for each configuration:
-      - ``main``/``co_kilosort4``: Kilosort4
-      - ``co_kilosort25``: Kilosort2.5
-      - ``co_spykingcircus2``: SpykingCircus2
-      - Plus ``*_opto`` variants with optogenetics artifact removal
-
-**SLURM/Local Deployment**
-   - Uses ``pipeline/main_multi_backend.nf`` (Nextflow DSL2)
-   - Parameter-driven sorter selection
-   - Supports both SLURM clusters and local execution
+For **Code Ocean** deployment, the ``nextflow.config`` file is configured to specify Code Ocean-specific
+settings and variables. The ``nextflow_local.config``/``nextflow_slurm.config`` files are used for local / SLURM 
+deployments, respectively.
 
 Infrastructure Components
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -187,7 +171,7 @@ Infrastructure Components
 Data Flow
 ~~~~~~~~~
 
-**Input**: Electrophysiology session data is mounted into each container at ``capsule/data/ecephys_session``
+**Input**: Electrophysiology session data is mounted from ``DATA_PATH`` into each container at ``capsule/data/ecephys_session``
 
 **Processing**: 11 sequential steps with parallelization at steps 2-6 (per probe/shank)
 
