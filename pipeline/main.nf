@@ -282,6 +282,9 @@ process job_dispatch {
     ${extra_installs_echo}
     ${extra_installs_cmd}
 
+    export CODE_REPO="${versions['JOB_DISPATCH_REPO']}"
+    export CODE_VERSION="${versions['JOB_DISPATCH_COMMIT']}"
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -333,6 +336,9 @@ process preprocessing {
     ${extra_installs_echo}
     ${extra_installs_cmd}
 
+    export CODE_REPO="${versions['PREPROCESSING_REPO']}"
+    export CODE_VERSION="${versions['PREPROCESSING_COMMIT']}"
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -373,6 +379,9 @@ process spikesort_kilosort25 {
     """
     #!/usr/bin/env bash
     set -e
+
+    export CODE_REPO="${versions['SPIKESORT_KS25_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_KS25_COMMIT']}"
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -415,6 +424,9 @@ process spikesort_kilosort4 {
     #!/usr/bin/env bash
     set -e
 
+    export CODE_REPO="${versions['SPIKESORT_KS4_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_KS4_COMMIT']}"
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -456,6 +468,9 @@ process spikesort_spykingcircus2 {
     #!/usr/bin/env bash
     set -e
 
+    export CODE_REPO="${versions['SPIKESORT_SC2_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_SC2_COMMIT']}"
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -496,6 +511,9 @@ process spikesort_lupin {
     """
     #!/usr/bin/env bash
     set -e
+
+    export CODE_REPO="${versions['SPIKESORT_LUPIN_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_LUPIN_COMMIT']}"
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -544,6 +562,9 @@ process postprocessing {
     ${extra_installs_echo}
     ${extra_installs_cmd}
 
+    export CODE_REPO="${versions['POSTPROCESSING_REPO']}"
+    export CODE_VERSION="${versions['POSTPROCESSING_COMMIT']}"
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -584,6 +605,9 @@ process curation {
     """
     #!/usr/bin/env bash
     set -e
+
+    export CODE_REPO="${versions['CURATION_REPO']}"
+    export CODE_VERSION="${versions['CURATION_COMMIT']}"
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -633,6 +657,9 @@ process visualization {
 
     ${extra_installs_echo}
     ${extra_installs_cmd}
+
+    export CODE_REPO="${versions['VISUALIZATION_REPO']}"
+    export CODE_VERSION="${versions['VISUALIZATION_COMMIT']}"
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -688,6 +715,9 @@ process results_collector {
     ${extra_installs_echo}
     ${extra_installs_cmd}
 
+    export CODE_REPO="${versions['RESULTS_COLLECTOR_REPO']}"
+    export CODE_VERSION="${versions['RESULTS_COLLECTOR_COMMIT']}"
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -736,6 +766,9 @@ process quality_control {
     ${extra_installs_echo}
     ${extra_installs_cmd}
 
+    export CODE_REPO="${versions['QUALITY_CONTROL_REPO']}"
+    export CODE_VERSION="${versions['QUALITY_CONTROL_COMMIT']}"
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -778,6 +811,9 @@ process quality_control_collector {
     """
     #!/usr/bin/env bash
     set -e
+
+    export CODE_REPO="${versions['QUALITY_CONTROL_COLLECTOR_REPO']}"
+    export CODE_VERSION="${versions['QUALITY_CONTROL_COLLECTOR_COMMIT']}"
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -822,6 +858,9 @@ process nwb_ecephys {
 
     ${extra_installs_echo}
     ${extra_installs_cmd}
+
+    export CODE_REPO="${versions['NWB_ECEPHYS_REPO']}"
+    export CODE_VERSION="${versions['NWB_ECEPHYS_COMMIT']}"
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -872,6 +911,9 @@ process nwb_units {
     ${extra_installs_echo}
     ${extra_installs_cmd}
 
+    export CODE_REPO="${versions['NWB_UNITS_REPO']}"
+    export CODE_VERSION="${versions['NWB_UNITS_COMMIT']}"
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -894,6 +936,24 @@ process nwb_units {
     """
 }
 
+// Provenance: record pipeline version, repos + commits and effective parameters
+process save_provenance {
+    tag 'provenance'
+    publishDir "$RESULTS_PATH", mode: 'copy'
+
+    input:
+    val provenance_json
+
+    output:
+    path 'provenance.json'
+
+    exec:
+    def out = new File(task.workDir.toString(), 'provenance.json')
+    out.text = groovy.json.JsonOutput.prettyPrint(provenance_json)
+    // exec returns its last value to stdout: return nothing to keep the log clean
+    return null
+}
+
 workflow {
     // Input channel from ecephys path
     ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
@@ -902,6 +962,43 @@ workflow {
     schema_file = file("${projectDir}/default_params_schema.json")
 
     validation_out = validate_params(params_file, schema_file)
+
+    // Provenance: only the selected sorter's repo/commit is recorded
+    def sorter_keys = ['kilosort25': 'spikesort_ks25', 'kilosort4': 'spikesort_ks4',
+                       'spykingcircus2': 'spikesort_sc2', 'lupin': 'spikesort_lupin']
+    def used_steps = step_version_keys.findAll { step, keys ->
+        !step.startsWith('spikesort_') || step == sorter_keys[sorter]
+    }
+    def provenance = [
+        pipeline_url: pipelineUrl,
+        pipeline_version: pipelineVersion,
+        container_tag: params.container_tag,
+        extra_installs: params.extra_installs,
+        sorter: sorter,
+        runmode: runmode,
+        command_line: workflow.commandLine,
+        steps: used_steps.collectEntries { step, keys ->
+            [(step): [repo: versions[keys[0]], commit: versions[keys[1]]]]
+        },
+        parameters: [
+            params_file: params.params_file ?: 'default_params.json',
+            params_file_content: json_params,
+            effective_args: [
+                job_dispatch: job_dispatch_args,
+                preprocessing: preprocessing_args,
+                spikesorting: spikesorting_args,
+                postprocessing: postprocessing_args,
+                curation: curation_args,
+                visualization: visualization_kwargs,
+                result_collector: result_collector_args,
+                nwb_ecephys: nwb_ecephys_args,
+                nwb_units: nwb_units_args,
+                quality_control: quality_control_args,
+                quality_control_collector: quality_control_collector_args
+            ]
+        ]
+    ]
+    save_provenance(groovy.json.JsonOutput.toJson(provenance))
 
     // Job dispatch
     // validation_out.ok is mapped to a constant so that it only acts as a gate and
