@@ -520,7 +520,7 @@ Parameter file section (``postprocessing``):
                ],
                "metric_params": {
                    "presence_ratio": { "bin_duration_s": 60 },
-                   "snr": { "peak_sign": "neg", "peak_mode": "extremum" },
+                   "snr": { "method": "extremum" },
                    "isi_violation": { "isi_threshold_ms": 1.5, "min_isi_ms": 0 },
                    "rp_violation": { "refractory_period_ms": 1, "censored_period_ms": 0.0 },
                    "sliding_rp_violation": {
