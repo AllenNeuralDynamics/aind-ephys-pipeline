@@ -8,7 +8,7 @@
     "properties": {
         "pipeline_version": {
             "type": "string",
-            "pattern": "^1\\.4\\.[0-9]+$",
+            "pattern": "^1\\.4\\.[1-9]+$",
             "description": "Version of the pipeline the parameters are compatible with. This should be updated when default parameters are changed in a way that is not backward compatible."
         },
         "logging": {
@@ -751,10 +751,7 @@
                                             "type": "object",
                                             "additionalProperties": false,
                                             "properties": {
-                                                "peak_sign": {
-                                                    "$ref": "#/$defs/peak_sign"
-                                                },
-                                                "peak_mode": {
+                                                "method": {
                                                     "type": "string",
                                                     "enum": ["extremum", "at_index"],
                                                     "default": "extremum",
@@ -959,9 +956,6 @@
                                                     "type": "boolean",
                                                     "default": true,
                                                     "description": "Whether to correct for the template signal when computing SD ratio."
-                                                },
-                                                "peak_sign": {
-                                                    "$ref": "#/$defs/peak_sign"
                                                 }
                                             }
                                         },

@@ -157,8 +157,7 @@
                         "bin_duration_s": 60
                     },
                     "snr": {
-                        "peak_sign": "both",
-                        "peak_mode": "extremum"
+                        "method": "extremum"
                     },
                     "isi_violation": {
                         "isi_threshold_ms": 1.5,
@@ -194,8 +193,7 @@
                     "sd_ratio": {
                         "censored_period_ms": 4.0,
                         "correct_for_drift": true,
-                        "correct_for_template_itself": true,
-                        "peak_sign": "neg"
+                        "correct_for_template_itself": true
                     },
                     "firing_range": {
                         "bin_size_s": 5,
