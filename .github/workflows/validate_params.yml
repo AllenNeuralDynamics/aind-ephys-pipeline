@@ -2,9 +2,9 @@ name: Validate Default Params
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
     types: [synchronize, opened, reopened]
 
 jobs:

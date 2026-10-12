@@ -2,7 +2,7 @@ name: Test Pipeline from NWB
 
 on:
   pull_request:
-      branches: [main]
+      branches: [main, dev]
       types: [synchronize, opened, reopened]
 
 concurrency:  # Cancel previous workflows on the same pull request
