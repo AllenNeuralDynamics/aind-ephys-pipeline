@@ -1,8 +1,11 @@
 """Check that the pipeline version is ahead of the latest release.
 
-- dev mode:  pipeline_version.txt > latest semver git tag,
-             CONTAINER_TAG in capsule_versions.env is either {V} or {V}-dev
-- main mode: same version check, CONTAINER_TAG must be exactly {V}
+- pipeline_version.txt ({V}) > latest semver git tag
+- CONTAINER_TAG in capsule_versions.env == {V}
+  (on dev, CI tests against {V}-dev by setting the CONTAINER_TAG env var)
+
+The --mode argument is kept for symmetry with check_release_notes.py:
+both modes currently run the same checks.
 
 Requires git tags to be fetched (actions/checkout with fetch-depth: 0).
 """
@@ -60,9 +63,11 @@ def main():
 
     container_tag = read_container_tag()
     print(f"CONTAINER_TAG: {container_tag}")
-    allowed = [version, f"{version}-dev"] if args.mode == "dev" else [version]
-    if container_tag not in allowed:
-        errors.append(f"CONTAINER_TAG in capsule_versions.env ({container_tag}) must be one of {allowed}")
+    if container_tag != version:
+        errors.append(
+            f"CONTAINER_TAG in capsule_versions.env ({container_tag}) must be {version}. "
+            "The -dev suffix is added automatically by CI for PRs to dev."
+        )
 
     if errors:
         for error in errors:
