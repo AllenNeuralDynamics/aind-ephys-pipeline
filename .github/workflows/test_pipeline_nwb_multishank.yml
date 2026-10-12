@@ -51,6 +51,8 @@ jobs:
             version: latest-stable
 
         - name: Run Nextflow pipeline
+          env: 
+            FIGPACK_UPLOAD: "0"
           run: |
             DATA_PATH="$(pwd)/tests/sample_dataset/nwb_multishank" RESULTS_PATH="$(pwd)/tests/sample_dataset/nwb_multishank_results" \
             nextflow  -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main_multi_backend.nf \
