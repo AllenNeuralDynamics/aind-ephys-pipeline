@@ -11,6 +11,7 @@ concurrency:  # Cancel previous workflows on the same pull request
 
 env: 
   NXF_SYNTAX_PARSER: v1
+  FIGPACK_API_KEY: ${{ secrets.FIGPACK_API_KEY }}
 
 jobs:
     test:
