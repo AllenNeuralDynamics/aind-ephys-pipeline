@@ -7,7 +7,7 @@
 # Defaults:
 #   --cache   : $NXF_SINGULARITY_CACHEDIR
 #   --tag     : resolved from pipeline/capsule_versions.env (PIPELINE_VERSION)
-#               or defaults to 1.4.0
+#               or defaults to pipeline version
 #   --sorter  : kilosort4   (options: kilosort25, kilosort4, spykingcircus2, all)
 #
 
@@ -42,7 +42,7 @@ fi
 # Resolve tag
 # ------------------------------
 if [[ -z "$TAG" ]]; then
-  if [[ -f "pipeline/capsule_versions.env" ]]; then
+  if [[ -f "../pipeline/capsule_versions.env" ]]; then
     PIPELINE_VERSION=$(grep -E '^PIPELINE_VERSION=' pipeline/capsule_versions.env | cut -d= -f2 | tr -d '[:space:]')
     if [[ -n "$PIPELINE_VERSION" ]]; then
       TAG="$PIPELINE_VERSION"
@@ -51,7 +51,8 @@ if [[ -z "$TAG" ]]; then
 fi
 
 if [[ -z "$TAG" ]]; then
-  TAG="1.4.0"
+  echo "ERROR: could not find tag" >&2
+  exit 1
 fi
 
 # ------------------------------

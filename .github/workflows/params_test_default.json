@@ -1,5 +1,5 @@
 {
-    "pipeline_version": "1.4.0",
+    "pipeline_version": "1.4.1",
     "logging": {
         "package": "logging",
         "logging_cfg": {
