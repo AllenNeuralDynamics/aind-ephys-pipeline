@@ -16,6 +16,11 @@ CI/CD:
 * Containers are cached once per run and shared across all Nextflow test jobs
 * Merged all Nextflow test workflows into a single reusable matrix workflow
 
+Containers:
+
+* Use ``archive.debian.org`` apt sources in base and NWB images (Debian 11 bullseye is EOL)
+* Install CPU-only ``torch`` in the base image (11.3GB -> 3.7GB)
+
 Refactor:
 
 * ``scripts/pull_pipeline_images.sh``: add ``--engine docker`` option, resolve the default tag from ``CONTAINER_TAG``,
