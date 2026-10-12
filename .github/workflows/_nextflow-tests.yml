@@ -1,0 +1,150 @@
+# Reusable: run the Nextflow pipeline tests against a given container tag.
+# Images are loaded from the cache produced by _cache-images.yml.
+name: Nextflow Tests
+
+on:
+  workflow_call:
+    inputs:
+      container_tag:
+        description: Container tag used by the pipeline processes
+        required: true
+        type: string
+      cache-key:
+        description: Cache key of the image archives (from _cache-images.yml)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  NXF_SYNTAX_PARSER: v1
+  CONTAINER_TAG: ${{ inputs.container_tag }}
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Test Pipeline from NWB
+            packages: spikeinterface|neuroconv|pynwb|hdmf-zarr
+            generate: python tests/sample_dataset/create_test_nwb.py
+            data: tests/sample_dataset/nwb
+            results: tests/sample_dataset/nwb_results
+            params: params_test_default.json
+            check: --num-streams 3 --num-success 2 --num-nwb 1 --check-nwb-devices
+          - name: Test Pipeline Customization
+            packages: spikeinterface|neuroconv|pynwb|hdmf-zarr
+            generate: python tests/sample_dataset/create_test_nwb.py
+            data: tests/sample_dataset/nwb
+            results: tests/sample_dataset/nwb/results
+            params: params_test_custom.json
+            check: --num-streams 3 --num-success 2 --num-nwb 1 --check-nwb-devices
+          - name: Test Pipeline from NWB with multi-shank probe
+            packages: spikeinterface|neuroconv|pynwb|hdmf-zarr
+            generate: python tests/sample_dataset/create_test_nwb.py --multi-shank
+            data: tests/sample_dataset/nwb_multishank
+            results: tests/sample_dataset/nwb_multishank_results
+            params: params_test_default.json
+            check: --num-streams 5 --num-success 4 --num-nwb 1 --check-nwb-devices
+          - name: Test Pipeline from SpikeInterface - single-segment
+            packages: spikeinterface|pynwb|hdmf-zarr
+            generate: python tests/sample_dataset/create_test_spikeinterface.py --num-segments 1
+            data: tests/sample_dataset/spikeinterface
+            results: tests/sample_dataset/spikeinterface_results
+            params: params_test_si.json
+            check: --num-streams 3 --num-success 2 --num-nwb 3
+          - name: Test Pipeline from SpikeInterface - multi-segment
+            packages: spikeinterface|pynwb|hdmf-zarr
+            generate: python tests/sample_dataset/create_test_spikeinterface.py --num-segments 2
+            data: tests/sample_dataset/spikeinterface
+            results: tests/sample_dataset/spikeinterface_results
+            params: params_test_si.json
+            check: --num-streams 3 --num-success 2 --num-nwb 3 --num-segments 2
+          - name: Test Pipeline from SpikeInterface - multi-segment + not split-segments
+            packages: spikeinterface|pynwb|hdmf-zarr
+            generate: python tests/sample_dataset/create_test_spikeinterface.py --num-segments 2
+            data: tests/sample_dataset/spikeinterface
+            results: tests/sample_dataset/spikeinterface_results
+            params: params_test_si_concat.json
+            check: --num-streams 3 --num-success 2 --num-nwb 3 --num-segments 2 --no-split-segments
+          - name: Test Pipeline Validation Error
+            data: tests/sample_dataset/nwb
+            results: tests/sample_dataset/nwb/results
+            params: params_wrong.json
+            expect_fail: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          echo "Before cleanup:"
+          df -h
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/hostedtoolcache
+          echo "After cleanup:"
+          df -h
+
+      - name: Restore cached images
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/images
+          key: ${{ inputs.cache-key }}
+          fail-on-cache-miss: true
+
+      - name: Load images
+        run: |
+          for f in "${{ runner.temp }}"/images/*.tar.zst; do
+            echo "Loading $f"
+            zstd -dc "$f" | docker load
+          done
+          rm -rf "${{ runner.temp }}/images"
+          docker images
+          df -h
+
+      - name: Set up Python
+        if: matrix.packages
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install packages
+        if: matrix.packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install $(grep -E '^(${{ matrix.packages }})==' environment/package-versions.txt | sed 's/^spikeinterface==/spikeinterface[full]==/' | tr '\n' ' ')
+
+      - name: Generate test data
+        if: matrix.generate
+        run: ${{ matrix.generate }}
+
+      - name: Set up Nextflow
+        uses: nf-core/setup-nextflow@v1
+        with:
+          version: latest-stable
+
+      - name: Run Nextflow pipeline
+        run: |
+          set +e
+          DATA_PATH="$(pwd)/${{ matrix.data }}" RESULTS_PATH="$(pwd)/${{ matrix.results }}" \
+          nextflow -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main_multi_backend.nf \
+          --params_file "$(pwd)/.github/workflows/${{ matrix.params }}"
+          STATUS=$?
+          if [[ "${{ matrix.expect_fail }}" == "true" ]]; then
+            [[ $STATUS -ne 0 ]] && echo "Pipeline failed as expected" && exit 0
+            echo "::error::Pipeline was expected to fail but succeeded"; exit 1
+          fi
+          exit $STATUS
+
+      - name: Check pipeline results
+        if: ${{ !matrix.expect_fail }}
+        run: |
+          python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/${{ matrix.results }}" \
+          --data-path "$(pwd)/${{ matrix.data }}" ${{ matrix.check }}

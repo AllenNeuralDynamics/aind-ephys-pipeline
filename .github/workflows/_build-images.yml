@@ -1,0 +1,101 @@
+# Reusable: build and push pipeline images, skipping the ones that are up to date.
+#
+# An image is up to date if the tag exists in ghcr and its `org.aind.env-hash`
+# label matches the hash of its Dockerfile + package-versions.txt
+# (see .github/scripts/image_info.sh).
+name: Build Images
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Container tag to build and push (e.g. 1.4.1-dev)
+        required: true
+        type: string
+      images:
+        description: JSON list of images to build
+        required: false
+        type: string
+        default: '["base", "nwb", "ks25", "ks4"]'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.image }}:${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    concurrency:  # serialize pushes to the same (shared) tag
+      group: images-${{ matrix.image }}-${{ inputs.tag }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(inputs.images) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve image info
+        id: info
+        run: |
+          NAME=$(.github/scripts/image_info.sh ${{ matrix.image }} name)
+          HASH=$(.github/scripts/image_info.sh ${{ matrix.image }} hash)
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "dockerfile=$(.github/scripts/image_info.sh ${{ matrix.image }} dockerfile)" >> "$GITHUB_OUTPUT"
+          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+          echo "Image: $NAME:${{ inputs.tag }} (env-hash: $HASH)"
+
+      - name: Check existing image
+        id: check
+        env:
+          GHCR_CREDS: ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REMOTE_HASH=$(skopeo inspect --creds "$GHCR_CREDS" "docker://${{ steps.info.outputs.name }}:${{ inputs.tag }}" 2>/dev/null \
+            | jq -r '.Labels["org.aind.env-hash"] // empty' || true)
+          echo "Remote env-hash: ${REMOTE_HASH:-<none>}"
+          if [[ "$REMOTE_HASH" == "${{ steps.info.outputs.hash }}" ]]; then
+            echo "Image is up to date, skipping build"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Image missing or outdated, building"
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Free up disk space
+        if: steps.check.outputs.build == 'true'
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /opt/hostedtoolcache
+          docker system prune -af
+          df -h
+
+      - name: Set up Docker Buildx
+        if: steps.check.outputs.build == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to ghcr
+        if: steps.check.outputs.build == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        if: steps.check.outputs.build == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: environment
+          file: environment/${{ steps.info.outputs.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          # single-manifest images, so labels can be inspected and tags promoted as-is
+          provenance: false
+          sbom: false
+          tags: ${{ steps.info.outputs.name }}:${{ inputs.tag }}
+          labels: |
+            org.aind.env-hash=${{ steps.info.outputs.hash }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
