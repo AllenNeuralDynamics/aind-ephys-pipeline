@@ -3,7 +3,13 @@
 1.4.1 - WIP
 ===========
 
-Minor release with a new CI/CD and release workflow.
+Minor release with a new CI/CD and release workflow and minor updates:
+
+Pipeline:
+
+* Update default params and schema for QC parameters, with CI validation
+* Update visualization step to use `Figpack <https://figpack.org/>`_ instead of ``SortingView``
+
 
 CI/CD:
 
@@ -37,7 +43,7 @@ Package versions
 
 **Container tag: 1.4.1**
 
-* ``spikeinterface`` version: 0.105.1
+* ``spikeinterface`` version: 0.105.2
 * ``aind-data-schema`` version: 2.9.1
 * ``neo`` version: 0.14.5
 * ``pynwb`` version: 4.2.0

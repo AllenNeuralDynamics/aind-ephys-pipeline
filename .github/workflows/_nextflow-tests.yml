@@ -20,6 +20,8 @@ permissions:
 env:
   NXF_SYNTAX_PARSER: v1
   CONTAINER_TAG: ${{ inputs.container_tag }}
+  FIGPACK_API_KEY: ${{ secrets.FIGPACK_API_KEY }}
+  FIGPACK_UPLOAD: 1
 
 jobs:
   test:
