@@ -41,8 +41,6 @@ Refactor:
 Package versions
 ----------------
 
-**Container tag: 1.4.1**
-
 * ``spikeinterface`` version: 0.105.2
 * ``aind-data-schema`` version: 2.9.1
 * ``neo`` version: 0.14.5
