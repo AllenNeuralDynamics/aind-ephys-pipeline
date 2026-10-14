@@ -187,8 +187,8 @@ Parameter file section (``job_dispatch``):
 
 .. note::
 
-   If the reader needs extra packages installed, specify them in the ``EXTRA_INSTALLS`` variable in the ``capsule_versions.env`` file 
-   (e.g. ``EXTRA_INSTALLS="mtscomp"``).
+   If the reader needs extra packages installed, specify them in the ``extra_installs`` parameter of your Nextflow config file or with ``--extra_installs``
+   (e.g. ``params.extra_installs = "mtscomp"``). Multiple packages are comma-separated.
 
 
 Preprocessing Parameters

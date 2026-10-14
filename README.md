@@ -69,7 +69,7 @@ flowchart LR
   - *4-6*. Postprocessing → Curation → Visualization
   - *7-11*. Results collection → Quality control → NWB export
 - **Infrastructure**: 4 container images from [GHCR](https://github.com/orgs/AllenNeuralDynamics/packages) and [UnitRefine ML models](https://huggingface.co/SpikeInterface) from Hugging Face
-- **Parallelization**: Steps run in parallel per probe/shank; version controlled via [`capsule_versions.env`](pipeline/capsule_versions.env)
+- **Parallelization**: Steps run in parallel per probe/shank; version controlled via [`process_versions.env`](pipeline/process_versions.env)
 
 See the [**detailed architecture documentation**](https://aind-ephys-pipeline.readthedocs.io/en/latest/architecture.html) for complete infrastructure details, data flow, and numbered step-by-step breakdown.
 

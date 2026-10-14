@@ -1,0 +1,67 @@
+# On push to main: tag {V}, create the GitHub release from
+# docs/source/releases/{V}.rst and point the `latest` images to {V}.
+# No-op if the {V} tag already exists.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    env:
+      GHCR_CREDS: ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if already released
+        id: version
+        run: |
+          VERSION=$(tr -d '[:space:]' < pipeline/pipeline_version.txt)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            echo "Tag $VERSION already exists, nothing to release"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Tag images as latest
+        if: steps.version.outputs.release == 'true'
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          for image in $(jq -r 'keys[]' environment/images.json); do
+            NAME=$(.github/scripts/image_info.sh $image name)
+            echo "Tagging $NAME:$VERSION as latest"
+            skopeo copy --all --src-creds "$GHCR_CREDS" --dest-creds "$GHCR_CREDS" \
+              "docker://$NAME:$VERSION" "docker://$NAME:latest"
+          done
+
+      - name: Convert release notes
+        if: steps.version.outputs.release == 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y pandoc
+          pandoc -f rst -t gfm "docs/source/releases/${{ steps.version.outputs.version }}.rst" -o "$RUNNER_TEMP/release_notes.md"
+          cat "$RUNNER_TEMP/release_notes.md"
+
+      - name: Create tag and GitHub release
+        if: steps.version.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" \
+            --notes-file "$RUNNER_TEMP/release_notes.md"
