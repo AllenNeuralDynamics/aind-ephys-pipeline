@@ -1,0 +1,25 @@
+.. _1.4.2:
+
+1.4.2 - WIP
+===========
+
+Minor release with a new CI/CD and CodeOcean updates
+
+Pipeline:
+
+* Add new ``save_provenance`` step to the pipeline, which waves a ``provenance.json`` file containing 
+  the provenance information (versions, parameters, etc).
+
+Refactor:
+
+* Unified ``main_multi_backend`` with ``main``, so all executors (including CodeOcean) use the same pipeline.
+
+
+Package versions
+----------------
+
+* ``spikeinterface`` version: 0.105.2
+* ``aind-data-schema`` version: 2.9.1
+* ``neo`` version: 0.14.5
+* ``pynwb`` version: 4.2.0
+* ``kilosort4`` version: 4.1.7
