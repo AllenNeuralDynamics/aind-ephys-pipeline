@@ -132,7 +132,7 @@ pipelineUrl = "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline"
 println "PIPELINE VERSION: ${pipelineVersion}"
 println "PIPELINE URL: ${pipelineUrl}"
 
-// container tag: CLI/config > CONTAINER_TAG env var > process_versions.env
+// container tag: CLI/config > CONTAINER_TAG env var > pipeline_version.txt
 def env_container_tag = System.getenv('CONTAINER_TAG')
 if (params.containsKey('container_tag')) {
     println "CONTAINER TAG (from CLI/config): ${params.container_tag}"
@@ -140,10 +140,13 @@ if (params.containsKey('container_tag')) {
     params.container_tag = env_container_tag
     println "CONTAINER TAG (from ENV): ${params.container_tag}"
 } else {
-    params.container_tag = "${versions['CONTAINER_TAG']}"
-    println "CONTAINER TAG (from versions file): ${params.container_tag}"
+    if (!pipelineVersion) {
+        error "Cannot determine container tag: set --container_tag, CONTAINER_TAG env var, or provide pipeline_version.txt"
+    }
+    params.container_tag = pipelineVersion
+    println "CONTAINER TAG (from pipeline_version.txt): ${params.container_tag}"
 }
-params.extra_installs = versions['EXTRA_INSTALLS'] ?: ""
+params.extra_installs = params.extra_installs ?: ""
 if (params.extra_installs) {
     println "Extra installs specified: ${params.extra_installs}"
 } else {

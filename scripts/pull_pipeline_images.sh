@@ -6,8 +6,7 @@
 #
 # Defaults:
 #   --cache   : $NXF_APPTAINER_CACHEDIR or $NXF_SINGULARITY_CACHEDIR
-#   --tag     : CONTAINER_TAG from pipeline/process_versions.env,
-#               or pipeline/pipeline_version.txt
+#   --tag     : contents of pipeline/pipeline_version.txt
 #   --sorter  : kilosort4   (options: kilosort25, kilosort4, spykingcircus2, lupin, none, all)
 #   --engine  : singularity or apptainer (auto-detected), or docker.
 #               With docker, images are pulled and saved as compressed
@@ -80,10 +79,6 @@ fi
 # ------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PIPELINE_DIR="$SCRIPT_DIR/../pipeline"
-
-if [[ -z "$TAG" && -f "$PIPELINE_DIR/process_versions.env" ]]; then
-  TAG=$(grep -E '^CONTAINER_TAG=' "$PIPELINE_DIR/process_versions.env" | cut -d= -f2 | tr -d '[:space:]"' || true)
-fi
 
 if [[ -z "$TAG" && -f "$PIPELINE_DIR/pipeline_version.txt" ]]; then
   TAG=$(tr -d '[:space:]' < "$PIPELINE_DIR/pipeline_version.txt")

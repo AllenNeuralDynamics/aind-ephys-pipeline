@@ -23,8 +23,13 @@ Containers:
 
 Refactor:
 
-* ``scripts/pull_pipeline_images.sh``: add ``--engine docker`` option, resolve the default tag from ``CONTAINER_TAG``,
+* ``scripts/pull_pipeline_images.sh``: add ``--engine docker`` option, resolve the default tag from ``pipeline_version.txt``,
   fix sorter images (``spykingcircus2`` and ``lupin`` use the base image) and add ``--sorter none``
+* Rename ``capsule_versions.env`` to ``process_versions.env``
+* Rename ``{STEP}_COMMIT`` to ``{STEP}_VERSION`` in ``process_versions.env``
+* Remove ``CONTAINER_TAG`` from ``process_versions.env``: default is now ``pipeline_version.txt``
+* Move ``EXTRA_INSTALLS`` from ``process_versions.env`` to the ``extra_installs`` parameter (Nextflow config or
+  ``--extra_installs``, comma-separated), so ``process_versions.env`` only contains process versions
 
 
 Package versions
@@ -32,8 +37,8 @@ Package versions
 
 **Container tag: 1.4.1**
 
-* ``spikeinterface`` version: TBD
-* ``aind-data-schema`` version: TBD
-* ``neo`` version: TBD
-* ``pynwb`` version: TBD
-* ``kilosort4`` version: TBD
+* ``spikeinterface`` version: 0.105.1
+* ``aind-data-schema`` version: 2.9.1
+* ``neo`` version: 0.14.5
+* ``pynwb`` version: 4.2.0
+* ``kilosort4`` version: 4.1.7

@@ -35,7 +35,7 @@ one-off tests or CI runs where you do not want to persist a custom env file.
 
 **Container tag**
 
-The container tag follows this precedence: CLI/config > ``CONTAINER_TAG`` environment variable > ``process_versions.env``.
+The container tag follows this precedence: CLI/config > ``CONTAINER_TAG`` environment variable > ``pipeline_version.txt``.
 
 .. code:: bash
 
@@ -116,12 +116,12 @@ data format by forking the ``aind-ephys-job-dispatch`` repository and implementi
 format and prepare it for preprocessing.
 
 In addition, if your data format requires additional Python packages to be read, you can specify them in the 
-``EXTRA_INSTALLS`` variable of ``process_versions_custom.env``. This variable should contain a string that ``pip`` can parse,
-for example:
+``extra_installs`` parameter, either in your Nextflow config file or on the command line (``--extra_installs``).
+This parameter should contain a comma-separated list of packages that ``pip`` can parse, for example:
 
-.. code:: bash
+.. code:: groovy
 
-    EXTRA_INSTALLS="package1==1.0.0 package2==2.0.0"
+    params.extra_installs = "package1==1.0.0,package2==2.0.0"
 
 
 
