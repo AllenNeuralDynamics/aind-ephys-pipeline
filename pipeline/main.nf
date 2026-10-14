@@ -49,10 +49,6 @@ process capsule_aind_ephys_job_dispatch_4 {
 	cpus 4
 	memory '30 GB'
 
-	input:
-	path session_files, stageAs: 'capsule/data/ecephys_session/*'
-	path session_zarrs, stageAs: zarrStage
-
 	output:
 	path 'capsule/results/*', emit: results
 
@@ -82,14 +78,14 @@ process capsule_aind_ephys_job_dispatch_4 {
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.capsule_aind_ephys_job_dispatch_4_args}
+	./run ${params.capsule_aind_ephys_job_dispatch_4_args} --ecephys-url ${params.ecephys_url}
 
 	echo "[${task.tag}] completed!"
 	"""
 
 	stub:
 	"""
-	stub_capsule.sh job_dispatch
+	stub_capsule.sh job_dispatch ${params.ecephys_url}
 	"""
 }
 
@@ -483,8 +479,6 @@ process capsule_nwb_packaging_units_11 {
 
 	input:
 	path session_files, stageAs: 'capsule/data/ecephys_session/*'
-	// opened for channel metadata and times only; no traces are read
-	path session_zarrs, stageAs: zarrStage
 	path job_dispatch_results, stageAs: 'capsule/data/*'
 	path results_data, stageAs: 'capsule/data/*'
 	path nwb_ecephys_results, stageAs: 'capsule/data/*'
@@ -518,7 +512,7 @@ process capsule_nwb_packaging_units_11 {
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.capsule_nwb_packaging_units_11_args}
+	./run ${params.capsule_nwb_packaging_units_11_args} --ecephys-url ${params.ecephys_url}
 
 	echo "[${task.tag}] completed!"
 	"""
@@ -651,9 +645,8 @@ workflow {
 	def qc_session_files_ch = Channel.value(
 		session_files + (by_stream && behavior_dir.exists() ? [behavior_dir] : [])
 	)
-	def all_zarrs_ch = Channel.value(by_stream ? zarr_root.listFiles().findAll { it.name.endsWith('.zarr') } : [])
 
-	job_dispatch_out = capsule_aind_ephys_job_dispatch_4(session_files_ch, all_zarrs_ch)
+	job_dispatch_out = capsule_aind_ephys_job_dispatch_4()
 	job_jsons = job_dispatch_out.results.flatten().filter { it.name.startsWith('job') && it.name.endsWith('.json') }
 
 	// [meta, job_json, AP zarrs, LFP zarrs]; meta is never modified, so joins can key on it
@@ -733,7 +726,6 @@ workflow {
 	nwb_ecephys_out = capsule_nwb_packaging_ecephys_capsule_12(session_files_ch, nwb_zarrs, job_jsons.collect())
 	capsule_nwb_packaging_units_11(
 		session_files_ch,
-		nwb_zarrs,
 		job_jsons.collect(),
 		collector_items.map { items -> items.findAll { it.name in ['postprocessed', 'spikesorted'] } },
 		nwb_ecephys_out.results.collect()

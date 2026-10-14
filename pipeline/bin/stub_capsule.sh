@@ -39,15 +39,16 @@ validate_params)
     touch validation.ok
     ;;
 job_dispatch)
-    need "$data/ecephys_session/data_description.json"
-    forbid "$data/ecephys_session/ecephys_clipped" "$data/ecephys_session/behavior-videos"
+    # reads the session from its URL (a local path in stub runs), so nothing is staged
+    session=${2:?job_dispatch needs the session URL}
+    forbid "$data/ecephys_session"
     i=0
-    for z in "$zroot"/*.zarr; do
+    for z in "$session"/ecephys/ecephys_compressed/*.zarr; do
         name=$(basename "$z")
         [[ $name == *NI-DAQ* || $name == *-LFP.zarr ]] && continue
         base=${name%.zarr}
         lfp=""
-        if [[ $base == *-AP && -e "$zroot/${base%-AP}-LFP.zarr" ]]; then
+        if [[ $base == *-AP && -e "$session/ecephys/ecephys_compressed/${base%-AP}-LFP.zarr" ]]; then
             lfp=",
   \"recording_lfp_dict\": {\"kwargs\": {\"folder_path\": \"ecephys_session/ecephys/ecephys_compressed/${base%-AP}-LFP.zarr\"}}"
         fi
@@ -159,7 +160,7 @@ nwb_ecephys)
     ;;
 nwb_units)
     need "$data/postprocessed" "$data/spikesorted"
-    forbid "$data/preprocessed" "$data/visualization"
+    forbid "$data/preprocessed" "$data/visualization" "$zroot"
     nwb=("$data"/*.nwb)
     count 1 "${nwb[@]}"
     cp -rL "${nwb[0]}" "$out/"
