@@ -9,6 +9,9 @@ Pipeline:
 
 * Add new ``save_provenance`` step to the pipeline, which waves a ``provenance.json`` file containing 
   the provenance information (versions, parameters, etc).
+* Stage only each stream's data in per-stream steps: tasks receive their job JSON, the zarrs that job reads
+  and the session's top-level JSONs instead of the whole session, so cloud executors no longer copy the full
+  asset into every task.
 
 Refactor:
 

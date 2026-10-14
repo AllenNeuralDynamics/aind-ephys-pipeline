@@ -244,6 +244,31 @@ if (runmode == 'fast'){
     println "nwb_ecephys_args: ${nwb_ecephys_args}"
 }
 
+// AIND sessions are staged per stream: each task gets only the zarr(s) its job reads, placed where the
+// relative paths embedded in job and recording JSONs expect them. Any other layout is staged whole.
+compressedRel = 'ecephys/ecephys_compressed'
+if (!file("${params.ecephys_path}/${compressedRel}").exists()) {
+    compressedRel = 'ecephys_compressed'
+}
+zarrStage = "capsule/data/ecephys_session/${compressedRel}/*"
+
+def zarrNames(obj) {
+    if (obj instanceof Map) {
+        return obj.collectMany { k, v ->
+            (k == 'folder_path' && v instanceof String && v.endsWith('.zarr')) ? [v.tokenize('/')[-1]] : zarrNames(v)
+        }
+    }
+    if (obj instanceof List) {
+        return obj.collectMany { zarrNames(it) }
+    }
+    return []
+}
+
+// a single-file output arrives as a bare path, several as a list
+def pick(files, Closure keep) {
+    (files instanceof List ? files : [files]).findAll(keep)
+}
+
 // Process definitions
 process validate_params {
     tag 'validate_params'
@@ -263,6 +288,11 @@ process validate_params {
     validate_params.py ${params_file} ${schema_file}
     touch validation.ok
     """
+
+    stub:
+    """
+    touch validation.ok
+    """
 }
 
 
@@ -272,7 +302,8 @@ process job_dispatch {
     container container_name
 
     input:
-    path input_folder, stageAs: 'capsule/data/ecephys_session'
+    path session_files, stageAs: 'capsule/data/ecephys_session/*'
+    path session_zarrs, stageAs: zarrStage
     val validation_ok
     
     output:
@@ -319,6 +350,11 @@ process job_dispatch {
     echo "[${task.tag}] completed!"
 
     """
+
+    stub:
+    """
+    stub_capsule.sh job_dispatch
+    """
 }
 
 process preprocessing {
@@ -328,11 +364,11 @@ process preprocessing {
 
     input:
     val max_duration_minutes
-    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
-    path job_dispatch_results, stageAs: 'capsule/data/*'
+    tuple val(meta), path(job_json, stageAs: 'capsule/data/*'), path(stream_zarrs, stageAs: zarrStage)
+    path session_files, stageAs: 'capsule/data/ecephys_session/*'
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*'), emit: results
 
     script:
     """
@@ -368,6 +404,11 @@ process preprocessing {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh preprocessing
+    """
 }
 
 process spikesort_kilosort25 {
@@ -378,10 +419,10 @@ process spikesort_kilosort25 {
 
     input:
     val max_duration_minutes
-    path preprocessing_results, stageAs: 'capsule/data/*'
+    tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*'), emit: results
 
     script:
     """
@@ -414,6 +455,11 @@ process spikesort_kilosort25 {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh spikesort
+    """
 }
 
 process spikesort_kilosort4 {
@@ -424,10 +470,10 @@ process spikesort_kilosort4 {
 
     input:
     val max_duration_minutes
-    path preprocessing_results, stageAs: 'capsule/data/*'
+    tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*'), emit: results
 
     script:
     """
@@ -458,6 +504,11 @@ process spikesort_kilosort4 {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh spikesort
+    """
 }
 
 process spikesort_spykingcircus2 {
@@ -467,10 +518,10 @@ process spikesort_spykingcircus2 {
 
     input:
     val max_duration_minutes
-    path preprocessing_results, stageAs: 'capsule/data/*'
+    tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*'), emit: results
 
     script:
     """
@@ -501,6 +552,11 @@ process spikesort_spykingcircus2 {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh spikesort
+    """
 }
 
 process spikesort_lupin {
@@ -510,10 +566,10 @@ process spikesort_lupin {
 
     input:
     val max_duration_minutes
-    path preprocessing_results, stageAs: 'capsule/data/*'
+    tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*'), emit: results
 
     script:
     """
@@ -546,6 +602,11 @@ process spikesort_lupin {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh spikesort
+    """
 }
 
 process postprocessing {
@@ -555,13 +616,11 @@ process postprocessing {
 
     input:
     val max_duration_minutes
-    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
-    path job_dispatch_results, stageAs: 'capsule/data/*'
-    path preprocessing_results, stageAs: 'capsule/data/*'
-    path spikesort_results, stageAs: 'capsule/data/*'
+    tuple val(meta), path(job_json, stageAs: 'capsule/data/*'), path(stream_zarrs, stageAs: zarrStage), path(preprocessing_results, stageAs: 'capsule/data/*'), path(spikesort_results, stageAs: 'capsule/data/*')
+    path session_files, stageAs: 'capsule/data/ecephys_session/*'
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*'), emit: results
 
     script:
     """
@@ -596,6 +655,11 @@ process postprocessing {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh postprocessing
+    """
 }
 
 process curation {
@@ -605,10 +669,10 @@ process curation {
 
     input:
     val max_duration_minutes
-    path postprocessing_results, stageAs: 'capsule/data/*'
+    tuple val(meta), path(postprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*'), emit: results
 
     script:
     """
@@ -640,6 +704,11 @@ process curation {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh curation
+    """
 }
 
 process visualization {
@@ -649,15 +718,10 @@ process visualization {
 
     input:
     val max_duration_minutes
-    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
-    path job_dispatch_results, stageAs: 'capsule/data/*'
-    path preprocessing_results, stageAs: 'capsule/data/*'
-    path spikesort_results, stageAs: 'capsule/data/*'
-    path postprocessing_results, stageAs: 'capsule/data/*'
-    path curation_results, stageAs: 'capsule/data/*'
+    tuple val(meta), path(job_json, stageAs: 'capsule/data/*'), path(stream_zarrs, stageAs: zarrStage), path(preprocessing_results, stageAs: 'capsule/data/*'), path(spikesort_results, stageAs: 'capsule/data/*'), path(postprocessing_results, stageAs: 'capsule/data/*'), path(curation_results, stageAs: 'capsule/data/*')
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*'), emit: results
 
     script:
     """
@@ -693,6 +757,11 @@ process visualization {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh visualization
+    """
 }
 
 process results_collector {
@@ -704,18 +773,12 @@ process results_collector {
 
     input:
     val max_duration_minutes
-    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path session_files, stageAs: 'capsule/data/ecephys_session/*'
     path job_dispatch_results, stageAs: 'capsule/data/*'
-    path preprocessing_results, stageAs: 'capsule/data/*'
-    path spikesort_results, stageAs: 'capsule/data/*'
-    path postprocessing_results, stageAs: 'capsule/data/*'
-    path curation_results, stageAs: 'capsule/data/*'
-    path visualization_results, stageAs: 'capsule/data/*'
+    path stream_results, stageAs: 'capsule/data/*'
 
     output:
     path 'capsule/results/*', emit: results
-    path 'capsule/results/*', emit: nwb_data
-    path 'capsule/results/*', emit: qc_data
 
     script:
     """
@@ -752,6 +815,11 @@ process results_collector {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh results_collector
+    """
 }
 
 process quality_control {
@@ -761,12 +829,12 @@ process quality_control {
 
     input:
     val max_duration_minutes
-    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
-    path job_dispatch_results, stageAs: 'capsule/data/*'
-    path results_data, stageAs: 'capsule/data/*'
+    // QC reads this stream's slice of the collector's layout, so each piece keeps its folder under data/
+    tuple val(meta), path(job_json, stageAs: 'capsule/data/*'), path(stream_zarrs, stageAs: zarrStage), path(preprocessed_json, stageAs: 'capsule/data/preprocessed/*'), path(preprocessed_motion, stageAs: 'capsule/data/preprocessed/motion/*'), path(spikesorted_motion, stageAs: 'capsule/data/spikesorted/motion/*'), path(postprocessed, stageAs: 'capsule/data/postprocessed/*'), path(curated, stageAs: 'capsule/data/curated/*'), path(collector_session_files, stageAs: 'capsule/data/*')
+    path session_files, stageAs: 'capsule/data/ecephys_session/*'
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*'), emit: results
 
     script:
     """
@@ -801,6 +869,11 @@ process quality_control {
     ./run ${pipeline_data_path_args} ${quality_control_args}
 
     echo "[${task.tag}] completed!"
+    """
+
+    stub:
+    """
+    stub_capsule.sh quality_control
     """
 }
 
@@ -846,6 +919,11 @@ process quality_control_collector {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh quality_control_collector
+    """
 }
 
 
@@ -856,7 +934,8 @@ process nwb_ecephys {
 
     input:
     val max_duration_minutes
-    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path session_files, stageAs: 'capsule/data/ecephys_session/*'
+    path session_zarrs, stageAs: zarrStage
     path job_dispatch_results, stageAs: 'capsule/data/*'
 
     output:
@@ -895,6 +974,11 @@ process nwb_ecephys {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh nwb_ecephys
+    """
 }
 
 process nwb_units {
@@ -906,7 +990,9 @@ process nwb_units {
 
     input:
     val max_duration_minutes
-    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
+    path session_files, stageAs: 'capsule/data/ecephys_session/*'
+    // opened for channel metadata and times only; no traces are read
+    path session_zarrs, stageAs: zarrStage
     path job_dispatch_results, stageAs: 'capsule/data/*'
     path results_data, stageAs: 'capsule/data/*'
     path nwb_ecephys_results, stageAs: 'capsule/data/*'
@@ -945,6 +1031,11 @@ process nwb_units {
 
     echo "[${task.tag}] completed!"
     """
+
+    stub:
+    """
+    stub_capsule.sh nwb_units
+    """
 }
 
 // Provenance: record pipeline version, repos + commits and effective parameters
@@ -972,8 +1063,20 @@ PROVENANCE_EOF
 }
 
 workflow {
-    // Input channel from ecephys path
-    ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
+    def session_root = file(params.ecephys_path)
+    def zarr_root = session_root.resolve(compressedRel)
+    def by_stream = zarr_root.exists()
+    // per-stream staging needs only the session's top-level JSONs; other layouts get the whole session
+    def session_files = by_stream
+        ? session_root.listFiles().findAll { it.name.endsWith('.json') }
+        : session_root.listFiles() as List
+    def session_files_ch = Channel.value(session_files)
+    // QC's event metrics read Harp files from behavior/
+    def behavior_dir = session_root.resolve('behavior')
+    def qc_session_files_ch = Channel.value(
+        session_files + (by_stream && behavior_dir.exists() ? [behavior_dir] : [])
+    )
+    def all_zarrs_ch = Channel.value(by_stream ? zarr_root.listFiles().findAll { it.name.endsWith('.zarr') } : [])
 
     params_file = file(params.params_file)
     schema_file = file("${projectDir}/default_params_schema.json")
@@ -1021,17 +1124,34 @@ workflow {
     // Job dispatch
     // validation_out.ok is mapped to a constant so that it only acts as a gate and
     // does not invalidate the job_dispatch cache hash when validate_params re-runs
-    job_dispatch_out = job_dispatch(ecephys_ch.collect(), validation_out.ok.map { true })
+    job_dispatch_out = job_dispatch(session_files_ch, all_zarrs_ch, validation_out.ok.map { true })
 
     max_duration_file = job_dispatch_out.max_duration_file
     max_duration_minutes = max_duration_file.map { it.text.trim() }
     max_duration_minutes.view { "Max recording duration: ${it}min" }
 
+    job_jsons = job_dispatch_out.results.flatten().filter { it.name.startsWith('job') && it.name.endsWith('.json') }
+
+    // [meta, job_json, AP zarrs, LFP zarrs]; meta is never modified, so joins can key on it
+    jobs = job_jsons.map { job_json ->
+        def job = new groovy.json.JsonSlurper().parseText(job_json.text)
+        def meta = [id: job.recording_name, session: job.session_name]
+        def zarrs = { dict -> by_stream ? zarrNames(dict).unique().collect { zarr_root.resolve(it) } : [] }
+        def ap_zarrs = zarrs(job.recording_dict)
+        if (by_stream && !ap_zarrs) {
+            error "No zarr found in ${job_json.name} for ${meta.id}"
+        }
+        [meta, job_json, ap_zarrs, zarrs(job.recording_lfp_dict)]
+    }
+    // only QC and NWB read the LFP stream
+    streams = jobs.map { meta, job_json, ap_zarrs, lfp_zarrs -> [meta, job_json, ap_zarrs] }
+    stream_zarrs = jobs.map { meta, job_json, ap_zarrs, lfp_zarrs -> [meta, ap_zarrs + lfp_zarrs] }
+
     // Preprocessing
     preprocessing_out = preprocessing(
         max_duration_minutes,
-        ecephys_ch.collect(),
-        job_dispatch_out.results.flatten()
+        streams,
+        session_files_ch
     )
 
     // Spike sorting based on selected sorter
@@ -1063,10 +1183,8 @@ workflow {
     // Postprocessing
     postprocessing_out = postprocessing(
         max_duration_minutes,
-        ecephys_ch.collect(),
-        job_dispatch_out.results.flatten(),
-        preprocessing_out.results.collect(),
-        spikesort_out.results.collect()
+        streams.join(preprocessing_out.results, failOnMismatch: true).join(spikesort_out.results, failOnMismatch: true),
+        session_files_ch
     )
 
     // Curation
@@ -1075,56 +1193,84 @@ workflow {
         postprocessing_out.results
     )
 
-    // Visualization
+    // Visualization: only its own stream; sorting contributes just its sorter name
     visualization_out = visualization(
         max_duration_minutes,
-        ecephys_ch.collect(),
-        job_dispatch_out.results.collect(),
-        preprocessing_out.results,
-        spikesort_out.results.collect(),
-        postprocessing_out.results.collect(),
-        curation_out.results.collect()
+        streams
+            .join(preprocessing_out.results, failOnMismatch: true)
+            .join(spikesort_out.results.map { meta, files -> [meta, pick(files) { it.name.startsWith('data_process_spikesorting') }] }, failOnMismatch: true)
+            .join(postprocessing_out.results, failOnMismatch: true)
+            .join(curation_out.results, failOnMismatch: true)
     )
 
-    // Results collection
+    // Results collection: everything except the preprocessed binaries, which the collector never reads
+    collector_stream_results = preprocessing_out.results
+        .map { meta, files -> pick(files) { it.name != "preprocessed_${meta.id}" && !it.name.startsWith('preprocessedviz_') } }
+        .mix(
+            spikesort_out.results.map { meta, files -> files },
+            postprocessing_out.results.map { meta, files -> files },
+            curation_out.results.map { meta, files -> files },
+            visualization_out.results.map { meta, files -> files }
+        )
+        .flatten()
+        .collect()
     results_collector_out = results_collector(
         max_duration_minutes,
-        ecephys_ch.collect(),
-        job_dispatch_out.results.collect(),
-        preprocessing_out.results.collect(),
-        spikesort_out.results.collect(),
-        postprocessing_out.results.collect(),
-        curation_out.results.collect(),
-        visualization_out.results.collect()
+        session_files_ch,
+        job_jsons.collect(),
+        collector_stream_results
     )
+    collector_items = results_collector_out.results.collect()
 
-    // Quality control
+    // Quality control: this stream's slice of the collector output
+    qc_inputs = streams
+        .join(stream_zarrs, failOnMismatch: true)
+        .map { meta, job_json, ap_zarrs, zarrs -> [meta, job_json, zarrs] }
+        .combine(collector_items.map { [it] })
+        .map { meta, job_json, zarrs, items ->
+            def by_name = items.collectEntries { [it.name, it] }
+            def existing = { String folder, String name ->
+                def p = by_name[folder]?.resolve(name)
+                p != null && p.exists() ? [p] : []
+            }
+            [
+                meta, job_json, zarrs,
+                existing('preprocessed', "${meta.id}.json"),
+                existing('preprocessed', "motion/${meta.id}"),
+                existing('spikesorted', "motion/${meta.id}"),
+                existing('postprocessed', "${meta.id}.zarr"),
+                existing('curated', meta.id),
+                items.findAll { it.name in ['processing.json', 'visualization_output.json'] },
+            ]
+        }
     quality_control_out = quality_control(
         max_duration_minutes,
-        ecephys_ch.collect(),
-        job_dispatch_out.results.flatten(),
-        results_collector_out.qc_data.collect()
+        qc_inputs,
+        qc_session_files_ch
     )
 
     // Quality control collection
     quality_control_collector(
         max_duration_minutes,
-        quality_control_out.results.collect()
+        quality_control_out.results.map { meta, files -> files }.collect()
     )
 
-    // NWB ecephys
+    // NWB: session-level, all streams
+    nwb_zarrs = stream_zarrs.map { meta, zarrs -> zarrs }.flatten().unique().collect().ifEmpty([])
+
     nwb_ecephys_out = nwb_ecephys(
         max_duration_minutes,
-        ecephys_ch.collect(),
-        job_dispatch_out.results.collect(),
+        session_files_ch,
+        nwb_zarrs,
+        job_jsons.collect(),
     )
 
-    // NWB units
     nwb_units(
         max_duration_minutes,
-        ecephys_ch.collect(),
-        job_dispatch_out.results.collect(),
-        results_collector_out.nwb_data.collect(),
+        session_files_ch,
+        nwb_zarrs,
+        job_jsons.collect(),
+        collector_items.map { items -> items.findAll { it.name in ['postprocessed', 'spikesorted'] } },
         nwb_ecephys_out.results.collect()
     )
 }
