@@ -102,6 +102,7 @@ jobs:
     name: Nextflow tests
     needs: [checks, cache]
     uses: ./.github/workflows/_nextflow-tests.yml
+    secrets: inherit
     with:
       container_tag: ${{ needs.checks.outputs.version }}
       cache-key: ${{ needs.cache.outputs.cache-key }}
