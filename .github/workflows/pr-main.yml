@@ -1,0 +1,121 @@
+# PRs from dev into main (release PRs):
+#   source/version/release-notes checks -> promote {V}-dev images to {V}
+#   -> cache images -> Nextflow tests
+#
+# Promotion only happens if the {V}-dev images were built from the same
+# environment/ files as the PR head (org.aind.env-hash label).
+#
+# The `ci-ok` job is meant to be the required status check in branch protection.
+name: PR to main
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  checks:
+    name: Release checks
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      images: ${{ steps.images.outputs.images }}
+    steps:
+      - name: Check source branch
+        if: github.head_ref != 'dev'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          echo "::error::PRs into main must come from dev (got '$HEAD_REF')"
+          exit 1
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List images
+        id: images
+        run: echo "images=$(jq -c 'keys' environment/images.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Read pipeline version
+        id: version
+        run: echo "version=$(tr -d '[:space:]' < pipeline/pipeline_version.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Check version
+        run: python .github/scripts/check_version.py --mode main
+
+      - name: Check release notes are finalized
+        run: python .github/scripts/check_release_notes.py --mode main
+
+  promote:
+    name: Promote ${{ matrix.image }}
+    needs: checks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(needs.checks.outputs.images) }}
+    env:
+      GHCR_CREDS: ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
+      VERSION: ${{ needs.checks.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check -dev image is up to date
+        id: info
+        run: |
+          NAME=$(.github/scripts/image_info.sh ${{ matrix.image }} name)
+          HASH=$(.github/scripts/image_info.sh ${{ matrix.image }} hash)
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          REMOTE_HASH=$(skopeo inspect --creds "$GHCR_CREDS" "docker://$NAME:$VERSION-dev" 2>/dev/null \
+            | jq -r '.Labels["org.aind.env-hash"] // empty' || true)
+          echo "$NAME:$VERSION-dev env-hash: ${REMOTE_HASH:-<missing>} (expected $HASH)"
+          if [[ "$REMOTE_HASH" != "$HASH" ]]; then
+            echo "::error::$NAME:$VERSION-dev is missing or was not built from the current environment/. Push to dev to rebuild it (pr-dev.yml)."
+            exit 1
+          fi
+
+      - name: Promote ${{ matrix.image }}:${{ needs.checks.outputs.version }}-dev to ${{ needs.checks.outputs.version }}
+        run: |
+          NAME=${{ steps.info.outputs.name }}
+          skopeo copy --all --src-creds "$GHCR_CREDS" --dest-creds "$GHCR_CREDS" \
+            "docker://$NAME:$VERSION-dev" "docker://$NAME:$VERSION"
+
+  cache:
+    name: Cache images
+    needs: [checks, promote]
+    uses: ./.github/workflows/_cache-images.yml
+    with:
+      tag: ${{ needs.checks.outputs.version }}
+
+  tests:
+    name: Nextflow tests
+    needs: [checks, cache]
+    uses: ./.github/workflows/_nextflow-tests.yml
+    with:
+      container_tag: ${{ needs.checks.outputs.version }}
+      cache-key: ${{ needs.cache.outputs.cache-key }}
+
+  ci-ok:
+    name: ci-ok
+    needs: [checks, promote, cache, tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all jobs
+        run: |
+          echo "checks=${{ needs.checks.result }} promote=${{ needs.promote.result }}"
+          echo "cache=${{ needs.cache.result }} tests=${{ needs.tests.result }}"
+          for result in "${{ needs.checks.result }}" "${{ needs.promote.result }}" "${{ needs.cache.result }}" "${{ needs.tests.result }}"; do
+            [[ "$result" == "success" ]] || { echo "::error::Required job did not succeed"; exit 1; }
+          done
