@@ -37,6 +37,9 @@ Refactor:
 * Move ``EXTRA_INSTALLS`` from ``process_versions.env`` to the ``extra_installs`` parameter (Nextflow config or
   ``--extra_installs``, comma-separated), so ``process_versions.env`` only contains process versions
 
+Deprecations:
+
+* Default schema updated to 1.4.1+ and incompatible with previous versions (metrics section)
 
 Package versions
 ----------------

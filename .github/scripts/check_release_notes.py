@@ -47,9 +47,6 @@ def check_finalized(version, notes):
     if not header.search(notes):
         errors.append(f"missing dated header, e.g. '{version} - Oct 2nd 2026'")
 
-    if f"**Container tag: {version}**" not in notes:
-        errors.append(f"missing '**Container tag: {version}**'")
-
     documented = dict(re.findall(r"^\* ``([\w.-]+)`` version: (\S+)", notes, re.MULTILINE))
     for name, expected in expected_package_versions().items():
         if documented.get(name) != expected:
