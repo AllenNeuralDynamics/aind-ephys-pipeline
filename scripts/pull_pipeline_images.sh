@@ -5,12 +5,6 @@
 #   pull_pipeline_images.sh [--cache CACHE_DIR] [--tag X.Y.Z] [--sorter SORTER] [--engine ENGINE]
 #
 # Defaults:
-<<<<<<< HEAD
-#   --cache   : $NXF_SINGULARITY_CACHEDIR
-#   --tag     : resolved from pipeline/capsule_versions.env (PIPELINE_VERSION)
-#               or defaults to pipeline version
-#   --sorter  : kilosort4   (options: kilosort25, kilosort4, spykingcircus2, all)
-=======
 #   --cache   : $NXF_APPTAINER_CACHEDIR or $NXF_SINGULARITY_CACHEDIR
 #   --tag     : contents of pipeline/pipeline_version.txt
 #   --sorter  : kilosort4   (options: kilosort25, kilosort4, spykingcircus2, lupin, none, all)
@@ -18,7 +12,6 @@
 #               With docker, images are pulled and saved as compressed
 #               archives (<name>.tar.zst) in CACHE_DIR, which can be restored with:
 #                 for f in CACHE_DIR/*.tar.zst; do zstd -dc "$f" | docker load; done
->>>>>>> dev
 #
 
 set -euo pipefail
@@ -54,14 +47,6 @@ fi
 # ------------------------------
 # Resolve engine
 # ------------------------------
-<<<<<<< HEAD
-if [[ -z "$TAG" ]]; then
-  if [[ -f "../pipeline/capsule_versions.env" ]]; then
-    PIPELINE_VERSION=$(grep -E '^PIPELINE_VERSION=' pipeline/capsule_versions.env | cut -d= -f2 | tr -d '[:space:]')
-    if [[ -n "$PIPELINE_VERSION" ]]; then
-      TAG="$PIPELINE_VERSION"
-    fi
-=======
 if [[ -z "$ENGINE" ]]; then
   if command -v singularity >/dev/null 2>&1; then
     ENGINE="singularity"
@@ -70,7 +55,6 @@ if [[ -z "$ENGINE" ]]; then
   else
     echo "ERROR: neither singularity nor apptainer found in PATH (use --engine docker for docker)" >&2
     exit 127
->>>>>>> dev
   fi
 fi
 
@@ -101,13 +85,8 @@ if [[ -z "$TAG" && -f "$PIPELINE_DIR/pipeline_version.txt" ]]; then
 fi
 
 if [[ -z "$TAG" ]]; then
-<<<<<<< HEAD
-  echo "ERROR: could not find tag" >&2
-  exit 1
-=======
   echo "ERROR: could not resolve container tag, use --tag" >&2
   exit 64
->>>>>>> dev
 fi
 
 # ------------------------------
