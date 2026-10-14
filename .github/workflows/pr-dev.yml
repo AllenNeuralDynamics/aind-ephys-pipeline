@@ -1,0 +1,98 @@
+# PRs into dev (and pushes to dev):
+#   version check -> build {V}-dev images -> cache images -> Nextflow tests
+#
+# Pushes to dev rebuild {V}-dev from the dev HEAD, so that the -dev images
+# always match the dev branch before being promoted to a release (pr-main.yml).
+#
+# The `ci-ok` job is meant to be the required status check in branch protection.
+name: PR to dev
+
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  meta:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.version }}-dev
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check PR is not from a fork
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "::error::PRs from forks cannot push the -dev container images to ghcr. Please push your branch to ${{ github.repository }}."
+          exit 1
+
+      - name: Read pipeline version
+        id: version
+        run: echo "version=$(tr -d '[:space:]' < pipeline/pipeline_version.txt)" >> "$GITHUB_OUTPUT"
+
+  version:
+    name: Check version
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version is ahead of the latest release
+        run: python .github/scripts/check_version.py --mode dev
+
+  images:
+    name: Build images
+    needs: [meta, version]
+    if: ${{ !cancelled() && needs.meta.result == 'success' && contains(fromJSON('["success", "skipped"]'), needs.version.result) }}
+    uses: ./.github/workflows/_build-images.yml
+    with:
+      tag: ${{ needs.meta.outputs.tag }}
+
+  cache:
+    name: Cache images
+    needs: [meta, images]
+    if: ${{ !cancelled() && needs.images.result == 'success' }}
+    uses: ./.github/workflows/_cache-images.yml
+    with:
+      tag: ${{ needs.meta.outputs.tag }}
+
+  tests:
+    name: Nextflow tests
+    needs: [meta, cache]
+    if: ${{ !cancelled() && needs.cache.result == 'success' }}
+    uses: ./.github/workflows/_nextflow-tests.yml
+    secrets: inherit
+    with:
+      container_tag: ${{ needs.meta.outputs.tag }}
+      cache-key: ${{ needs.cache.outputs.cache-key }}
+
+  ci-ok:
+    name: ci-ok
+    needs: [meta, version, images, cache, tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all jobs
+        run: |
+          echo "meta=${{ needs.meta.result }} version=${{ needs.version.result }} images=${{ needs.images.result }}"
+          echo "cache=${{ needs.cache.result }} tests=${{ needs.tests.result }}"
+          for result in "${{ needs.meta.result }}" "${{ needs.images.result }}" "${{ needs.cache.result }}" "${{ needs.tests.result }}"; do
+            [[ "$result" == "success" ]] || { echo "::error::Required job did not succeed"; exit 1; }
+          done
+          [[ "${{ needs.version.result }}" =~ ^(success|skipped)$ ]] || { echo "::error::Version check failed"; exit 1; }

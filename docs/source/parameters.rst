@@ -187,8 +187,8 @@ Parameter file section (``job_dispatch``):
 
 .. note::
 
-   If the reader needs extra packages installed, specify them in the ``EXTRA_INSTALLS`` variable in the ``capsule_versions.env`` file 
-   (e.g. ``EXTRA_INSTALLS="mtscomp"``).
+   If the reader needs extra packages installed, specify them in the ``extra_installs`` parameter of your Nextflow config file or with ``--extra_installs``
+   (e.g. ``params.extra_installs = "mtscomp"``). Multiple packages are comma-separated.
 
 
 Preprocessing Parameters
@@ -520,7 +520,7 @@ Parameter file section (``postprocessing``):
                ],
                "metric_params": {
                    "presence_ratio": { "bin_duration_s": 60 },
-                   "snr": { "peak_sign": "neg", "peak_mode": "extremum" },
+                   "snr": { "method": "extremum" },
                    "isi_violation": { "isi_threshold_ms": 1.5, "min_isi_ms": 0 },
                    "rp_violation": { "refractory_period_ms": 1, "censored_period_ms": 0.0 },
                    "sliding_rp_violation": {

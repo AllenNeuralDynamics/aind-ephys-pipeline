@@ -119,7 +119,7 @@ Detailed Architecture Diagram
        executor -.->|"Executes"| pipeline
 
        %% Version control
-       versions["📋 <a href='https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/blob/main/pipeline/capsule_versions.env'>capsule_versions.env</a><br/>Pins Git commit hashes<br/>for each step"]
+       versions["📋 <a href='https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/blob/main/pipeline/process_versions.env'>process_versions.env</a><br/>Pins Git commit hashes<br/>for each step"]
        pipeline -.->|"Version controlled<br/>via"| versions
 
        %% Styling
@@ -183,7 +183,7 @@ Data Flow
 Version Control
 ~~~~~~~~~~~~~~~
 
-Git commit hashes in ``capsule_versions.env`` pin exact versions of each processing step's repository,
+Git commit hashes in ``process_versions.env`` pin exact versions of each processing step's repository,
 ensuring reproducibility across pipeline runs.
 
 Pipeline Steps Detailed Breakdown

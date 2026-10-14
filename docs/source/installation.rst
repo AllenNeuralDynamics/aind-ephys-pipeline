@@ -32,29 +32,26 @@ Installation Steps
 
    Follow the `Docker installation instructions <https://docs.docker.com/engine/install/>`_
 
-3. (Optional) Set up Figurl:
+3. (Optional) Set up Figpack:
+   
+   Figpack is a service for managing and sharing scientific data.
 
-   a. Initialize Kachery Client:
-
-      i. Register at `kachery.vercel.app <https://kachery.vercel.app/>`_ using your GitHub account.
-      ii. Go to settings and provide your name, an email address and a short description of your research purpose.
-      iii. Set the ``KACHERY_API_KEY`` environment variable with your assigned API key.
-
+   a. Go to `https://figpack.org/` and request an API key.
    b. Set credentials:
       
-      * Click on settings and generate a new API key.
-      * Set environment variables:
+      Set the ``FIGPACK_API_KEY`` and ``FIGPACK_UPLOAD`` environment variables:
 
       .. code-block:: bash
 
-         export KACHERY_API_KEY="your-client-id"
-         # Optional: Set custom Kachery zone
-         export KACHERY_ZONE="your-zone"
+         export FIGPACK_API_KEY="your-api-key"
+         export FIGPACK_UPLOAD=1
 
-   c. (optional) Set up a custom kachery zone:
+   c. Set up a custom Figpack bucket:
 
-      If you plan to use the Figurl service extensively, please consider creating your own "zone".
-      Follow the instructions in the `Kachery documentation <https://github.com/magland/kachery>`_.
+      If you plan to use the Figpack service extensively and you want to have 
+      control over your web visualizations, please consider creating your 
+      setting up your own bucket for Figpack to use. You can easily set it up 
+      using the ``Buckets`` section in the Figpack web interface.
 
 4. Clone the pipeline repository:
 
