@@ -25,7 +25,7 @@ Refactor:
 * Rename ``requirements.txt`` to ``package-versions.txt``
 * Added parameter validation as a process
 * Add ``pipeline/pipeline_version.txt``
-* Add explicit ``CONTAINER_TAG`` in ``capsule_versions.env``
+* Add explicit ``CONTAINER_TAG`` in ``process_versions.env``
 * Moved ``sample_data`` under ``tests``
 * Move ``pull_pipeline_images.sh`` under ``scripts``
 * Add optional ``logging`` section to params to control logging across processes
@@ -35,8 +35,6 @@ Refactor:
 
 Package versions
 ----------------
-
-**Container tag: 1.4.0**
 
 * ``spikeinterface`` version: 0.105.0
 * ``aind-data-schema`` version: 2.8.1

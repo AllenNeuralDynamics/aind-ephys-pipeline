@@ -62,9 +62,9 @@ println "PARAMS: ${params}"
 // get commit hashes for capsules
 def parse_capsule_versions() {
     // Check for custom versions file first, fall back to default
-    def versionsFile = file("${baseDir}/capsule_versions_custom.env")
+    def versionsFile = file("${baseDir}/process_versions_custom.env")
     if (!versionsFile.exists()) {
-        versionsFile = file("${baseDir}/capsule_versions.env")
+        versionsFile = file("${baseDir}/process_versions.env")
     }
     def capsule_versions = versionsFile.toString()
     println "Using capsule versions file at: ${capsule_versions}"
@@ -89,31 +89,31 @@ def parse_capsule_versions() {
 versions = parse_capsule_versions()
 
 // Allow CLI/config to override individual step repos and commits.
-// Usage: --preprocessing_repo <url> --preprocessing_commit <hash>
+// Usage: --preprocessing_repo <url> --preprocessing_version <hash>
 // (Nextflow converts --foo-bar to params.foo_bar automatically)
 def step_version_keys = [
-    'job_dispatch':              ['JOB_DISPATCH_REPO',              'JOB_DISPATCH_COMMIT'],
-    'preprocessing':             ['PREPROCESSING_REPO',             'PREPROCESSING_COMMIT'],
-    'spikesort_ks25':            ['SPIKESORT_KS25_REPO',            'SPIKESORT_KS25_COMMIT'],
-    'spikesort_ks4':             ['SPIKESORT_KS4_REPO',             'SPIKESORT_KS4_COMMIT'],
-    'spikesort_sc2':             ['SPIKESORT_SC2_REPO',             'SPIKESORT_SC2_COMMIT'],
-    'spikesort_lupin':           ['SPIKESORT_LUPIN_REPO',           'SPIKESORT_LUPIN_COMMIT'],
-    'postprocessing':            ['POSTPROCESSING_REPO',            'POSTPROCESSING_COMMIT'],
-    'curation':                  ['CURATION_REPO',                  'CURATION_COMMIT'],
-    'visualization':             ['VISUALIZATION_REPO',             'VISUALIZATION_COMMIT'],
-    'results_collector':         ['RESULTS_COLLECTOR_REPO',         'RESULTS_COLLECTOR_COMMIT'],
-    'quality_control':           ['QUALITY_CONTROL_REPO',           'QUALITY_CONTROL_COMMIT'],
-    'quality_control_collector': ['QUALITY_CONTROL_COLLECTOR_REPO', 'QUALITY_CONTROL_COLLECTOR_COMMIT'],
-    'nwb_ecephys':               ['NWB_ECEPHYS_REPO',               'NWB_ECEPHYS_COMMIT'],
-    'nwb_units':                 ['NWB_UNITS_REPO',                 'NWB_UNITS_COMMIT'],
+    'job_dispatch':              ['JOB_DISPATCH_REPO',              'JOB_DISPATCH_VERSION'],
+    'preprocessing':             ['PREPROCESSING_REPO',             'PREPROCESSING_VERSION'],
+    'spikesort_ks25':            ['SPIKESORT_KS25_REPO',            'SPIKESORT_KS25_VERSION'],
+    'spikesort_ks4':             ['SPIKESORT_KS4_REPO',             'SPIKESORT_KS4_VERSION'],
+    'spikesort_sc2':             ['SPIKESORT_SC2_REPO',             'SPIKESORT_SC2_VERSION'],
+    'spikesort_lupin':           ['SPIKESORT_LUPIN_REPO',           'SPIKESORT_LUPIN_VERSION'],
+    'postprocessing':            ['POSTPROCESSING_REPO',            'POSTPROCESSING_VERSION'],
+    'curation':                  ['CURATION_REPO',                  'CURATION_VERSION'],
+    'visualization':             ['VISUALIZATION_REPO',             'VISUALIZATION_VERSION'],
+    'results_collector':         ['RESULTS_COLLECTOR_REPO',         'RESULTS_COLLECTOR_VERSION'],
+    'quality_control':           ['QUALITY_CONTROL_REPO',           'QUALITY_CONTROL_VERSION'],
+    'quality_control_collector': ['QUALITY_CONTROL_COLLECTOR_REPO', 'QUALITY_CONTROL_COLLECTOR_VERSION'],
+    'nwb_ecephys':               ['NWB_ECEPHYS_REPO',               'NWB_ECEPHYS_VERSION'],
+    'nwb_units':                 ['NWB_UNITS_REPO',                 'NWB_UNITS_VERSION'],
 ]
 step_version_keys.each { step, keys ->
     if (params.containsKey("${step}_repo")) {
         versions[keys[0]] = params["${step}_repo"]
         println "OVERRIDE ${keys[0]} (from CLI): ${versions[keys[0]]}"
     }
-    if (params.containsKey("${step}_commit")) {
-        versions[keys[1]] = params["${step}_commit"]
+    if (params.containsKey("${step}_version")) {
+        versions[keys[1]] = params["${step}_version"]
         println "OVERRIDE ${keys[1]} (from CLI): ${versions[keys[1]]}"
     }
 }
@@ -132,7 +132,7 @@ pipelineUrl = "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline"
 println "PIPELINE VERSION: ${pipelineVersion}"
 println "PIPELINE URL: ${pipelineUrl}"
 
-// container tag: CLI/config > CONTAINER_TAG env var > capsule_versions.env
+// container tag: CLI/config > CONTAINER_TAG env var > pipeline_version.txt
 def env_container_tag = System.getenv('CONTAINER_TAG')
 if (params.containsKey('container_tag')) {
     println "CONTAINER TAG (from CLI/config): ${params.container_tag}"
@@ -140,10 +140,13 @@ if (params.containsKey('container_tag')) {
     params.container_tag = env_container_tag
     println "CONTAINER TAG (from ENV): ${params.container_tag}"
 } else {
-    params.container_tag = "${versions['CONTAINER_TAG']}"
-    println "CONTAINER TAG (from versions file): ${params.container_tag}"
+    if (!pipelineVersion) {
+        error "Cannot determine container tag: set --container_tag, CONTAINER_TAG env var, or provide pipeline_version.txt"
+    }
+    params.container_tag = pipelineVersion
+    println "CONTAINER TAG (from pipeline_version.txt): ${params.container_tag}"
 }
-params.extra_installs = versions['EXTRA_INSTALLS'] ?: ""
+params.extra_installs = params.extra_installs ?: ""
 if (params.extra_installs) {
     println "Extra installs specified: ${params.extra_installs}"
 } else {
@@ -290,7 +293,7 @@ process job_dispatch {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['JOB_DISPATCH_REPO']}" "${versions['JOB_DISPATCH_COMMIT']}"
+    clone_repo "${versions['JOB_DISPATCH_REPO']}" "${versions['JOB_DISPATCH_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -341,7 +344,7 @@ process preprocessing {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['PREPROCESSING_REPO']}" "${versions['PREPROCESSING_COMMIT']}"
+    clone_repo "${versions['PREPROCESSING_REPO']}" "${versions['PREPROCESSING_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -382,7 +385,7 @@ process spikesort_kilosort25 {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['SPIKESORT_KS25_REPO']}" "${versions['SPIKESORT_KS25_COMMIT']}"
+    clone_repo "${versions['SPIKESORT_KS25_REPO']}" "${versions['SPIKESORT_KS25_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -423,7 +426,7 @@ process spikesort_kilosort4 {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['SPIKESORT_KS4_REPO']}" "${versions['SPIKESORT_KS4_COMMIT']}"
+    clone_repo "${versions['SPIKESORT_KS4_REPO']}" "${versions['SPIKESORT_KS4_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -464,7 +467,7 @@ process spikesort_spykingcircus2 {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['SPIKESORT_SC2_REPO']}" "${versions['SPIKESORT_SC2_COMMIT']}"
+    clone_repo "${versions['SPIKESORT_SC2_REPO']}" "${versions['SPIKESORT_SC2_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -505,7 +508,7 @@ process spikesort_lupin {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['SPIKESORT_LUPIN_REPO']}" "${versions['SPIKESORT_LUPIN_COMMIT']}"
+    clone_repo "${versions['SPIKESORT_LUPIN_REPO']}" "${versions['SPIKESORT_LUPIN_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -552,7 +555,7 @@ process postprocessing {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['POSTPROCESSING_REPO']}" "${versions['POSTPROCESSING_COMMIT']}"
+    clone_repo "${versions['POSTPROCESSING_REPO']}" "${versions['POSTPROCESSING_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -593,7 +596,7 @@ process curation {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['CURATION_REPO']}" "${versions['CURATION_COMMIT']}"
+    clone_repo "${versions['CURATION_REPO']}" "${versions['CURATION_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -642,7 +645,7 @@ process visualization {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['VISUALIZATION_REPO']}" "${versions['VISUALIZATION_COMMIT']}"
+    clone_repo "${versions['VISUALIZATION_REPO']}" "${versions['VISUALIZATION_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -697,7 +700,7 @@ process results_collector {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['RESULTS_COLLECTOR_REPO']}" "${versions['RESULTS_COLLECTOR_COMMIT']}"
+    clone_repo "${versions['RESULTS_COLLECTOR_REPO']}" "${versions['RESULTS_COLLECTOR_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -744,7 +747,7 @@ process quality_control {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['QUALITY_CONTROL_REPO']}" "${versions['QUALITY_CONTROL_COMMIT']}"
+    clone_repo "${versions['QUALITY_CONTROL_REPO']}" "${versions['QUALITY_CONTROL_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -785,7 +788,7 @@ process quality_control_collector {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['QUALITY_CONTROL_COLLECTOR_REPO']}" "${versions['QUALITY_CONTROL_COLLECTOR_COMMIT']}"
+    clone_repo "${versions['QUALITY_CONTROL_COLLECTOR_REPO']}" "${versions['QUALITY_CONTROL_COLLECTOR_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -831,7 +834,7 @@ process nwb_ecephys {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['NWB_ECEPHYS_REPO']}" "${versions['NWB_ECEPHYS_COMMIT']}"
+    clone_repo "${versions['NWB_ECEPHYS_REPO']}" "${versions['NWB_ECEPHYS_VERSION']}"
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -874,7 +877,7 @@ process nwb_units {
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
-    clone_repo "${versions['NWB_UNITS_REPO']}" "${versions['NWB_UNITS_COMMIT']}"
+    clone_repo "${versions['NWB_UNITS_REPO']}" "${versions['NWB_UNITS_VERSION']}"
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"

@@ -23,6 +23,6 @@ tests/sample_dataset/**results
 
 # User-specific files
 pipeline/nextflow_slurm_custom.config
-pipeline/capsule_versions_custom.env
+pipeline/process_versions_custom.env
 .idea
 .claude
