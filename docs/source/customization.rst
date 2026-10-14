@@ -10,7 +10,7 @@ Customizing Pipeline Steps
 Each step of the pipeline (e.g., job dispatch, preprocessing, spike sorting, postprocessing, etc.) is implemented in a 
 separate GitHub repository and runs at from specific commit hash. The most straightforward way to customize the 
 pipeline is to fork these repositories and then point the pipeline to your custom fork by changing the commit hash.
-Instead of changing the default ``capsule_versions.env`` file, we recommend creating a new ``capsule_versions_custom.env`` 
+Instead of changing the default ``process_versions.env`` file, we recommend creating a new ``process_versions_custom.env`` 
 file that specifies the commit hashes of your custom versions of the steps you want to modify.
 
 For example, let's imagine you want to customize the preprocessing step to add an artifact removal step that is not 
@@ -18,24 +18,24 @@ currently included in the default preprocessing pipeline.
 
 You would first fork the ``aind-ephys-preprocessing`` repository (obtaining your own copy: <https://github.com/your_username/aind-ephys-preprocessing>).
 Then, you would implement your custom preprocessing pipeline in your fork, and then get the commit hash of the version you want to use. 
-Then, you would create a ``capsule_versions_custom.env`` file with the following content:
+Then, you would create a ``process_versions_custom.env`` file with the following content:
 
 .. code:: bash
 
     PREPROCESSING_REPO=https://github.com/your_username/aind-ephys-preprocessing
-    PREPROCESSING_COMMIT=commit_hash_of_your_custom_version
+    PREPROCESSING_VERSION=commit_hash_of_your_custom_version
 
 
 Overriding versions from the command line
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Instead of (or in addition to) editing a ``capsule_versions_custom.env`` file, you can override the repo URL,
+Instead of (or in addition to) editing a ``process_versions_custom.env`` file, you can override the repo URL,
 commit hash, or container tag for any step directly on the Nextflow command line. This is convenient for
 one-off tests or CI runs where you do not want to persist a custom env file.
 
 **Container tag**
 
-The container tag follows this precedence: CLI/config > ``CONTAINER_TAG`` environment variable > ``capsule_versions.env``.
+The container tag follows this precedence: CLI/config > ``CONTAINER_TAG`` environment variable > ``process_versions.env``.
 
 .. code:: bash
 
@@ -43,7 +43,7 @@ The container tag follows this precedence: CLI/config > ``CONTAINER_TAG`` enviro
 
 **Per-step repo and commit**
 
-Each step exposes two parameters: ``<step>_repo`` and ``<step>_commit``.
+Each step exposes two parameters: ``<step>_repo`` and ``<step>_version``.
 Either can be overridden independently — you can pin a different commit of the official repo without
 changing the URL, or point to a fork without changing the commit.
 
@@ -51,12 +51,12 @@ changing the URL, or point to a fork without changing the commit.
 
     # Override just the commit (keeps the default repo URL)
     nextflow run pipeline/main_multi_backend.nf \
-        --preprocessing_commit abc123def ...
+        --preprocessing_version abc123def ...
 
     # Override both repo and commit (e.g. a personal fork)
     nextflow run pipeline/main_multi_backend.nf \
         --preprocessing_repo https://github.com/your_username/aind-ephys-preprocessing \
-        --preprocessing_commit abc123def ...
+        --preprocessing_version abc123def ...
 
 The full list of step names is:
 
@@ -100,7 +100,7 @@ The full list of step names is:
     Nextflow automatically converts dashes to underscores in parameter names, so
     ``--preprocessing-repo`` and ``--preprocessing_repo`` are equivalent.
 
-CLI overrides take precedence over both ``capsule_versions.env`` and ``capsule_versions_custom.env``.
+CLI overrides take precedence over both ``process_versions.env`` and ``process_versions_custom.env``.
 
 
 Custom Data Ingestion (``job_dispatch``)
@@ -116,7 +116,7 @@ data format by forking the ``aind-ephys-job-dispatch`` repository and implementi
 format and prepare it for preprocessing.
 
 In addition, if your data format requires additional Python packages to be read, you can specify them in the 
-``EXTRA_INSTALLS`` variable of ``capsule_versions_custom.env``. This variable should contain a string that ``pip`` can parse,
+``EXTRA_INSTALLS`` variable of ``process_versions_custom.env``. This variable should contain a string that ``pip`` can parse,
 for example:
 
 .. code:: bash
@@ -228,12 +228,12 @@ https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-template
 
 1. Create a GitHub repo using this template (top right: "Use this template") (e.g., ``https://github.com/new-sorter-capsule-repo.git``) with the custom spike sorting implementation. 
 2. Fill in the SORTER_NAME, URL, and VERSION variables in the ``run_capsule.py`` file with the appropriate values for your sorter and repository.
-3. | Commit and push the code to your GitHub repo. Add an entry to the ``capsule_versions.env`` (or ``capsule_versions_custom.env``) file with 
+3. | Commit and push the code to your GitHub repo. Add an entry to the ``process_versions.env`` (or ``process_versions_custom.env``) file with 
    | the commit hash of the version you want to use for your sorter (e.g., ``SPIKESORT_NEWSORTER=commit_hash``).
 4. | If the new sorter requires additional dependencies that are not included in the existing spike sorting capsule image,
    | create a new Docker image that includes these dependencies and push it to a container registry (e.g., Docker Hub, GitHub Container Registry, etc.).
    | Let's assume the new container image is called ``awesome-sorter/my-new-sorter-container:latest``.
-5. | Add the commit hash of the version of the sorter you want to use in the ``capsule_versions.env`` file: ``SPIKESORT_NEWSORTER=commit_hash``.
+5. | Add the commit hash of the version of the sorter you want to use in the ``process_versions.env`` file: ``SPIKESORT_NEWSORTER=commit_hash``.
    | This file is used to define the versions of the sorter and the capsule. The commit hash should be the one you want to use for your sorter.
 6. | Add a new process to the ``main_multi_backend.nf`` file that defines how to run the new spike sorting algorithm using the capsule. 
    | You can use the existing spike sorting processes (e.g., ``spikesort_kilosort25``, ``spikesort_kilosort4``, ``spikesort_spykingcircus2``)

@@ -1,7 +1,7 @@
 """Check that the pipeline version is ahead of the latest release.
 
 - pipeline_version.txt ({V}) > latest semver git tag
-- CONTAINER_TAG in capsule_versions.env == {V}
+- CONTAINER_TAG in process_versions.env == {V}
   (on dev, CI tests against {V}-dev by setting the CONTAINER_TAG env var)
 
 The --mode argument is kept for symmetry with check_release_notes.py:
@@ -20,7 +20,9 @@ SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 VERSION_FILE = REPO_ROOT / "pipeline" / "pipeline_version.txt"
-VERSIONS_ENV = REPO_ROOT / "pipeline" / "capsule_versions.env"
+VERSIONS_ENV = REPO_ROOT / "pipeline" / "process_versions.env"
+VERSIONS_ENV_LEGACY = REPO_ROOT / "pipeline" / "capsule_versions.env"
+
 
 
 def parse_semver(version):
@@ -35,9 +37,11 @@ def latest_release_tag():
 
 
 def read_container_tag():
-    for line in VERSIONS_ENV.read_text().splitlines():
-        if line.startswith("CONTAINER_TAG="):
-            return line.split("=", 1)[1].strip().strip('"')
+    for env_file in [VERSIONS_ENV, VERSIONS_ENV_LEGACY]:
+        if env_file.exists():
+            for line in env_file.read_text().splitlines():
+                if line.startswith("CONTAINER_TAG="):
+                    return line.split("=", 1)[1].strip().strip('"')
     return None
 
 
@@ -65,7 +69,7 @@ def main():
     print(f"CONTAINER_TAG: {container_tag}")
     if container_tag != version:
         errors.append(
-            f"CONTAINER_TAG in capsule_versions.env ({container_tag}) must be {version}. "
+            f"CONTAINER_TAG in process_versions.env ({container_tag}) must be {version}. "
             "The -dev suffix is added automatically by CI for PRs to dev."
         )
 
