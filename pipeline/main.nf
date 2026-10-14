@@ -264,10 +264,6 @@ def zarrNames(obj) {
     return []
 }
 
-// a single-file output arrives as a bare path, several as a list
-def pick(files, Closure keep) {
-    (files instanceof List ? files : [files]).findAll(keep)
-}
 
 // Process definitions
 process validate_params {
@@ -368,7 +364,7 @@ process preprocessing {
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
 
     output:
-    tuple val(meta), path('capsule/results/*'), emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
@@ -422,7 +418,7 @@ process spikesort_kilosort25 {
     tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    tuple val(meta), path('capsule/results/*'), emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
@@ -473,7 +469,7 @@ process spikesort_kilosort4 {
     tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    tuple val(meta), path('capsule/results/*'), emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
@@ -521,7 +517,7 @@ process spikesort_spykingcircus2 {
     tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    tuple val(meta), path('capsule/results/*'), emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
@@ -569,7 +565,7 @@ process spikesort_lupin {
     tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    tuple val(meta), path('capsule/results/*'), emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
@@ -620,7 +616,7 @@ process postprocessing {
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
 
     output:
-    tuple val(meta), path('capsule/results/*'), emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
@@ -672,7 +668,7 @@ process curation {
     tuple val(meta), path(postprocessing_results, stageAs: 'capsule/data/*')
 
     output:
-    tuple val(meta), path('capsule/results/*'), emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
@@ -721,7 +717,7 @@ process visualization {
     tuple val(meta), path(job_json, stageAs: 'capsule/data/*'), path(stream_zarrs, stageAs: zarrStage), path(preprocessing_results, stageAs: 'capsule/data/*'), path(spikesort_results, stageAs: 'capsule/data/*'), path(postprocessing_results, stageAs: 'capsule/data/*'), path(curation_results, stageAs: 'capsule/data/*')
 
     output:
-    tuple val(meta), path('capsule/results/*'), emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
@@ -834,7 +830,7 @@ process quality_control {
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
 
     output:
-    tuple val(meta), path('capsule/results/*'), emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
@@ -1198,14 +1194,14 @@ workflow {
         max_duration_minutes,
         streams
             .join(preprocessing_out.results, failOnMismatch: true)
-            .join(spikesort_out.results.map { meta, files -> [meta, pick(files) { it.name.startsWith('data_process_spikesorting') }] }, failOnMismatch: true)
+            .join(spikesort_out.results.map { meta, files -> [meta, files.findAll { it.name.startsWith('data_process_spikesorting') }] }, failOnMismatch: true)
             .join(postprocessing_out.results, failOnMismatch: true)
             .join(curation_out.results, failOnMismatch: true)
     )
 
     // Results collection: everything except the preprocessed binaries, which the collector never reads
     collector_stream_results = preprocessing_out.results
-        .map { meta, files -> pick(files) { it.name != "preprocessed_${meta.id}" && !it.name.startsWith('preprocessedviz_') } }
+        .map { meta, files -> files.findAll { it.name != "preprocessed_${meta.id}" && !it.name.startsWith('preprocessedviz_') } }
         .mix(
             spikesort_out.results.map { meta, files -> files },
             postprocessing_out.results.map { meta, files -> files },
