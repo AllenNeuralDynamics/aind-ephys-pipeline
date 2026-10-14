@@ -103,11 +103,20 @@ echo "Engine    : $ENGINE"
 
 # ------------------------------
 # Base + non-sorter images
+# (image names are defined in environment/images.json)
 # ------------------------------
-IMAGES=(
-  "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base"
-  "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb"
-)
+IMAGES_JSON="$SCRIPT_DIR/../environment/images.json"
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ERROR: jq not found in PATH (required to read $IMAGES_JSON)" >&2
+  exit 127
+fi
+
+image_ref() {
+  jq -er --arg k "$1" '.[$k].image_name | "ghcr.io/allenneuraldynamics/" + .' "$IMAGES_JSON"
+}
+
+IMAGES=("$(image_ref base)" "$(image_ref nwb)")
 
 # ------------------------------
 # Sorter selection
@@ -115,16 +124,13 @@ IMAGES=(
 # ------------------------------
 case "$SORTER" in
   kilosort25)
-    IMAGES+=("ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort25");;
+    IMAGES+=("$(image_ref ks25)");;
   kilosort4)
-    IMAGES+=("ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort4");;
+    IMAGES+=("$(image_ref ks4)");;
   spykingcircus2|lupin|none)
     ;;
   all)
-    IMAGES+=(
-      "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort25"
-      "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort4"
-    );;
+    IMAGES+=("$(image_ref ks25)" "$(image_ref ks4)");;
   *)
     echo "ERROR: invalid --sorter value '$SORTER' (valid: kilosort25, kilosort4, spykingcircus2, lupin, none, all)" >&2
     exit 65;;

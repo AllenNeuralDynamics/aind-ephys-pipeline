@@ -43,7 +43,7 @@ jobs:
         if: steps.version.outputs.release == 'true'
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          for image in base nwb ks25 ks4; do
+          for image in $(jq -r 'keys[]' environment/images.json); do
             NAME=$(.github/scripts/image_info.sh $image name)
             echo "Tagging $NAME:$VERSION as latest"
             skopeo copy --all --src-creds "$GHCR_CREDS" --dest-creds "$GHCR_CREDS" \

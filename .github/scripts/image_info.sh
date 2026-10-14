@@ -4,7 +4,7 @@
 # Usage:
 #   image_info.sh <image> <field>
 #
-#   image: base | nwb | ks25 | ks4
+#   image: a key of environment/images.json (base | nwb | ks25 | ks4)
 #   field: name       -> ghcr.io/allenneuraldynamics/<repo>
 #          dockerfile -> Dockerfile_<x> (relative to environment/)
 #          hash       -> content hash of the files the image is built from
@@ -15,18 +15,18 @@
 
 set -euo pipefail
 
-IMAGE="${1:?image required (base|nwb|ks25|ks4)}"
+IMAGE="${1:?image required (a key of environment/images.json)}"
 FIELD="${2:?field required (name|dockerfile|hash)}"
 
-case "$IMAGE" in
-  base) REPO="aind-ephys-pipeline-base";        DOCKERFILE="Dockerfile_base";;
-  nwb)  REPO="aind-ephys-pipeline-nwb";         DOCKERFILE="Dockerfile_nwb";;
-  ks25) REPO="aind-ephys-spikesort-kilosort25"; DOCKERFILE="Dockerfile_kilosort25";;
-  ks4)  REPO="aind-ephys-spikesort-kilosort4";  DOCKERFILE="Dockerfile_kilosort4";;
-  *) echo "Unknown image: $IMAGE" >&2; exit 64;;
-esac
-
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+IMAGES_JSON="$REPO_ROOT/environment/images.json"
+
+if ! jq -e --arg i "$IMAGE" 'has($i)' "$IMAGES_JSON" >/dev/null; then
+  echo "Unknown image: $IMAGE (valid: $(jq -r 'keys | join("|")' "$IMAGES_JSON"))" >&2
+  exit 64
+fi
+REPO=$(jq -r --arg i "$IMAGE" '.[$i].image_name' "$IMAGES_JSON")
+DOCKERFILE=$(jq -r --arg i "$IMAGE" '.[$i].dockerfile' "$IMAGES_JSON")
 
 case "$FIELD" in
   name)       echo "ghcr.io/allenneuraldynamics/${REPO}";;

@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      images: ${{ steps.images.outputs.images }}
     steps:
       - name: Check source branch
         if: github.head_ref != 'dev'
@@ -40,6 +41,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: List images
+        id: images
+        run: echo "images=$(jq -c 'keys' environment/images.json)" >> "$GITHUB_OUTPUT"
 
       - name: Read pipeline version
         id: version
@@ -58,7 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [base, nwb, ks25, ks4]
+        image: ${{ fromJSON(needs.checks.outputs.images) }}
     env:
       GHCR_CREDS: ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}
       VERSION: ${{ needs.checks.outputs.version }}

@@ -13,18 +13,41 @@ on:
         required: true
         type: string
       images:
-        description: JSON list of images to build
+        description: JSON list of images to build (default - all images in environment/images.json)
         required: false
         type: string
-        default: '["base", "nwb", "ks25", "ks4"]'
+        default: ''
 
 permissions:
   contents: read
   packages: write
 
 jobs:
+  list:
+    name: List images
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.list.outputs.images }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: List images
+        id: list
+        env:
+          INPUT_IMAGES: ${{ inputs.images }}
+        run: |
+          if [[ -n "$INPUT_IMAGES" ]]; then
+            IMAGES="$INPUT_IMAGES"
+          else
+            IMAGES=$(jq -c 'keys' environment/images.json)
+          fi
+          echo "Images: $IMAGES"
+          echo "images=$IMAGES" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build ${{ matrix.image }}:${{ inputs.tag }}
+    needs: list
     runs-on: ubuntu-latest
     concurrency:  # serialize pushes to the same (shared) tag
       group: images-${{ matrix.image }}-${{ inputs.tag }}
@@ -32,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ${{ fromJSON(inputs.images) }}
+        image: ${{ fromJSON(needs.list.outputs.images) }}
 
     steps:
       - name: Checkout repository
