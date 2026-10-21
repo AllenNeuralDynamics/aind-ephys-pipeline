@@ -9,6 +9,8 @@ pynwb==4.2.0
 pytz==2025.2
 hdbscan==0.8.41
 neuroconv==0.10.2
+zarr==2.18.7
+numcodecs==0.16.5
 wavpack-numcodecs==0.2.2
 hdmf==6.1.0
 hdmf-zarr==0.13.0
