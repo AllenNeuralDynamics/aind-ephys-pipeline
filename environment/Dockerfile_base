@@ -33,7 +33,7 @@ COPY package-versions.txt /tmp/package-versions.txt
 RUN pip install --upgrade pip && \
     grep -E '^torch==' /tmp/package-versions.txt | xargs pip install --index-url https://download.pytorch.org/whl/cpu
 
-RUN grep -E 'log-schema|aind-data-schema|aind-metadata-upgrader|aind-qcportal-schema|numcodecs|pyvips|sortingview|figpack|figpack-spike-sorting|matplotlib_venn|wavpack-numcodecs|pynwb|hdmf-zarr|hdbscan|s3fs|seaborn|scikit-learn|neo|scipy' \
+RUN grep -E 'log-schema|aind-data-schema|aind-metadata-upgrader|aind-qcportal-schema|pyvips|sortingview|figpack|figpack-spike-sorting|matplotlib_venn|wavpack-numcodecs|pynwb|hdmf-zarr|hdbscan|s3fs|seaborn|scikit-learn|neo|scipy' \
         /tmp/package-versions.txt | xargs pip install
 
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
