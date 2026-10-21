@@ -19,7 +19,7 @@ Refactor:
 Package versions
 ----------------
 
-* ``spikeinterface`` version: 0.105.2
+* ``spikeinterface`` version: 0.105.3
 * ``aind-data-schema`` version: 2.9.1
 * ``neo`` version: 0.14.5
 * ``pynwb`` version: 4.2.0
