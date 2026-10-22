@@ -1,0 +1,26 @@
+.. _1.4.2:
+
+1.4.2 - WIP
+===========
+
+Minor release with a new CI/CD and CodeOcean updates
+
+Pipeline:
+
+* Add new ``save_provenance`` step to the pipeline, which waves a ``provenance.json`` file containing 
+  the provenance information (versions, parameters, etc).
+* Fix support for inconsistent streams in NWB processes (`aind-ecephys-nwb#27 <https://github.com/AllenNeuralDynamics/aind-ecephys-nwb/pull/27>`_ - `aind-units-nwb#35 <https://github.com/AllenNeuralDynamics/aind-units-nwb/pull/35>`_).
+
+Refactor:
+
+* Unified ``main_multi_backend`` with ``main``, so all executors (including CodeOcean) use the same pipeline.
+
+
+Package versions
+----------------
+
+* ``spikeinterface`` version: 0.105.3
+* ``aind-data-schema`` version: 2.9.1
+* ``neo`` version: 0.14.5
+* ``pynwb`` version: 4.2.0
+* ``kilosort4`` version: 4.1.7
