@@ -42,6 +42,18 @@ def buildStepArgs(Map json_section, String cli_param_name, Map logging_params = 
     return args_map ? "--params '${groovy.json.JsonOutput.toJson(args_map)}'" : "--params '{}'"
 }
 
+// Forward the head job's temporary AWS credentials (Code Ocean ECS endpoint) to a task.
+// Called at task creation so the session token is fresh; returns '' outside Code Ocean.
+def awsCredentialsExports() {
+    def uri = System.getenv('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
+    if (!uri) return ''
+    def creds = new groovy.json.JsonSlurper().parseText(new URL("http://169.254.170.2${uri}").text)
+    return """export AWS_ACCESS_KEY_ID='${creds.AccessKeyId}'
+    export AWS_SECRET_ACCESS_KEY='${creds.SecretAccessKey}'
+    export AWS_SESSION_TOKEN='${creds.Token}'
+    echo "forwarded AWS credentials (expire ${creds.Expiration})\""""
+}
+
 println "DATA_PATH: ${DATA_PATH}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
@@ -670,6 +682,7 @@ process visualization {
     export CODE_REPO="${versions['VISUALIZATION_REPO']}"
     export CODE_VERSION="${versions['VISUALIZATION_VERSION']}"
 
+    ${awsCredentialsExports()}
 
     mkdir -p capsule
     mkdir -p capsule/data

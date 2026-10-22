@@ -15,6 +15,10 @@ Refactor:
 
 * Unified ``main_multi_backend`` with ``main``, so all executors (including CodeOcean) use the same pipeline.
 
+Build:
+
+* Forward AWS credentials to tasks in Code Ocean using the new ``awsCredentialsExports`` function.
+* Update ``figpack`` to version 0.3.21
 
 Package versions
 ----------------
