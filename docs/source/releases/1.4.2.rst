@@ -10,7 +10,10 @@ Pipeline:
 * Add new ``save_provenance`` step to the pipeline, which waves a ``provenance.json`` file containing 
   the provenance information (versions, parameters, etc).
 * Fix support for inconsistent streams in NWB processes (`aind-ecephys-nwb#27 <https://github.com/AllenNeuralDynamics/aind-ecephys-nwb/pull/27>`_ - `aind-units-nwb#35 <https://github.com/AllenNeuralDynamics/aind-units-nwb/pull/35>`_).
-
+* Stage only each stream's data in per-stream steps: tasks receive their job JSON, the zarrs that job reads
+  and the session's top-level JSONs instead of the whole session, so cloud executors no longer copy the full
+  asset into every task.
+ 
 Refactor:
 
 * Unified ``main_multi_backend`` with ``main``, so all executors (including CodeOcean) use the same pipeline.
