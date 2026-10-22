@@ -41,7 +41,7 @@ The container tag follows this precedence: CLI/config > ``CONTAINER_TAG`` enviro
 
     nextflow run pipeline/main.nf --container_tag 1.5.0-rc1 ...
 
-**Per-step repo and commit**
+**Per-step repo and version**
 
 Each step exposes two parameters: ``<step>_repo`` and ``<step>_version``.
 Either can be overridden independently — you can pin a different commit of the official repo without
