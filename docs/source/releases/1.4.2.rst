@@ -22,6 +22,10 @@ Refactor:
   The parameters editor (``params_app``) now uses the AJV 2020-12 validator.
 * Moved ``pipeline/bin/validate_params.py`` to ``.github/scripts/validate_params.py``: it is only used by CI.
 
+Build:
+
+* Forward AWS credentials to tasks in Code Ocean using the new ``awsCredentialsExports`` function.
+* Update ``figpack`` to version 0.3.21
 
 Package versions
 ----------------
