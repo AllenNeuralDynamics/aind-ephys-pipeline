@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://github.com/AllenNeuralDynamics/aind-ephys-pipeline/pipeline/default_params_schema.json",
     "title": "AIND Ephys Pipeline Parameters",
     "description": "Configuration schema for the AIND electrophysiology analysis pipeline. See https://aind-ephys-pipeline.readthedocs.io/en/latest/parameters.html for documentation.",

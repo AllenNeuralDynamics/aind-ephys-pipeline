@@ -1,6 +1,8 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
+include { validate } from 'plugin/nf-schema'
+
 params.ecephys_path = DATA_PATH
 params.params_file = null
 
@@ -56,6 +58,14 @@ else {
     json_params = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text)
     println "Loaded parameters from DEFAULT_PARAMS"
 }
+
+// Validate the parameters file against the schema before any process runs
+def params_file_name = params.params_file ?: "default_params.json"
+def params_errors = validate(json_params, "${projectDir}/default_params_schema.json", exitOnError: false)
+if (params_errors) {
+    error "Invalid parameters in ${params_file_name}:\n" + params_errors.collect { "  * ${it}" }.join('\n')
+}
+println "Parameters in ${params_file_name} are valid"
 
 println "PARAMS: ${params}"
 
@@ -245,27 +255,6 @@ if (runmode == 'fast'){
 }
 
 // Process definitions
-process validate_params {
-    tag 'validate_params'
-    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
-    container container_name
-
-    input:
-    path params_file
-    path schema_file
-    output:
-    path 'validation.ok', emit: ok
-    script:
-    """
-    #!/usr/bin/env bash
-    set -e
-
-    validate_params.py ${params_file} ${schema_file}
-    touch validation.ok
-    """
-}
-
-
 process job_dispatch {
     tag 'job-dispatch'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
@@ -273,8 +262,7 @@ process job_dispatch {
 
     input:
     path input_folder, stageAs: 'capsule/data/ecephys_session'
-    val validation_ok
-    
+
     output:
     path 'capsule/results/*', emit: results
     path 'max_duration.txt', emit: max_duration_file  // file containing the value
@@ -975,12 +963,6 @@ workflow {
     // Input channel from ecephys path
     ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
 
-    params_file = file(params.params_file)
-    schema_file = file("${projectDir}/default_params_schema.json")
-
-    validation_out = validate_params(params_file, schema_file)
-
-
     // Provenance: only the selected sorter's repo/commit is recorded
     def sorter_keys = ['kilosort25': 'spikesort_ks25', 'kilosort4': 'spikesort_ks4',
                        'spykingcircus2': 'spikesort_sc2', 'lupin': 'spikesort_lupin']
@@ -1019,9 +1001,7 @@ workflow {
     save_provenance(groovy.json.JsonOutput.toJson(provenance))
 
     // Job dispatch
-    // validation_out.ok is mapped to a constant so that it only acts as a gate and
-    // does not invalidate the job_dispatch cache hash when validate_params re-runs
-    job_dispatch_out = job_dispatch(ecephys_ch.collect(), validation_out.ok.map { true })
+    job_dispatch_out = job_dispatch(ecephys_ch.collect())
 
     max_duration_file = job_dispatch_out.max_duration_file
     max_duration_minutes = max_duration_file.map { it.text.trim() }

@@ -6,8 +6,10 @@ Usage:
 
 Exits 0 if the parameters are valid, 1 otherwise, printing every validation
 error (with its location in the params tree) to stderr. The JSON Schema draft
-is chosen automatically from the schema's "$schema" field, so this keeps
-working if you later bump default_params_schema.json from draft-07 to 2020-12.
+is chosen automatically from the schema's "$schema" field.
+
+Used by CI (validate_params.yml). At runtime, the pipeline validates the
+parameters file with the nf-schema plugin (see pipeline/main.nf).
 """
 import json
 import sys

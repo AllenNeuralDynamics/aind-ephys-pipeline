@@ -28,7 +28,7 @@ jobs:
 
       - name: Validate default params
         run: |
-          python pipeline/bin/validate_params.py \
+          python .github/scripts/validate_params.py \
             pipeline/default_params.json \
             pipeline/default_params_schema.json
 

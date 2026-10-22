@@ -27,6 +27,10 @@ To use a parameter file, specify it with the ``--params_file`` option:
    --params_file PATH_TO_PARAMS_FILE
    # Example: --params_file pipeline/default_params.json
 
+The parameter file is validated against ``pipeline/default_params_schema.json`` (see below)
+with the `nf-schema <https://nextflow-io.github.io/nf-schema/>`_ plugin when the pipeline starts.
+If it is invalid, the pipeline stops before running any process and lists the invalid parameters.
+
 
 .. note::
 
@@ -70,7 +74,7 @@ JSON Schema
 -----------
 
 The file ``pipeline/default_params_schema.json`` is a
-`JSON Schema (draft-07) <https://json-schema.org/>`_ that formally describes every
+`JSON Schema (draft 2020-12) <https://json-schema.org/>`_ that formally describes every
 parameter, its type, allowed values, and defaults. You can use it for:
 
 * **Editor integration** — VS Code, PyCharm, and other editors can provide

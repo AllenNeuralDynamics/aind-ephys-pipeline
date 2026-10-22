@@ -11,9 +11,16 @@ Pipeline:
   the provenance information (versions, parameters, etc).
 * Fix support for inconsistent streams in NWB processes (`aind-ecephys-nwb#27 <https://github.com/AllenNeuralDynamics/aind-ecephys-nwb/pull/27>`_ - `aind-units-nwb#35 <https://github.com/AllenNeuralDynamics/aind-units-nwb/pull/35>`_).
 
+* Validate the parameters file with the `nf-schema <https://nextflow-io.github.io/nf-schema/>`_ plugin when the pipeline starts,
+  instead of with a ``validate_params`` process. Invalid parameters now stop the pipeline before any process (or container) runs.
+  **Requires Nextflow >= 25.10** (``nf-schema@2.7.3``).
+
 Refactor:
 
 * Unified ``main_multi_backend`` with ``main``, so all executors (including CodeOcean) use the same pipeline.
+* Parameters schema (``default_params_schema.json``) moved from JSON Schema draft-07 to draft 2020-12, as required by ``nf-schema``.
+  The parameters editor (``params_app``) now uses the AJV 2020-12 validator.
+* Moved ``pipeline/bin/validate_params.py`` to ``.github/scripts/validate_params.py``: it is only used by CI.
 
 
 Package versions
