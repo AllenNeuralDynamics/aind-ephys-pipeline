@@ -1,8 +1,7 @@
-spikeinterface==0.105.2
+spikeinterface==0.105.3
 neo==0.14.5
 pyvips==2.2.1
-sortingview==0.14.2
-figpack==0.3.8
+figpack==0.3.21
 figpack-spike-sorting==0.1.15
 matplotlib_venn==1.1.2
 torch==2.6.0
@@ -10,6 +9,8 @@ pynwb==4.2.0
 pytz==2025.2
 hdbscan==0.8.41
 neuroconv==0.10.2
+zarr==2.18.7
+numcodecs==0.15.1
 wavpack-numcodecs==0.2.2
 hdmf==6.1.0
 hdmf-zarr==0.13.0
