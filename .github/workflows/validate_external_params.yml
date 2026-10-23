@@ -1,4 +1,4 @@
-name: Validate Default Params
+name: Validate params against external libraries
 
 on:
   push:
@@ -8,32 +8,8 @@ on:
     types: [synchronize, opened, reopened]
 
 jobs:
-  schema:
-    name: Validate default_params against schema
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install packages
-        run: |
-          python -m pip install --upgrade pip
-          pip install jsonschema
-
-      - name: Validate default params
-        run: |
-          python .github/scripts/validate_params.py \
-            pipeline/default_params.json \
-            pipeline/default_params_schema.json
-
-  sorter-defaults:
-    name: Check sorter params against SpikeInterface defaults
+  validate-sorter-defaults:
+    name: Validate sorter params against SpikeInterface defaults
     runs-on: ubuntu-latest
 
     steps:
@@ -57,8 +33,8 @@ jobs:
         run: |
           python tests/check_sorter_params.py --params pipeline/default_params.json
 
-  postprocessing-params:
-    name: Check postprocessing params against SpikeInterface
+  validate-postprocessing-params:
+    name: Validate postprocessing params against SpikeInterface defaults
     runs-on: ubuntu-latest
 
     steps:

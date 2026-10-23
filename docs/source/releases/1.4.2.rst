@@ -20,7 +20,7 @@ Refactor:
 * Unified ``main_multi_backend`` with ``main``, so all executors (including CodeOcean) use the same pipeline.
 * Parameters schema (``default_params_schema.json``) moved from JSON Schema draft-07 to draft 2020-12, as required by ``nf-schema``.
   The parameters editor (``params_app``) now uses the AJV 2020-12 validator.
-* Moved ``pipeline/bin/validate_params.py`` to ``.github/scripts/validate_params.py``: it is only used by CI.
+* Moved ``pipeline/bin/validate_params.py`` to ``validate_params.yml`` (an inline nf-schema script): it is only used by CI.
 
 Build:
 
