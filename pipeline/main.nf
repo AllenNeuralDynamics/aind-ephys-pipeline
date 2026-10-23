@@ -56,7 +56,7 @@ def awsCredentialsExports() {
     echo "forwarded AWS credentials (expire ${creds.Expiration})\""""
 }
 
-println "DATA_PATH: ${DATA_PATH}"
+println "DATA_PATH: ${params.ecephys_path}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
 // Load parameters from custom JSON file, or default_params
@@ -130,12 +130,12 @@ def step_version_keys = [
     'nwb_units':                 ['NWB_UNITS_REPO',                 'NWB_UNITS_VERSION'],
 ]
 step_version_keys.each { step, keys ->
-    if (params.containsKey("${step}_repo")) {
-        versions[keys[0]] = params["${step}_repo"]
+    if (params.containsKey(step + "_repo")) {
+        versions[keys[0]] = params[step + "_repo"]
         println "OVERRIDE ${keys[0]} (from CLI): ${versions[keys[0]]}"
     }
-    if (params.containsKey("${step}_version")) {
-        versions[keys[1]] = params["${step}_version"]
+    if (params.containsKey(step + "_version")) {
+        versions[keys[1]] = params[step + "_version"]
         println "OVERRIDE ${keys[1]} (from CLI): ${versions[keys[1]]}"
     }
 }
