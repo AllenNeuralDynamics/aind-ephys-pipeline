@@ -16,7 +16,7 @@ Requirements
 
 For local deployment, you need:
 
-* ``nextflow`` (version 22.10.8 recommended)
+* ``nextflow`` (version 25.10 or newer, required by the ``nf-schema`` plugin used to validate parameters)
 * ``docker`` (19.03+ if going to use GPUs, e.g. for spikesort_kilosort* workflows)
 * ``figurl`` (optional, for cloud visualization)
 
@@ -70,7 +70,7 @@ Requirements
 
 For SLURM cluster deployment:
 
-* ``nextflow`` (version 22.10.8 recommended)
+* ``nextflow`` (version 25.10 or newer, required by the ``nf-schema`` plugin used to validate parameters)
 *  ``apptainer`` or ``singularity``
 * Access to a SLURM cluster
 * ``figurl`` (optional, for cloud visualization)
