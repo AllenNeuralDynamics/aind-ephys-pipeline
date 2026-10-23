@@ -3,7 +3,7 @@ nextflow.enable.dsl = 2
 
 include { validate } from 'plugin/nf-schema'
 
-params.ecephys_path = DATA_PATH
+params.ecephys_path = params.ecephys_url ?: DATA_PATH
 params.params_file = null
 
 // Git repository prefix - can be overridden via command line or environment variable
