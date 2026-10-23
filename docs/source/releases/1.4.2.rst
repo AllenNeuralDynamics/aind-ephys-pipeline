@@ -1,7 +1,7 @@
 .. _1.4.2:
 
-1.4.2 - WIP
-===========
+1.4.2 - Oct 23rd 2026
+=====================
 
 Minor release with a new CI/CD and CodeOcean updates
 
