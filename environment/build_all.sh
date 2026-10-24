@@ -1,21 +1,44 @@
-IMAGES_ARG="${1:-base,nwb,ks25,ks4}"
+IMAGES_JSON="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/images.json"
+ALL_IMAGES=$(jq -r 'keys | join(",")' "$IMAGES_JSON")
+
+if [[ -z "$1" ]]; then
+    echo "Usage: $0 <container_tag> [target] [images]"
+    echo ""
+    echo "Arguments:"
+    echo "  container_tag: Docker container tag (required)"
+    echo "  target: Build target 'main' or 'dev' (default: main)"
+    echo "  images: Comma-separated list of images to build, or 'all' (default: all; available: $ALL_IMAGES)"
+    exit 1
+fi
+
+CONTAINER_TAG_ARG="${1}"
+TARGET_ARG="${2:-main}"
+IMAGES_ARG="${3:-all}"
+[[ "$IMAGES_ARG" == "all" ]] && IMAGES_ARG="$ALL_IMAGES"
+
+if [[ "$TARGET_ARG" != "main" && "$TARGET_ARG" != "dev" ]]; then
+    echo "Error: TARGET_ARG must be 'main' or 'dev', got '$TARGET_ARG'"
+    exit 1
+fi
+
+if [[ "$TARGET_ARG" == "dev" ]]; then
+    echo "Building in dev mode..."
+    CONTAINER_TAG_ARG="$CONTAINER_TAG_ARG-dev"
+fi
+
 IFS=',' read -r -a IMAGES_LIST <<< "$IMAGES_ARG"
 
-SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' requirements.txt | cut -d'=' -f3)
+echo "Images to build: ${IMAGES_LIST[*]}"
+echo "Build target: $TARGET_ARG"
+echo "Starting build with container tag: $CONTAINER_TAG_ARG"
 
-if [[ " ${IMAGES_LIST[*]} " == *" base "* ]]; then
-    echo "Building base image..."
-    docker build -t ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-$SPIKEINTERFACE_VERSION -f Dockerfile_base .
-fi
-if [[ " ${IMAGES_LIST[*]} " == *" nwb "* ]]; then
-    echo "Building NWB image..."
-    docker build -t ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:si-$SPIKEINTERFACE_VERSION -f Dockerfile_nwb .
-fi
-if [[ " ${IMAGES_LIST[*]} " == *" ks25 "* ]]; then
-    echo "Building Kilosort 2.5 image..."
-    docker build -t ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort25:si-$SPIKEINTERFACE_VERSION -f Dockerfile_kilosort25 .
-fi
-if [[ " ${IMAGES_LIST[*]} " == *" ks4 "* ]]; then
-    echo "Building Kilosort 4 image..."
-    docker build -t ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort4:si-$SPIKEINTERFACE_VERSION -f Dockerfile_kilosort4 .
-fi
+for image in "${IMAGES_LIST[@]}"; do
+    if ! jq -e --arg i "$image" 'has($i)' "$IMAGES_JSON" >/dev/null; then
+        echo "Error: unknown image '$image' (available: $ALL_IMAGES)"
+        exit 1
+    fi
+    IMAGE_NAME=$(jq -r --arg i "$image" '.[$i].image_name' "$IMAGES_JSON")
+    DOCKERFILE=$(jq -r --arg i "$image" '.[$i].dockerfile' "$IMAGES_JSON")
+    echo "Building $image image..."
+    docker build -t ghcr.io/allenneuraldynamics/$IMAGE_NAME:$CONTAINER_TAG_ARG -f $DOCKERFILE .
+done

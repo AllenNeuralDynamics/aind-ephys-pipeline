@@ -1,0 +1,32 @@
+# PRs into dev must update the release notes of the upcoming version
+# (docs/source/releases/{V}.rst), unless labeled with `skip-changelog`.
+#
+# Kept separate from pr-dev.yml so that (un)labeling only re-runs this check.
+name: Changelog
+
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    name: Check release notes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip
+        if: contains(github.event.pull_request.labels.*.name, 'skip-changelog')
+        run: echo "skip-changelog label found, skipping release notes check"
+
+      - name: Checkout repository
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check release notes are updated
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        run: python .github/scripts/check_release_notes.py --mode dev --base-ref origin/${{ github.base_ref }}

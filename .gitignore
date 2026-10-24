@@ -10,12 +10,19 @@
 **/.nextflow*
 /docs/build/
 tests/.nfs*
+tests/*.sh
+tests/*.json
+tests/sample_dataset/nwb/
+tests/sample_dataset/spikeinterface/
+tests/sample_dataset/nwb_*/
+tests/sample_dataset/spikeinterface_*/
+tests/sample_dataset/**results
 
 # External repositories
 /external/
 
 # User-specific files
 pipeline/nextflow_slurm_custom.config
-pipeline/capsule_versions_custom.env
+pipeline/process_versions_custom.env
 .idea
 .claude

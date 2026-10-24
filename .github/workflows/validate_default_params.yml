@@ -1,0 +1,37 @@
+name: Validate default params
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+    types: [synchronize, opened, reopened]
+
+jobs:
+  validate:
+    name: Validate default_params against schema
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Nextflow
+        uses: nf-core/setup-nextflow@v2
+        with:
+          version: "25.10.0"
+
+      - name: Validate default params
+        run: |
+          cat > "$RUNNER_TEMP/validate.nf" <<'EOF'
+          include { validate } from 'plugin/nf-schema'
+
+          workflow {
+              def json_params = new groovy.json.JsonSlurper().parseText(file(params.params_file).text)
+              validate(json_params, params.schema)  // exits non-zero on invalid params
+              println "${params.params_file} is valid against ${params.schema}"
+          }
+          EOF
+          nextflow run "$RUNNER_TEMP/validate.nf" -plugins nf-schema@2.7.3 \
+            --params_file "$(pwd)/pipeline/default_params.json" \
+            --schema "$(pwd)/pipeline/default_params_schema.json"
