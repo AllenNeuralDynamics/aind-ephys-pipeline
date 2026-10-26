@@ -1,0 +1,86 @@
+# Reusable: pull pipeline images once and store them in the GitHub Actions cache,
+# so that test jobs can `docker load` them instead of pulling from ghcr.
+#
+# The cache key includes the env-hash of each cached image, so rebuilding an
+# image under the same tag (e.g. X.Y.Z-dev) invalidates the cache.
+name: Cache Images
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Container tag to cache
+        required: true
+        type: string
+      sorter:
+        description: Sorter images to include (see scripts/pull_pipeline_images.sh)
+        required: false
+        type: string
+        default: none
+    outputs:
+      cache-key:
+        description: Cache key of the image archives
+        value: ${{ jobs.cache.outputs.cache-key }}
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  cache:
+    name: Cache images ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.key.outputs.key }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compute cache key
+        id: key
+        run: |
+          IMAGES="base nwb"
+          case "${{ inputs.sorter }}" in
+            kilosort25) IMAGES="$IMAGES ks25";;
+            kilosort4)  IMAGES="$IMAGES ks4";;
+            all)        IMAGES="$IMAGES ks25 ks4";;
+          esac
+          HASHES=$(for img in $IMAGES; do .github/scripts/image_info.sh $img hash; done | tr '\n' '-')
+          echo "key=images-${{ inputs.tag }}-${{ inputs.sorter }}-${HASHES%-}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cache
+        id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/images
+          key: ${{ steps.key.outputs.key }}
+          lookup-only: true
+
+      - name: Free up disk space
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /opt/hostedtoolcache
+          df -h
+
+      - name: Log in to ghcr
+        if: steps.restore.outputs.cache-hit != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull images
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: |
+          scripts/pull_pipeline_images.sh --engine docker --cache "${{ runner.temp }}/images" \
+            --tag "${{ inputs.tag }}" --sorter "${{ inputs.sorter }}"
+          du -sh "${{ runner.temp }}"/images/*
+
+      - name: Save cache
+        if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/images
+          key: ${{ steps.key.outputs.key }}

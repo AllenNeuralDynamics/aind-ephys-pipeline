@@ -40,7 +40,7 @@
 SCRIPT_PATH="$(realpath "$0")"
 echo "Running script at: $SCRIPT_PATH"
 
-SAMPLE_DATASET_PATH="$(realpath $(dirname "$SCRIPT_PATH")/../sample_dataset)"
+SAMPLE_DATASET_PATH="$(realpath $(dirname "$SCRIPT_PATH")/sample_dataset)"
 echo "Sample dataset path: $SAMPLE_DATASET_PATH"
 
 PIPELINE_PATH="$(realpath $(dirname "$SCRIPT_PATH")/..)"
@@ -67,5 +67,5 @@ echo "Using config file: $CONFIG_FILE"
 # run pipeline
 DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
     -C $CONFIG_FILE -log $RESULTS_PATH/nextflow/nextflow.log \
-    run $PIPELINE_PATH/pipeline/main_multi_backend.nf \
+    run $PIPELINE_PATH/pipeline/main.nf \
     --params_file params_test.json $ARGS

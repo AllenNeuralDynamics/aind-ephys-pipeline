@@ -2,6 +2,11 @@ FROM continuumio/miniconda3:23.9.0-0
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Debian 11 (bullseye) is EOL: packages moved to archive.debian.org
+RUN printf 'deb http://archive.debian.org/debian bullseye main\ndeb http://archive.debian.org/debian-security bullseye-security main\n' \
+        > /etc/apt/sources.list \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive
+
 # 1. Install system dependencies as root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -10,11 +15,11 @@ RUN apt-get update \
 
 # 2. Install Python packages as root so they land in the system (conda) site-packages,
 #    accessible to any user regardless of UID at runtime.
-COPY requirements.txt /tmp/requirements.txt
+COPY package-versions.txt /tmp/package-versions.txt
 RUN pip install --upgrade pip && \
-    grep -E 'aind-data-schema|aind-nwb-utils|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs|neo' /tmp/requirements.txt | xargs pip install
+    grep -E 'log-schema|aind-data-schema|aind-nwb-utils|zarr|numcodecs|hdmf-zarr|pynwb|pytz|neuroconv|wavpack-numcodecs|neo' /tmp/package-versions.txt | xargs pip install
 
-RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/requirements.txt | cut -d'=' -f3) && \
+RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
 
 # 3. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).

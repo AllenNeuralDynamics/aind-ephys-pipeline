@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Print info about a pipeline container image.
+#
+# Usage:
+#   image_info.sh <image> <field>
+#
+#   image: a key of environment/images.json (base | nwb | ks25 | ks4)
+#   field: name       -> ghcr.io/allenneuraldynamics/<repo>
+#          dockerfile -> Dockerfile_<x> (relative to environment/)
+#          hash       -> content hash of the files the image is built from
+#                        (its Dockerfile + package-versions.txt)
+#
+# The hash is stored as the `org.aind.env-hash` label on each built image and
+# is used to decide whether an existing tag is up to date with environment/.
+
+set -euo pipefail
+
+IMAGE="${1:?image required (a key of environment/images.json)}"
+FIELD="${2:?field required (name|dockerfile|hash)}"
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+IMAGES_JSON="$REPO_ROOT/environment/images.json"
+
+if ! jq -e --arg i "$IMAGE" 'has($i)' "$IMAGES_JSON" >/dev/null; then
+  echo "Unknown image: $IMAGE (valid: $(jq -r 'keys | join("|")' "$IMAGES_JSON"))" >&2
+  exit 64
+fi
+REPO=$(jq -r --arg i "$IMAGE" '.[$i].image_name' "$IMAGES_JSON")
+DOCKERFILE=$(jq -r --arg i "$IMAGE" '.[$i].dockerfile' "$IMAGES_JSON")
+
+case "$FIELD" in
+  name)       echo "ghcr.io/allenneuraldynamics/${REPO}";;
+  dockerfile) echo "$DOCKERFILE";;
+  hash)
+    cd "$REPO_ROOT/environment"
+    cat "$DOCKERFILE" package-versions.txt | sha256sum | cut -c1-16;;
+  *) echo "Unknown field: $FIELD" >&2; exit 64;;
+esac

@@ -27,6 +27,10 @@ To use a parameter file, specify it with the ``--params_file`` option:
    --params_file PATH_TO_PARAMS_FILE
    # Example: --params_file pipeline/default_params.json
 
+The parameter file is validated against ``pipeline/default_params_schema.json`` (see below)
+with the `nf-schema <https://nextflow-io.github.io/nf-schema/>`_ plugin when the pipeline starts.
+If it is invalid, the pipeline stops before running any process and lists the invalid parameters.
+
 
 .. note::
 
@@ -70,7 +74,7 @@ JSON Schema
 -----------
 
 The file ``pipeline/default_params_schema.json`` is a
-`JSON Schema (draft-07) <https://json-schema.org/>`_ that formally describes every
+`JSON Schema (draft 2020-12) <https://json-schema.org/>`_ that formally describes every
 parameter, its type, allowed values, and defaults. You can use it for:
 
 * **Editor integration** — VS Code, PyCharm, and other editors can provide
@@ -187,8 +191,8 @@ Parameter file section (``job_dispatch``):
 
 .. note::
 
-   If the reader needs extra packages installed, specify them in the ``EXTRA_INSTALLS`` variable in the ``capsule_versions.env`` file 
-   (e.g. ``EXTRA_INSTALLS="mtscomp"``).
+   If the reader needs extra packages installed, specify them in the ``extra_installs`` parameter of your Nextflow config file or with ``--extra_installs``
+   (e.g. ``params.extra_installs = "mtscomp"``). Multiple packages are comma-separated.
 
 
 Preprocessing Parameters
@@ -482,9 +486,6 @@ Parameter file section (``postprocessing``):
                "dtype": null
            },
            "templates": {},
-           "spike_amplitudes": {
-               "peak_sign": "neg"
-           },
            "template_similarity": {
                "method": "l1"
            },
@@ -523,7 +524,7 @@ Parameter file section (``postprocessing``):
                ],
                "metric_params": {
                    "presence_ratio": { "bin_duration_s": 60 },
-                   "snr": { "peak_sign": "neg", "peak_mode": "extremum" },
+                   "snr": { "method": "extremum" },
                    "isi_violation": { "isi_threshold_ms": 1.5, "min_isi_ms": 0 },
                    "rp_violation": { "refractory_period_ms": 1, "censored_period_ms": 0.0 },
                    "sliding_rp_violation": {
@@ -786,7 +787,7 @@ Here's an example of running the pipeline with custom parameters:
 .. code-block:: bash
 
    DATA_PATH=$DATA RESULTS_PATH=$RESULTS \
-   nextflow -C nextflow_local.config run main_multi_backend.nf \
+   nextflow -C nextflow_local.config run main.nf \
      --n_jobs 16 \
      --sorter kilosort4 \
      --job_dispatch_args="--input spikeglx --debug --debug-duration 120" \

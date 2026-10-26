@@ -1,0 +1,18 @@
+{
+    "base": {
+        "dockerfile": "Dockerfile_base",
+        "image_name": "aind-ephys-pipeline-base"
+    },
+    "ks4": {
+        "dockerfile": "Dockerfile_kilosort4",
+        "image_name": "aind-ephys-spikesort-kilosort4"
+    },
+    "ks25": {
+        "dockerfile": "Dockerfile_kilosort25",
+        "image_name": "aind-ephys-spikesort-kilosort25"
+    },
+    "nwb": {
+        "dockerfile": "Dockerfile_nwb",
+        "image_name": "aind-ephys-pipeline-nwb"
+    }
+}
