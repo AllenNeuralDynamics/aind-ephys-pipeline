@@ -1,0 +1,8 @@
+{
+	"version": 1,
+	"nextflow_version": "25.10.4",
+	"role": {
+		"role_arn": "arn:aws:iam::467914378000:role/aind-codeocean-user"
+	},
+	"verbose_logs": true
+}

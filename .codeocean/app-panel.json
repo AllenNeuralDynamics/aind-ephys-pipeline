@@ -1,0 +1,107 @@
+{
+	"version": 1,
+	"named_parameters": true,
+	"datasets": [
+		{
+			"id": "72f4ecb6-b431-4186-8dbc-ed4cd88f5d0f",
+			"name": "ephys raw asset",
+			"description": "Input ephys raw data asset to be processed."
+		}
+	],
+	"parameters": [
+		{
+			"id": "VsGT06i8z41qXBQa",
+			"name": "sorter",
+			"param_name": "sorter",
+			"type": "list",
+			"value_type": "string",
+			"default_value": "kilosort4",
+			"required": true,
+			"extra_data": [
+				"kilosort4",
+				"lupin",
+				"spykingcircus2",
+				"kilosort25"
+			]
+		},
+		{
+			"id": "udNnYK2jaJUSUDNH",
+			"name": "job dispatch",
+			"param_name": "job_dispatch_args",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "MDlNEwPIhsJ5U5ST",
+			"name": "preprocessing",
+			"param_name": "preprocessing_args",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "cH9k0qdPMVBsxQXu",
+			"name": "spikesorting",
+			"param_name": "spikesorting_args",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "GmDFcBtIiAlPBHpJ",
+			"name": "postprocessing",
+			"param_name": "postprocessing_args",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "orvonVAhB9JM8bCt",
+			"name": "curation",
+			"param_name": "curation_args",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "TR5dhVX9wDl5XyNe",
+			"name": "visualization",
+			"param_name": "visualization_args",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "DWmUCcuNtBcb4FZN",
+			"name": "quality control",
+			"param_name": "quality_control_args",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "6tNPjklR3ibmqfKP",
+			"name": "nwb ecephys",
+			"param_name": "nwb_ecephys_args",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "g3bB9V3wPda3pR7H",
+			"name": "result collector",
+			"param_name": "result_collector_args",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "4WOcXor3Uhtgs1y4",
+			"name": "preprocessing repo",
+			"param_name": "preprocessing_repo",
+			"description": "Used to override preprocessing to for optical stimulation removal",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "lYPM4xH3UTVkuLlh",
+			"name": "preprocessing version",
+			"param_name": "preprocessing_version",
+			"description": "Used to override preprocessing to for optical stimulation removal",
+			"type": "text",
+			"value_type": "string"
+		}
+	]
+}
