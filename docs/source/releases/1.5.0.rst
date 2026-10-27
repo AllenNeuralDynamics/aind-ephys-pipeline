@@ -14,7 +14,7 @@ Pipeline:
   instead of with a ``validate_params`` process. Invalid parameters now stop the pipeline before any process (or container) runs.
   **Requires Nextflow >= 25.10** (``nf-schema@2.7.3``).
 * Add ``PYTHONNOUSERSITE = 1`` to slurm config to prevent apptainer/singularity to use local Python site packages.
-
+* Add dotted parameters via command line (e.g. ``--preprocessing.filter_type=bandpass``)
 
 Refactor:
 
