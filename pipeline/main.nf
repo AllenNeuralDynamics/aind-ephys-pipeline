@@ -6,9 +6,6 @@ include { validate } from 'plugin/nf-schema'
 params.ecephys_path = params.ecephys_url ?: DATA_PATH
 params.params_file = null
 
-// Git repository prefix - can be overridden via command line or environment variable
-params.git_repo_prefix = System.getenv('GIT_REPO_PREFIX') ?: 'https://github.com/AllenNeuralDynamics/aind-'
-
 // Helper function for git cloning
 gitCloneFunction = '''
 clone_repo() {
@@ -25,11 +22,8 @@ clone_repo() {
 }
 '''
 
-def buildStepArgs(Map json_section, String cli_param_name, Map logging_params = null) {
+def buildStepArgs(Map json_section, String cli_param_name) {
     def args_map = json_section ? new LinkedHashMap(json_section) : [:]
-    if (logging_params && !args_map.containsKey('logging')) {
-        args_map['logging'] = logging_params
-    }
     if (cli_param_name in params_keys && params[cli_param_name] instanceof String) {
         println "Merging ${cli_param_name} from JSON with CLI args: ${params[cli_param_name]}"
         def cli_tokens = params[cli_param_name].trim().split(/\s+/) as List
@@ -41,7 +35,7 @@ def buildStepArgs(Map json_section, String cli_param_name, Map logging_params = 
             }
         }
     }
-    return args_map ? "--params '${groovy.json.JsonOutput.toJson(args_map)}'" : "--params '{}'"
+    return args_map
 }
 
 // Forward the head job's temporary AWS credentials (Code Ocean ECS endpoint) to a task.
@@ -224,19 +218,6 @@ if (params.params_file) {
     println "No parameters file provided, using default parameters."
 }
 
-// Build params: merge CLI overrides, stringify once
-job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_args", json_params.logging)
-preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args", json_params.logging)
-postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args", json_params.logging)
-curation_args = buildStepArgs(json_params.curation, "curation_args", json_params.logging)
-visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs", json_params.logging)
-result_collector_args = buildStepArgs(json_params.result_collector, "result_collector_args", json_params.logging)
-nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args", json_params.logging)
-nwb_units_args = buildStepArgs(json_params.nwb?.units, "nwb_units_args", json_params.logging)
-quality_control_args = buildStepArgs(json_params.quality_control, "quality_control_args", json_params.logging)
-quality_control_collector_args = buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args", json_params.logging)
-
-
 // Spikesorting: resolve sorter-specific sub-map
 def sorter = null
 if (params.params_file && json_params.spikesorting) {
@@ -249,22 +230,57 @@ if (sorter == null) {
     println "No sorter specified, defaulting to kilosort4"
     sorter = "kilosort4"
 }
-spikesorting_args = buildStepArgs(
-    json_params.spikesorting ? json_params.spikesorting[sorter] : null,
-    "spikesorting_args",
-    json_params.logging
-)
-println "Using SORTER: ${sorter} with args: ${spikesorting_args}"
+
+// Full parameter map: JSON + CLI overrides, one entry per step
+def full_params = [
+    logging: buildStepArgs(json_params.logging, "logging_args"),
+    job_dispatch: buildStepArgs(json_params.job_dispatch, "job_dispatch_args"),
+    preprocessing: buildStepArgs(json_params.preprocessing, "preprocessing_args"),
+    spikesorting: buildStepArgs(json_params.spikesorting ? json_params.spikesorting[sorter] : null, "spikesorting_args"),
+    postprocessing: buildStepArgs(json_params.postprocessing, "postprocessing_args"),
+    curation: buildStepArgs(json_params.curation, "curation_args"),
+    visualization: buildStepArgs(json_params.visualization, "visualization_kwargs"),
+    result_collector: buildStepArgs(json_params.result_collector, "result_collector_args"),
+    nwb_ecephys: buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args"),
+    nwb_units: buildStepArgs(json_params.nwb?.units, "nwb_units_args"),
+    quality_control: buildStepArgs(json_params.quality_control, "quality_control_args"),
+    quality_control_collector: buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args")
+]
 
 if (runmode == 'fast'){
-    preprocessing_args = "--motion skip"
-    postprocessing_args = "--skip-extensions spike_locations,principal_components"
-    nwb_ecephys_args = "--skip-lfp"
-    println "Running in fast mode. Setting parameters:"
-    println "preprocessing_args: ${preprocessing_args}"
-    println "postprocessing_args: ${postprocessing_args}"
-    println "nwb_ecephys_args: ${nwb_ecephys_args}"
+    full_params.preprocessing.motion = 'skip'
+    full_params.postprocessing.skip_extensions = 'spike_locations,principal_components'
+    full_params.nwb_ecephys.skip_lfp = true
+    println "Running in fast mode: overrode preprocessing, postprocessing and nwb_ecephys parameters"
 }
+
+// With log-schema, tag logs with the acquisition name from data_description.json
+// (file() handles both local paths and s3:// URLs from ecephys_url)
+if (full_params.logging?.package == 'log-schema') {
+    def acquisition_name = null
+    try {
+        def data_description = file("${params.ecephys_path}/data_description.json")
+        if (data_description.exists()) {
+            acquisition_name = new groovy.json.JsonSlurper().parseText(data_description.text).name
+        }
+    } catch (Exception e) {
+        println "WARN: could not read data_description.json: ${e.message}"
+    }
+    if (!acquisition_name) {
+        println "WARN: no name found in ${params.ecephys_path}/data_description.json, using 'undefined'"
+        acquisition_name = 'undefined'
+    }
+    full_params.logging.logging_cfg = (full_params.logging.logging_cfg ?: [:]) + [acquisition_name: acquisition_name]
+    println "Logging acquisition_name: ${acquisition_name}"
+}
+
+// Dump the full map to the work dir so it can be inspected/attached to tasks
+def full_params_file = new File("${workDir}/full_params.json")
+full_params_file.parentFile.mkdirs()
+full_params_file.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(full_params))
+println "Full parameters written to ${full_params_file}"
+
+println "Using SORTER: ${sorter}"
 
 // Process definitions
 process job_dispatch {
@@ -274,6 +290,7 @@ process job_dispatch {
 
     input:
     path input_folder, stageAs: 'capsule/data/ecephys_session'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -309,7 +326,7 @@ process job_dispatch {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${job_dispatch_args}
+    ./run
 
     MAX_DURATION_MIN=\$(python get_max_recording_duration_min.py)
 
@@ -330,6 +347,7 @@ process preprocessing {
     val max_duration_minutes
     path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
     path job_dispatch_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -364,7 +382,7 @@ process preprocessing {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${preprocessing_args} ${job_args}
+    ./run ${job_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -379,6 +397,7 @@ process spikesort_kilosort25 {
     input:
     val max_duration_minutes
     path preprocessing_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -454,7 +473,7 @@ process spikesort_kilosort4 {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${spikesorting_args} ${job_args}
+    ./run ${job_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -468,6 +487,7 @@ process spikesort_spykingcircus2 {
     input:
     val max_duration_minutes
     path preprocessing_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -497,7 +517,7 @@ process spikesort_spykingcircus2 {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${spikesorting_args} ${job_args}
+    ./run ${job_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -511,6 +531,7 @@ process spikesort_lupin {
     input:
     val max_duration_minutes
     path preprocessing_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -542,7 +563,7 @@ process spikesort_lupin {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${spikesorting_args} ${job_args}
+    ./run ${job_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -559,6 +580,7 @@ process postprocessing {
     path job_dispatch_results, stageAs: 'capsule/data/*'
     path preprocessing_results, stageAs: 'capsule/data/*'
     path spikesort_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -592,7 +614,7 @@ process postprocessing {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${postprocessing_args} ${job_args}
+    ./run ${job_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -606,6 +628,7 @@ process curation {
     input:
     val max_duration_minutes
     path postprocessing_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -636,7 +659,7 @@ process curation {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${curation_args} ${job_args}
+    ./run ${job_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -655,6 +678,7 @@ process visualization {
     path spikesort_results, stageAs: 'capsule/data/*'
     path postprocessing_results, stageAs: 'capsule/data/*'
     path curation_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -690,7 +714,7 @@ process visualization {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${visualization_kwargs}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -712,6 +736,7 @@ process results_collector {
     path postprocessing_results, stageAs: 'capsule/data/*'
     path curation_results, stageAs: 'capsule/data/*'
     path visualization_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -748,8 +773,7 @@ process results_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    echo ${result_collector_args}
-    ./run ${pipeline_paths_args} ${result_collector_args}
+    ./run ${pipeline_paths_args}
 
     echo "[${task.tag}] completed!"
     """
@@ -765,6 +789,7 @@ process quality_control {
     path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
     path job_dispatch_results, stageAs: 'capsule/data/*'
     path results_data, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -815,6 +840,7 @@ process quality_control_collector {
     input:
     val max_duration_minutes
     path quality_control_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*'
@@ -859,6 +885,7 @@ process nwb_ecephys {
     val max_duration_minutes
     path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
     path job_dispatch_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -911,6 +938,7 @@ process nwb_units {
     path job_dispatch_results, stageAs: 'capsule/data/*'
     path results_data, stageAs: 'capsule/data/*'
     path nwb_ecephys_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*'
