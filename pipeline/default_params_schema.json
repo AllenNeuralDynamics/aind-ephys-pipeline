@@ -8,7 +8,7 @@
     "properties": {
         "pipeline_version": {
             "type": "string",
-            "pattern": "^1\\.4\\.[1-9]+$",
+            "pattern": "^1\\.5\\.[0-9]+$",
             "description": "Version of the pipeline the parameters are compatible with. This should be updated when default parameters are changed in a way that is not backward compatible."
         },
         "logging": {
@@ -1341,111 +1341,137 @@
         },
         "result_collector": {
             "type": "object",
-            "description": "Parameters for result collector."
+            "description": "Parameters for result collector.",
+            "properties": {
+                "pipeline_data_path": {
+                    "type": ["string", "null"],
+                    "default": null,
+                    "description": "Pipeline input data path. If null, set from the pipeline DATA_PATH."
+                },
+                "pipeline_results_path": {
+                    "type": ["string", "null"],
+                    "default": null,
+                    "description": "Pipeline results path. If null, set from the pipeline RESULTS_PATH."
+                }
+            }
         },
-        "nwb": {
+        "nwb_ecephys": {
             "type": "object",
-            "description": "Parameters for NWB (Neurodata Without Borders) export.",
+            "description": "Parameters for NWB ecephys.",
             "additionalProperties": false,
             "properties": {
-                "ecephys": {
+                "backend": {
+                    "type": "string",
+                    "enum": ["zarr", "hdf5"],
+                    "default": "zarr",
+                    "description": "Backend to use for NWB file writing."
+                },
+                "stub": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to create a stub NWB file (truncated, for testing)."
+                },
+                "stub_seconds": {
+                    "type": "number",
+                    "default": 10,
+                    "minimum": 0,
+                    "description": "Duration in seconds for the stub NWB file."
+                },
+                "write_lfp": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to write LFP electrical series."
+                },
+                "write_raw": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to write RAW electrical series."
+                },
+                "lfp_temporal_factor": {
+                    "type": "integer",
+                    "default": 2,
+                    "minimum": 1,
+                    "description": "Temporal subsampling factor for LFP."
+                },
+                "lfp_spatial_factor": {
+                    "type": "integer",
+                    "default": 4,
+                    "minimum": 1,
+                    "description": "Spatial subsampling factor for LFP."
+                },
+                "lfp_highpass_freq_min": {
+                    "type": "number",
+                    "default": 0.1,
+                    "minimum": 0,
+                    "description": "LFP highpass filter minimum frequency in Hz."
+                },
+                "surface_channel_agar_probes_indices": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Comma-separated indices of probes with surface channel in agar."
+                },
+                "lfp": {
                     "type": "object",
-                    "description": "Parameters for electrophysiology NWB export.",
+                    "description": "LFP processing parameters.",
                     "additionalProperties": false,
                     "properties": {
-                        "backend": {
-                            "type": "string",
-                            "enum": ["zarr", "hdf5"],
-                            "default": "zarr",
-                            "description": "Backend to use for NWB file writing."
-                        },
-                        "stub": {
-                            "type": "boolean",
-                            "default": false,
-                            "description": "Whether to create a stub NWB file (truncated, for testing)."
-                        },
-                        "stub_seconds": {
-                            "type": "number",
-                            "default": 10,
-                            "minimum": 0,
-                            "description": "Duration in seconds for the stub NWB file."
-                        },
-                        "write_lfp": {
-                            "type": "boolean",
-                            "default": true,
-                            "description": "Whether to write LFP electrical series."
-                        },
-                        "write_raw": {
-                            "type": "boolean",
-                            "default": false,
-                            "description": "Whether to write RAW electrical series."
-                        },
-                        "lfp_temporal_factor": {
-                            "type": "integer",
-                            "default": 2,
-                            "minimum": 1,
-                            "description": "Temporal subsampling factor for LFP."
-                        },
-                        "lfp_spatial_factor": {
-                            "type": "integer",
-                            "default": 4,
-                            "minimum": 1,
-                            "description": "Spatial subsampling factor for LFP."
-                        },
-                        "lfp_highpass_freq_min": {
-                            "type": "number",
-                            "default": 0.1,
-                            "minimum": 0,
-                            "description": "LFP highpass filter minimum frequency in Hz."
-                        },
-                        "surface_channel_agar_probes_indices": {
-                            "type": "string",
-                            "default": "",
-                            "description": "Comma-separated indices of probes with surface channel in agar."
-                        },
-                        "lfp": {
+                        "filter": {
                             "type": "object",
-                            "description": "LFP processing parameters.",
+                            "description": "LFP filter parameters.",
                             "additionalProperties": false,
                             "properties": {
-                                "filter": {
-                                    "type": "object",
-                                    "description": "LFP filter parameters.",
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "freq_min": {
-                                            "type": "number",
-                                            "default": 0.1,
-                                            "minimum": 0,
-                                            "description": "Minimum frequency for LFP bandpass filter in Hz."
-                                        },
-                                        "freq_max": {
-                                            "type": "number",
-                                            "default": 500,
-                                            "minimum": 0,
-                                            "description": "Maximum frequency for LFP bandpass filter in Hz."
-                                        }
-                                    }
-                                },
-                                "sampling_rate": {
+                                "freq_min": {
                                     "type": "number",
-                                    "default": 2500,
+                                    "default": 0.1,
                                     "minimum": 0,
-                                    "description": "Target sampling rate for LFP in Hz."
+                                    "description": "Minimum frequency for LFP bandpass filter in Hz."
+                                },
+                                "freq_max": {
+                                    "type": "number",
+                                    "default": 500,
+                                    "minimum": 0,
+                                    "description": "Maximum frequency for LFP bandpass filter in Hz."
                                 }
                             }
+                        },
+                        "sampling_rate": {
+                            "type": "number",
+                            "default": 2500,
+                            "minimum": 0,
+                            "description": "Target sampling rate for LFP in Hz."
                         }
                     }
+                }
+            }
+        },
+        "nwb_units": {
+            "type": "object",
+            "description": "Parameters for Units NWB export.",
+            "additionalProperties": false,
+            "properties": {
+                "stub": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to create a stub NWB file (truncated, for testing)."
                 },
-                "units": {
-                    "type": "object",
-                    "description": "Parameters for Units NWB export."
+                "stub_units": {
+                    "type": "number",
+                    "default": 10,
+                    "minimum": 0,
+                    "description": "Number of units for the stub NWB file."
                 }
             }
         },
         "quality_control": {
             "type": "object",
-            "description": "Parameters for quality control."
+            "description": "Parameters for quality control.",
+            "properties": {
+                "pipeline_data_path": {
+                    "type": ["string", "null"],
+                    "default": null,
+                    "description": "Pipeline input data path. If null, set from the pipeline DATA_PATH."
+                }
+            }
         },
         "quality_control_collector": {
             "type": "object",

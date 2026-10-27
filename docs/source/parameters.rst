@@ -621,7 +621,7 @@ NWB Ecephys Parameters
 ~~~~~~~~~~~~~~~~~~~~~~
 
 
-Parameter file section (``nwb.ecephys``):
+Parameter file section (``nwb_ecephys``):
 
 .. code-block:: json
 
@@ -683,6 +683,57 @@ Parameter file section (``nwb.ecephys``):
 
 ``lfp.sampling_rate``
    Target sampling rate in Hz for the LFP band after temporal downsampling.
+
+
+NWB Units Parameters
+~~~~~~~~~~~~~~~~~~~~
+
+Parameter file section (``nwb_units``):
+
+.. code-block:: json
+
+   {
+       "stub": false,
+       "stub_units": 10
+   }
+
+``stub``
+   If ``true``, write a truncated file for quick validation and testing.
+
+``stub_units``
+   Number of units written when ``stub`` is ``true``.
+
+
+Pipeline Paths (Result Collector and Quality Control)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Parameter file sections (``result_collector`` and ``quality_control``):
+
+.. code-block:: json
+
+   {
+       "result_collector": {
+           "pipeline_data_path": null,
+           "pipeline_results_path": null
+       },
+       "quality_control": {
+           "pipeline_data_path": null
+       }
+   }
+
+``pipeline_data_path`` / ``pipeline_results_path``
+   Input data and results locations recorded by the step. When ``null``, they are filled in
+   from ``DATA_PATH`` and ``RESULTS_PATH`` (not on Code Ocean, where they are left unset).
+
+
+Logging
+~~~~~~~
+
+When ``logging.package`` is ``log-schema``, the pipeline reads ``name`` from the
+``data_description.json`` found next to the input data (local path or ``s3://`` ``ecephys_url``)
+and adds it as ``logging.logging_cfg.acquisition_name``. If the file or field is missing, a
+warning is printed and ``"undefined"`` is used. Reading a public S3 bucket requires
+``aws.client.anonymous = true`` in the Nextflow config.
 
 
 Visualization Parameters

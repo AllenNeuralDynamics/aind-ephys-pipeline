@@ -1,6 +1,6 @@
-.. _1.4.2:
+.. _1.5.0:
 
-1.4.2 - Oct 23rd 2026
+1.5.0 - Oct 29th 2026
 =====================
 
 Minor release with a new CI/CD and CodeOcean updates
@@ -15,12 +15,15 @@ Pipeline:
   **Requires Nextflow >= 25.10** (``nf-schema@2.7.3``).
 * Add ``PYTHONNOUSERSITE = 1`` to slurm config to prevent apptainer/singularity to use local Python site packages.
 
+
 Refactor:
 
 * Unified ``main_multi_backend`` with ``main``, so all executors (including CodeOcean) use the same pipeline.
 * Parameters schema (``default_params_schema.json``) moved from JSON Schema draft-07 to draft 2020-12, as required by ``nf-schema``.
   The parameters editor (``params_app``) now uses the AJV 2020-12 validator.
 * Moved ``pipeline/bin/validate_params.py`` to ``validate_params.yml`` (an inline nf-schema script): it is only used by CI.
+* Refactored parameter propagation: each process now takes the full params as ``capsule/params.json``.
+* The ``main.nf`` is now in charge of looking for a ``data_description.json`` file in the input directory and set the ``acquisition_name`` field for ``logging``.
 
 Build:
 

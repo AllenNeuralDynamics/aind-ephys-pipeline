@@ -3,8 +3,6 @@ nextflow.enable.dsl = 2
 
 include { validate } from 'plugin/nf-schema'
 
-System.getenv().sort().each { k, v -> println "${k}=${v}" }
-
 params.ecephys_path = params.ecephys_url ?: DATA_PATH
 params.params_file = null
 
@@ -158,8 +156,6 @@ println "PIPELINE URL: ${pipelineUrl}"
 // Pass pipeline data/results paths to the collector (disabled on Code Ocean, where
 // RESULTS_PATH is unique per run and would invalidate the task cache)
 params.pass_pipeline_paths = true
-pipeline_paths_args = params.pass_pipeline_paths ? "--pipeline-data-path ${DATA_PATH} --pipeline-results-path ${RESULTS_PATH}" : ""
-pipeline_data_path_args = params.pass_pipeline_paths ? "--pipeline-data-path ${DATA_PATH}" : ""
 
 println "PASS PIPELINE PATHS: ${params.pass_pipeline_paths}"
 
@@ -204,10 +200,6 @@ if (params.executor == "local")
         n_jobs = -1
     }
     println "N JOBS: ${n_jobs}"
-    job_args=" --n-jobs ${n_jobs}"
-}
-else {
-    job_args=""
 }
 
 // set runmode
@@ -248,11 +240,18 @@ def full_params = [
     curation: buildStepArgs(json_params.curation, "curation_args"),
     visualization: buildStepArgs(json_params.visualization, "visualization_kwargs"),
     result_collector: buildStepArgs(json_params.result_collector, "result_collector_args"),
-    nwb_ecephys: buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args"),
-    nwb_units: buildStepArgs(json_params.nwb?.units, "nwb_units_args"),
+    nwb_ecephys: buildStepArgs(json_params.nwb_ecephys, "nwb_ecephys_args"),
+    nwb_units: buildStepArgs(json_params.nwb_units, "nwb_units_args"),
     quality_control: buildStepArgs(json_params.quality_control, "quality_control_args"),
     quality_control_collector: buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args")
 ]
+
+// Fill in pipeline paths unless set explicitly in the params
+if (params.pass_pipeline_paths) {
+    full_params.result_collector.pipeline_data_path = full_params.result_collector.pipeline_data_path ?: DATA_PATH
+    full_params.result_collector.pipeline_results_path = full_params.result_collector.pipeline_results_path ?: RESULTS_PATH
+    full_params.quality_control.pipeline_data_path = full_params.quality_control.pipeline_data_path ?: DATA_PATH
+}
 
 if (runmode == 'fast'){
     full_params.preprocessing.motion = 'skip'
@@ -324,7 +323,7 @@ process job_dispatch {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     TASK_DIR=\$(pwd)
 
@@ -382,7 +381,7 @@ process preprocessing {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -391,7 +390,7 @@ process preprocessing {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -429,7 +428,7 @@ process spikesort_kilosort25 {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -438,7 +437,7 @@ process spikesort_kilosort25 {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${spikesorting_args} ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -473,7 +472,7 @@ process spikesort_kilosort4 {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -482,7 +481,7 @@ process spikesort_kilosort4 {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -517,7 +516,7 @@ process spikesort_spykingcircus2 {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -526,7 +525,7 @@ process spikesort_spykingcircus2 {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -563,7 +562,7 @@ process spikesort_lupin {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -572,7 +571,7 @@ process spikesort_lupin {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -614,7 +613,7 @@ process postprocessing {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -623,7 +622,7 @@ process postprocessing {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -659,7 +658,7 @@ process curation {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -668,7 +667,7 @@ process curation {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -714,7 +713,7 @@ process visualization {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -772,7 +771,7 @@ process results_collector {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     export PIPELINE_VERSION=${pipelineVersion}
     export PIPELINE_URL=${pipelineUrl}
@@ -784,7 +783,7 @@ process results_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${pipeline_paths_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -826,7 +825,7 @@ process quality_control {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -835,7 +834,7 @@ process quality_control {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${pipeline_data_path_args} ${quality_control_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -873,7 +872,7 @@ process quality_control_collector {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -882,7 +881,7 @@ process quality_control_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${quality_control_collector_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -923,7 +922,7 @@ process nwb_ecephys {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -932,7 +931,7 @@ process nwb_ecephys {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${nwb_ecephys_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -980,12 +979,12 @@ process nwb_units {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${nwb_units_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -1039,19 +1038,7 @@ workflow {
         parameters: [
             params_file: params.params_file ?: 'default_params.json',
             params_file_content: json_params,
-            effective_args: [
-                job_dispatch: job_dispatch_args,
-                preprocessing: preprocessing_args,
-                spikesorting: spikesorting_args,
-                postprocessing: postprocessing_args,
-                curation: curation_args,
-                visualization: visualization_kwargs,
-                result_collector: result_collector_args,
-                nwb_ecephys: nwb_ecephys_args,
-                nwb_units: nwb_units_args,
-                quality_control: quality_control_args,
-                quality_control_collector: quality_control_collector_args
-            ]
+            effective_params: full_params
         ]
     ]
     save_provenance(groovy.json.JsonOutput.toJson(provenance))
