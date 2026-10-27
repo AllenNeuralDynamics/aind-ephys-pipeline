@@ -57,6 +57,8 @@
         },
         "custom_preprocessing_pipeline": null,
         "motion_correction": {
+            "compute": true,
+            "apply": false,
             "preset": "dredge_fast",
             "detect_kwargs": {},
             "select_kwargs": {},

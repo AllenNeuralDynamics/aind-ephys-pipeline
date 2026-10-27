@@ -38,6 +38,39 @@ def buildStepArgs(Map json_section, String cli_param_name) {
     return args_map
 }
 
+// Recursively merge `over` into `base` (returns a new map)
+def deepMerge(Map base, Map over) {
+    def out = new LinkedHashMap(base)
+    over.each { k, v ->
+        out[k] = (out[k] instanceof Map && v instanceof Map) ? deepMerge(out[k], v) : v
+    }
+    return out
+}
+
+// Coerce a CLI value (Nextflow guesses int/float/boolean from the text) to the type the schema expects.
+// Values already matching an allowed type, or that cannot be converted, are left for validation to report.
+def coerceToSchema(value, Map node, Map root) {
+    if (node?.get('$ref')) {
+        node = node['$ref'].replaceFirst('^#/', '').split('/').inject(root) { n, k -> n[k] }
+    }
+    if (value instanceof Map) {
+        return value.collectEntries { k, v -> [(k): coerceToSchema(v, node?.properties?.get(k) ?: [:], root)] }
+    }
+    def types = node?.type instanceof List ? node.type : (node?.type ? [node.type] : [])
+    if (!types) return value
+    def matches = { t ->
+        (t == 'string' && value instanceof String) || (t == 'boolean' && value instanceof Boolean) ||
+        (t == 'integer' && value instanceof Integer) || (t == 'number' && value instanceof Number)
+    }
+    if (types.any(matches)) return value
+    def text = value.toString()
+    if ('null' in types && text == 'null') return null
+    if ('integer' in types && value instanceof Number && value == value.intValue()) return value.intValue()
+    if ('boolean' in types && text in ['true', 'false']) return text == 'true'
+    if ('string' in types) return text
+    return value
+}
+
 // Forward the head job's temporary AWS credentials (Code Ocean ECS endpoint) to a task.
 // Called at task creation so the session token is fresh; returns '' outside Code Ocean.
 def awsCredentialsExports() {
@@ -53,11 +86,6 @@ def awsCredentialsExports() {
 println "DATA_PATH: ${params.ecephys_path}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
-def credsUri = System.getenv('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
-if (credsUri) {
-    println "head role: " + new groovy.json.JsonSlurper().parseText(new URL("http://169.254.170.2${credsUri}").text).RoleArn
-}
-
 // Load parameters from custom JSON file, or default_params
 def json_params = [:]
 if (params.params_file) {
@@ -68,6 +96,17 @@ else {
     params.params_file = "${baseDir}/default_params.json"
     json_params = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text)
     println "Loaded parameters from DEFAULT_PARAMS"
+}
+
+// Dotted CLI overrides following the JSON layout, e.g. --preprocessing.filter_type=bandpass
+// (Nextflow turns them into nested maps in `params`); merged before validation so they are checked too
+def step_keys = ['logging', 'job_dispatch', 'preprocessing', 'spikesorting', 'postprocessing', 'curation', 'visualization',
+                 'results_collector', 'nwb_ecephys', 'nwb_units', 'quality_control', 'quality_control_collector']
+def cli_overrides = step_keys.findAll { params.containsKey(it) && params[it] instanceof Map }.collectEntries { [(it): params[it]] }
+if (cli_overrides) {
+    println "Merging dotted CLI parameters: ${cli_overrides}"
+    def schema = new groovy.json.JsonSlurper().parseText(new File("${projectDir}/default_params_schema.json").text)
+    json_params = deepMerge(json_params, coerceToSchema(cli_overrides, schema, schema))
 }
 
 // Validate the parameters file against the schema before any process runs
@@ -230,39 +269,45 @@ if (sorter == null) {
     sorter = "kilosort4"
 }
 
-// Full parameter map: JSON + CLI overrides, one entry per step
-def full_params = [
-    logging: buildStepArgs(json_params.logging, "logging_args"),
-    job_dispatch: buildStepArgs(json_params.job_dispatch, "job_dispatch_args"),
-    preprocessing: buildStepArgs(json_params.preprocessing, "preprocessing_args"),
-    spikesorting: buildStepArgs(json_params.spikesorting ? json_params.spikesorting[sorter] : null, "spikesorting_args"),
-    postprocessing: buildStepArgs(json_params.postprocessing, "postprocessing_args"),
-    curation: buildStepArgs(json_params.curation, "curation_args"),
-    visualization: buildStepArgs(json_params.visualization, "visualization_kwargs"),
-    result_collector: buildStepArgs(json_params.result_collector, "result_collector_args"),
-    nwb_ecephys: buildStepArgs(json_params.nwb_ecephys, "nwb_ecephys_args"),
-    nwb_units: buildStepArgs(json_params.nwb_units, "nwb_units_args"),
-    quality_control: buildStepArgs(json_params.quality_control, "quality_control_args"),
-    quality_control_collector: buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args")
-]
+// Full parameter map: start from the JSON (keeps its layout, pipeline_version, ...) and replace
+// every step section with the version merged with the legacy CLI `*_args` strings
+def full_params = new groovy.json.JsonSlurper().parseText(groovy.json.JsonOutput.toJson(json_params))
+[logging: "logging_args",
+ job_dispatch: "job_dispatch_args",
+ preprocessing: "preprocessing_args",
+ postprocessing: "postprocessing_args",
+ curation: "curation_args",
+ visualization: "visualization_kwargs",
+ results_collector: "results_collector_args",
+ nwb_ecephys: "nwb_ecephys_args",
+ nwb_units: "nwb_units_args",
+ quality_control: "quality_control_args",
+ quality_control_collector: "quality_control_collector_args"].each { section, cli_name ->
+    full_params[section] = buildStepArgs(json_params[section], cli_name)
+}
+// Spikesorting: record the selected sorter and replace its sub-map
+full_params.spikesorting = (full_params.spikesorting ?: [:]) + [sorter: sorter]
+full_params.spikesorting[sorter] = buildStepArgs(json_params.spikesorting?.get(sorter), "spikesorting_args")
 
 // Fill in pipeline paths unless set explicitly in the params
 if (params.pass_pipeline_paths) {
-    full_params.result_collector.pipeline_data_path = full_params.result_collector.pipeline_data_path ?: DATA_PATH
-    full_params.result_collector.pipeline_results_path = full_params.result_collector.pipeline_results_path ?: RESULTS_PATH
+    full_params.results_collector.pipeline_data_path = full_params.results_collector.pipeline_data_path ?: DATA_PATH
+    full_params.results_collector.pipeline_results_path = full_params.results_collector.pipeline_results_path ?: RESULTS_PATH
     full_params.quality_control.pipeline_data_path = full_params.quality_control.pipeline_data_path ?: DATA_PATH
 }
 
 if (runmode == 'fast'){
-    full_params.preprocessing.motion = 'skip'
-    full_params.postprocessing.skip_extensions = 'spike_locations,principal_components'
-    full_params.nwb_ecephys.skip_lfp = true
-    println "Running in fast mode: overrode preprocessing, postprocessing and nwb_ecephys parameters"
+    full_params.preprocessing.motion_correction = (full_params.preprocessing.motion_correction ?: [:]) + [compute: false]
+    full_params.nwb_ecephys.write_lfp = false
+    full_params.postprocessing.extensions?.remove('spike_locations')
+    full_params.postprocessing.extensions?.remove('principal_components')
 }
 
-// With log-schema, tag logs with the acquisition name from data_description.json
+// Tag logs with the acquisition name from data_description.json and the pipeline name;
+// values set by the user in the params file take priority
 // (file() handles both local paths and s3:// URLs from ecephys_url)
-if (full_params.logging?.package == 'log-schema') {
+full_params.logging = full_params.logging ?: [:]
+if (!full_params.logging.acquisition_name) {
     def acquisition_name = null
     try {
         def data_description = file("${params.ecephys_path}/data_description.json")
@@ -276,15 +321,29 @@ if (full_params.logging?.package == 'log-schema') {
         println "WARN: no name found in ${params.ecephys_path}/data_description.json, using 'undefined'"
         acquisition_name = 'undefined'
     }
-    full_params.logging.logging_cfg = (full_params.logging.logging_cfg ?: [:]) + [acquisition_name: acquisition_name]
-    println "Logging acquisition_name: ${acquisition_name}"
+    full_params.logging.acquisition_name = acquisition_name
 }
+if (!full_params.logging.pipeline_name) {
+    full_params.logging.pipeline_name = 'AIND Ephys Pipeline'
+}
+println "Logging acquisition_name: ${full_params.logging.acquisition_name}"
 
 // Dump the full map to the work dir so it can be inspected/attached to tasks
 def full_params_file = new File("${workDir}/full_params.json")
 full_params_file.parentFile.mkdirs()
-full_params_file.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(full_params))
+// Rewrite only on change: tasks hash the staged file's mtime, so touching it would invalidate -resume
+def full_params_text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(full_params))
+if (!full_params_file.exists() || full_params_file.text != full_params_text) {
+    full_params_file.text = full_params_text
+}
 println "Full parameters written to ${full_params_file}"
+
+// Validate the final map (JSON + CLI + runmode/log/path adjustments) against the schema
+def full_params_errors = validate(new groovy.json.JsonSlurper().parseText(full_params_file.text), "${projectDir}/default_params_schema.json", exitOnError: false)
+if (full_params_errors) {
+    error "Invalid full parameters (${full_params_file}):\n" + full_params_errors.collect { "  * ${it}" }.join('\n')
+}
+println "Full parameters are valid"
 
 println "Using SORTER: ${sorter}"
 
@@ -452,6 +511,7 @@ process spikesort_kilosort4 {
     input:
     val max_duration_minutes
     path preprocessing_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -1016,6 +1076,8 @@ PROVENANCE_EOF
 
 workflow {
     // Input channel from ecephys path
+    // Value channel so the same params file is reused by every task (File objects are not valid path inputs)
+    full_params_ch = Channel.value(file(full_params_file.toString()))
     ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
 
     // Provenance: only the selected sorter's repo/commit is recorded
@@ -1044,7 +1106,7 @@ workflow {
     save_provenance(groovy.json.JsonOutput.toJson(provenance))
 
     // Job dispatch
-    job_dispatch_out = job_dispatch(ecephys_ch.collect())
+    job_dispatch_out = job_dispatch(ecephys_ch.collect(), full_params_ch)
 
     max_duration_file = job_dispatch_out.max_duration_file
     max_duration_minutes = max_duration_file.map { it.text.trim() }
@@ -1054,7 +1116,8 @@ workflow {
     preprocessing_out = preprocessing(
         max_duration_minutes,
         ecephys_ch.collect(),
-        job_dispatch_out.results.flatten()
+        job_dispatch_out.results.flatten(),
+        full_params_ch
     )
 
     // Spike sorting based on selected sorter
@@ -1062,22 +1125,26 @@ workflow {
     if (sorter == 'kilosort25') {
         spikesort_out = spikesort_kilosort25(
             max_duration_minutes,
-            preprocessing_out.results
+            preprocessing_out.results,
+            full_params_ch
         )
     } else if (sorter == 'kilosort4') {
         spikesort_out = spikesort_kilosort4(
             max_duration_minutes,
-            preprocessing_out.results
+            preprocessing_out.results,
+            full_params_ch
         )
     } else if (sorter == 'spykingcircus2') {
         spikesort_out = spikesort_spykingcircus2(
             max_duration_minutes,
-            preprocessing_out.results
+            preprocessing_out.results,
+            full_params_ch
         )
     } else if (sorter == 'lupin') {
         spikesort_out = spikesort_lupin(
             max_duration_minutes,
-            preprocessing_out.results
+            preprocessing_out.results,
+            full_params_ch
         )
     } else {
         error "Unsupported sorter: ${sorter}"
@@ -1089,13 +1156,15 @@ workflow {
         ecephys_ch.collect(),
         job_dispatch_out.results.flatten(),
         preprocessing_out.results.collect(),
-        spikesort_out.results.collect()
+        spikesort_out.results.collect(),
+        full_params_ch
     )
 
     // Curation
     curation_out = curation(
         max_duration_minutes,
-        postprocessing_out.results
+        postprocessing_out.results,
+        full_params_ch
     )
 
     // Visualization
@@ -1106,7 +1175,8 @@ workflow {
         preprocessing_out.results,
         spikesort_out.results.collect(),
         postprocessing_out.results.collect(),
-        curation_out.results.collect()
+        curation_out.results.collect(),
+        full_params_ch
     )
 
     // Results collection
@@ -1118,7 +1188,8 @@ workflow {
         spikesort_out.results.collect(),
         postprocessing_out.results.collect(),
         curation_out.results.collect(),
-        visualization_out.results.collect()
+        visualization_out.results.collect(),
+        full_params_ch
     )
 
     // Quality control
@@ -1126,13 +1197,15 @@ workflow {
         max_duration_minutes,
         ecephys_ch.collect(),
         job_dispatch_out.results.flatten(),
-        results_collector_out.qc_data.collect()
+        results_collector_out.qc_data.collect(),
+        full_params_ch
     )
 
     // Quality control collection
     quality_control_collector(
         max_duration_minutes,
-        quality_control_out.results.collect()
+        quality_control_out.results.collect(),
+        full_params_ch
     )
 
     // NWB ecephys
@@ -1140,6 +1213,7 @@ workflow {
         max_duration_minutes,
         ecephys_ch.collect(),
         job_dispatch_out.results.collect(),
+        full_params_ch
     )
 
     // NWB units
@@ -1148,6 +1222,7 @@ workflow {
         ecephys_ch.collect(),
         job_dispatch_out.results.collect(),
         results_collector_out.nwb_data.collect(),
-        nwb_ecephys_out.results.collect()
+        nwb_ecephys_out.results.collect(),
+        full_params_ch
     )
 }

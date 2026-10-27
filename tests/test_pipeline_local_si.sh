@@ -34,7 +34,7 @@ else
 fi
 echo "Using config file: $CONFIG_FILE"
 
-PARAMS_FILE="$PIPELINE_PATH/.github/workflows/params_test_si.json"
+PARAMS_FILE="$PIPELINE_PATH/.github/workflows/params_files/params_test_si.json"
 
 # run pipeline
 NXF_VER=$NXF_VERSION DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \

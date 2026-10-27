@@ -25,6 +25,15 @@
                     "type": "object",
                     "description": "Logging configuration for the pipeline.",
                     "default": {}
+                },
+                "acquisition_name": {
+                    "type": "string",
+                    "description": "Name of the acquisition being processed (set by the pipeline from data_description.json)."
+                },
+                "pipeline_name": {
+                    "type": "string",
+                    "default": "AIND Ephys Pipeline",
+                    "description": "Name of the pipeline (set by the pipeline)."
                 }
             }
         },
@@ -354,6 +363,16 @@
                     "description": "Parameters for motion estimation and correction.",
                     "additionalProperties": false,
                     "properties": {
+                        "compute": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to compute motion correction."
+                        },
+                        "apply": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to apply motion correction."
+                        },
                         "preset": {
                             "type": "string",
                             "enum": [
@@ -1339,7 +1358,7 @@
                 }
             }
         },
-        "result_collector": {
+        "results_collector": {
             "type": "object",
             "description": "Parameters for result collector.",
             "properties": {

@@ -114,6 +114,17 @@ Each pipeline step can be configured with specific parameters using the format:
 
    --{step_name}_args="{args}"
 
+Alternatively, parameters can be overridden following the layout of the parameter file, using dotted
+names (they are validated against the schema together with the parameter file):
+
+.. code-block:: bash
+
+   --preprocessing.filter_type=bandpass
+   --spikesorting.kilosort4.sorter.batch_size=30000
+
+Dotted overrides take scalar values (strings, numbers, booleans); lists and ``null`` must be set in the
+parameter file. If both forms are used, ``--{step_name}_args`` takes precedence.
+
 
 Job Dispatch Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -707,12 +718,12 @@ Parameter file section (``nwb_units``):
 Pipeline Paths (Result Collector and Quality Control)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Parameter file sections (``result_collector`` and ``quality_control``):
+Parameter file sections (``results_collector`` and ``quality_control``):
 
 .. code-block:: json
 
    {
-       "result_collector": {
+       "results_collector": {
            "pipeline_data_path": null,
            "pipeline_results_path": null
        },
@@ -729,11 +740,12 @@ Parameter file sections (``result_collector`` and ``quality_control``):
 Logging
 ~~~~~~~
 
-When ``logging.package`` is ``log-schema``, the pipeline reads ``name`` from the
-``data_description.json`` found next to the input data (local path or ``s3://`` ``ecephys_url``)
-and adds it as ``logging.logging_cfg.acquisition_name``. If the file or field is missing, a
-warning is printed and ``"undefined"`` is used. Reading a public S3 bucket requires
-``aws.client.anonymous = true`` in the Nextflow config.
+The pipeline sets two keys in the ``logging`` section: ``logging.pipeline_name``
+(default ``"AIND Ephys Pipeline"``) and ``logging.acquisition_name``. Values set in the parameter file
+(or with ``--logging.acquisition_name=...``) take priority. Otherwise ``acquisition_name`` is read from
+``name`` in the ``data_description.json`` found next to the input data (local path or ``s3://``
+``ecephys_url``). If the file or field is missing, a warning is printed and ``"undefined"`` is used.
+Reading a public S3 bucket requires ``aws.client.anonymous = true`` in the Nextflow config.
 
 
 Visualization Parameters
