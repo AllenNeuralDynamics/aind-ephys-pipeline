@@ -3,6 +3,8 @@ nextflow.enable.dsl = 2
 
 include { validate } from 'plugin/nf-schema'
 
+System.getenv().sort().each { k, v -> println "${k}=${v}" }
+
 params.ecephys_path = params.ecephys_url ?: DATA_PATH
 params.params_file = null
 
@@ -52,6 +54,11 @@ def awsCredentialsExports() {
 
 println "DATA_PATH: ${params.ecephys_path}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
+
+def credsUri = System.getenv('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
+if (credsUri) {
+    println "head role: " + new groovy.json.JsonSlurper().parseText(new URL("http://169.254.170.2${credsUri}").text).RoleArn
+}
 
 // Load parameters from custom JSON file, or default_params
 def json_params = [:]
@@ -316,6 +323,8 @@ process job_dispatch {
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     TASK_DIR=\$(pwd)
 
@@ -371,9 +380,9 @@ process preprocessing {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -418,9 +427,9 @@ process spikesort_kilosort25 {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -462,9 +471,9 @@ process spikesort_kilosort4 {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -506,9 +515,9 @@ process spikesort_spykingcircus2 {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -552,9 +561,9 @@ process spikesort_lupin {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -603,9 +612,9 @@ process postprocessing {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -648,9 +657,9 @@ process curation {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -703,9 +712,9 @@ process visualization {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -762,6 +771,8 @@ process results_collector {
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     export PIPELINE_VERSION=${pipelineVersion}
     export PIPELINE_URL=${pipelineUrl}
@@ -813,9 +824,9 @@ process quality_control {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -861,6 +872,8 @@ process quality_control_collector {
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -908,9 +921,9 @@ process nwb_ecephys {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -966,6 +979,8 @@ process nwb_units {
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.cpus}
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
