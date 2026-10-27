@@ -98,7 +98,6 @@ Installation Steps
    cd pipeline
 
 
-Code Ocean Setup
 Code Ocean Deployment
 ---------------------
 
@@ -128,25 +127,23 @@ This example shows how to run the pipeline using the Code Ocean Python API:
       mount="ecephys",
    )
 
-   # Set the sorter as a named parameter (e.g., "kilosort25", "kilosort4", "spykingcircus2", "lupin")
+   # Set the sorter and preprocessing filter_type as a named parameter
    named_parameters = [
       NamedRunParam(
          param_name="sorter",
          value="kilosort4"
+      ),
+      NamedRunParam(
+         param_name="preprocessing.filter_type",
+         value="bandpass"
       )
    ]
 
-   # Set process parameters (e.g., preprocessing)
-   preprocessing_params = PipelineProcessParams(
-      name="preprocessing",
-      parameters=["--motion", "skip", "--filter", "bandpass"]
-   )
 
    run_params = RunParams(
       pipeline_id=PIPELINE_ID,
       data_assets=[data_asset],
       named_parameters=named_parameters,
-      processes=[preprocessing_params],
    )
 
    # Run the pipeline
