@@ -5,6 +5,7 @@
     "description": "Configuration schema for the AIND electrophysiology analysis pipeline. See https://aind-ephys-pipeline.readthedocs.io/en/latest/parameters.html for documentation.",
     "type": "object",
     "additionalProperties": false,
+    "required": ["pipeline_version", "logging"],
     "properties": {
         "pipeline_version": {
             "type": "string",
@@ -15,6 +16,7 @@
             "type": "object",
             "description": "Logging configuration for the pipeline.",
             "additionalProperties": false,
+            "required": ["package"],
             "properties": {
                 "package": {
                     "type": "string",

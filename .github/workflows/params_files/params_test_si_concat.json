@@ -1,5 +1,8 @@
 {
     "pipeline_version": "1.5.0",
+    "logging": {
+        "package": "logging"
+    },
     "job_dispatch": {
         "split_segments": false,
         "split_groups": true,
