@@ -66,6 +66,8 @@ def coerceToSchema(value, Map node, Map root) {
     def text = value.toString()
     if ('null' in types && text == 'null') return null
     if ('integer' in types && value instanceof Number && value == value.intValue()) return value.intValue()
+    if ('integer' in types && text.isInteger()) return text.toInteger()
+    if ('number' in types && text.isNumber()) return text.toBigDecimal()
     if ('boolean' in types && text in ['true', 'false']) return text == 'true'
     if ('string' in types) return text
     return value
@@ -102,7 +104,25 @@ else {
 // (Nextflow turns them into nested maps in `params`); merged before validation so they are checked too
 def step_keys = ['logging', 'job_dispatch', 'preprocessing', 'spikesorting', 'postprocessing', 'curation', 'visualization',
                  'results_collector', 'nwb_ecephys', 'nwb_units', 'quality_control', 'quality_control_collector']
-def cli_overrides = step_keys.findAll { params.containsKey(it) && params[it] instanceof Map }.collectEntries { [(it): params[it]] }
+def cli_overrides = [:]
+// Same overrides packed in one string, for Code Ocean (only App Panel params are forwarded), e.g.
+// --extra_params "--preprocessing.filter_type=bandpass --spikesorting.kilosort4.sorter.batch_size=30000"
+// shortcut: whitespace split, so values can't contain spaces; use the params file for those
+if (params.containsKey('extra_params') && params.extra_params instanceof String) {
+    def tokens = params.extra_params.trim().split(/\s+/) as List
+    for (int i = 0; i < tokens.size(); i++) {
+        if (!tokens[i].startsWith('--')) continue
+        def (key, value) = tokens[i].substring(2).contains('=') ? tokens[i].substring(2).split('=', 2) as List :
+            [tokens[i].substring(2), (i + 1 < tokens.size() && !tokens[i + 1].startsWith('--')) ? tokens[++i] : 'true']
+        def path = key.split(/\./) as List
+        if (!(path[0] in step_keys) || path.size() < 2) {
+            println "WARN: ignoring extra_params entry '--${key}' (must start with one of ${step_keys})"
+            continue
+        }
+        cli_overrides = deepMerge(cli_overrides, path.reverse().inject(value) { acc, k -> [(k): acc] })
+    }
+}
+cli_overrides = deepMerge(cli_overrides, step_keys.findAll { params.containsKey(it) && params[it] instanceof Map }.collectEntries { [(it): params[it]] })
 if (cli_overrides) {
     println "Merging dotted CLI parameters: ${cli_overrides}"
     def schema = new groovy.json.JsonSlurper().parseText(new File("${projectDir}/default_params_schema.json").text)

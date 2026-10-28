@@ -125,6 +125,15 @@ names (they are validated against the schema together with the parameter file):
 Dotted overrides take scalar values (strings, numbers, booleans); lists and ``null`` must be set in the
 parameter file. If both forms are used, ``--{step_name}_args`` takes precedence.
 
+The same overrides can be packed into a single string with ``--extra_params`` (used on Code Ocean, see
+:doc:`deployments`):
+
+.. code-block:: bash
+
+   --extra_params "--preprocessing.filter_type=bandpass --spikesorting.kilosort4.sorter.batch_size=30000"
+
+Real dotted CLI parameters take precedence over ``--extra_params``.
+
 
 Job Dispatch Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~
