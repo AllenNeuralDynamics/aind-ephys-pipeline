@@ -3,7 +3,8 @@
 1.5.0 - Oct 29th 2026
 =====================
 
-Minor release with a new CI/CD and CodeOcean updates
+Major release with new features and updated dependencies.
+You should update your parameter files to be compatible with the new schema.
 
 Pipeline:
 
@@ -29,6 +30,10 @@ Build:
 
 * Forward AWS credentials to tasks in Code Ocean using the new ``awsCredentialsExports`` function.
 * Update ``figpack`` to version 0.3.21
+
+Deprecations:
+
+* Default schema updated to 1.5.* and incompatible with previous versions
 
 Package versions
 ----------------
