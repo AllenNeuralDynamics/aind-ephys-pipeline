@@ -1458,7 +1458,7 @@
             "properties": {
                 "sorter": {
                     "type": ["string", "null"],
-                    "enum": ["kilosort25", "kilosort4", "spykingcircus2", "lupin",null],
+                    "enum": ["kilosort25", "kilosort4", "spykingcircus2", "lupin", "dartsort", null],
                     "default": null,
                     "description": "Spike sorter to use. If null, uses the --sorter command-line parameter."
                 },
@@ -1473,6 +1473,9 @@
                 },
                 "lupin": {
                     "$ref": "#/$defs/sorter_wrapper_lupin"
+                },
+                "dartsort": {
+                    "$ref": "#/$defs/sorter_wrapper_dartsort"
                 }
 
             }
@@ -2483,6 +2486,376 @@
                             "type": "boolean",
                             "default": false,
                             "description": "Whether to enable debug mode."
+                        }
+                    }
+                }
+            }
+        },
+        "sorter_wrapper_dartsort": {
+            "type": "object",
+            "description": "DARTsort spike sorter configuration.",
+            "additionalProperties": false,
+            "properties": {
+                "job_kwargs": {
+                    "$ref": "#/$defs/job_kwargs"
+                },
+                "sorter": {
+                    "type": "object",
+                    "description": "DARTsort algorithm-specific parameters.",
+                    "additionalProperties": false,
+                    "properties": {
+                        "do_motion_estimation": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to estimate motion (drift) before sorting."
+                        },
+                        "already_preprocessed": {
+                            "type": "string",
+                            "default": "assume_yes_if_float",
+                            "description": "Whether the recording is already preprocessed (e.g. \"assume_yes_if_float\")."
+                        },
+                        "preprocessing": {
+                            "type": "string",
+                            "default": "standardize",
+                            "description": "Preprocessing applied by DARTsort (e.g. \"standardize\")."
+                        },
+                        "preprocessing_dtype": {
+                            "type": "string",
+                            "default": "float32",
+                            "description": "Data type used for preprocessed data."
+                        },
+                        "subsampling_spikes_per_channel": {
+                            "type": "integer",
+                            "default": 5000,
+                            "description": "Maximum number of spikes per channel used for subsampling."
+                        },
+                        "subsampling_presence": {
+                            "type": "number",
+                            "default": 0.025,
+                            "description": "Minimum presence fraction for subsampled spikes."
+                        },
+                        "matching_iterations": {
+                            "type": "integer",
+                            "default": 1,
+                            "description": "Number of template matching iterations."
+                        },
+                        "dredge_only": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to only run motion estimation (DREDge) and skip sorting."
+                        },
+                        "n_jobs_cpu": {
+                            "type": "integer",
+                            "default": 0,
+                            "description": "Number of CPU jobs. 0 uses the default."
+                        },
+                        "n_jobs_gpu": {
+                            "type": "integer",
+                            "default": 0,
+                            "description": "Number of GPU jobs. 0 uses the default."
+                        },
+                        "motion_n_jobs_gpu": {
+                            "type": "integer",
+                            "default": 2,
+                            "description": "Number of GPU jobs for motion estimation."
+                        },
+                        "n_jobs_small": {
+                            "type": "integer",
+                            "default": -2,
+                            "description": "Number of jobs for small CPU tasks. Negative values count from the number of CPUs."
+                        },
+                        "n_jobs_small_gpu": {
+                            "type": "integer",
+                            "default": 4,
+                            "description": "Number of jobs for small GPU tasks."
+                        },
+                        "device": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "default": null,
+                            "description": "Torch device (e.g. \"cuda\"). If null, auto-selected."
+                        },
+                        "executor": {
+                            "type": "string",
+                            "default": "threading_unless_multigpu",
+                            "description": "Executor type used for parallelism."
+                        },
+                        "chunk_length_samples": {
+                            "type": "integer",
+                            "default": 30000,
+                            "description": "Chunk length in samples."
+                        },
+                        "work_in_tmpdir": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to work in a temporary directory."
+                        },
+                        "copy_recording_to_tmpdir": {
+                            "type": "string",
+                            "default": "no",
+                            "description": "Whether to copy the recording to the temporary directory (e.g. \"no\")."
+                        },
+                        "workdir_copier": {
+                            "type": "string",
+                            "default": "shutil",
+                            "description": "Method used to copy files to the working directory."
+                        },
+                        "workdir_follow_symlinks": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to follow symlinks when copying to the working directory."
+                        },
+                        "tmpdir_parent": {
+                            "type": "string",
+                            "default": "../scratch",
+                            "description": "Parent directory for temporary files."
+                        },
+                        "save_intermediates": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to save intermediate results."
+                        },
+                        "save_final_features": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to save final features."
+                        },
+                        "ms_before": {
+                            "type": "number",
+                            "default": 1.4,
+                            "description": "Waveform window before the peak (ms)."
+                        },
+                        "ms_after": {
+                            "type": "number",
+                            "default": 2.6333333333333333,
+                            "description": "Waveform window after the peak (ms)."
+                        },
+                        "alignment_ms": {
+                            "type": "number",
+                            "default": 1.5,
+                            "description": "Alignment window (ms)."
+                        },
+                        "deduplication_ms": {
+                            "type": "number",
+                            "default": 0.25,
+                            "description": "Deduplication window (ms)."
+                        },
+                        "peak_sign": {
+                            "type": "string",
+                            "default": "both",
+                            "description": "Sign of the peaks to detect.",
+                            "enum": [
+                                "neg",
+                                "pos",
+                                "both"
+                            ]
+                        },
+                        "voltage_threshold": {
+                            "type": "number",
+                            "default": 3.0,
+                            "description": "Detection threshold for subtraction."
+                        },
+                        "matching_threshold": {
+                            "type": "number",
+                            "default": 6.0,
+                            "description": "Detection threshold for template matching."
+                        },
+                        "initial_threshold": {
+                            "type": "number",
+                            "default": 9.0,
+                            "description": "Initial detection threshold."
+                        },
+                        "motion_voltage_threshold": {
+                            "type": "number",
+                            "default": 4.0,
+                            "description": "Detection threshold used for motion estimation."
+                        },
+                        "temporal_pca_rank": {
+                            "type": "integer",
+                            "default": 8,
+                            "description": "Rank of the temporal PCA."
+                        },
+                        "feature_ms_before": {
+                            "type": "number",
+                            "default": 0.75,
+                            "description": "Feature window before the peak (ms)."
+                        },
+                        "feature_ms_after": {
+                            "type": "number",
+                            "default": 1.25,
+                            "description": "Feature window after the peak (ms)."
+                        },
+                        "subtraction_radius_um": {
+                            "type": "number",
+                            "default": 200.0,
+                            "description": "Channel neighborhood radius for subtraction (um)."
+                        },
+                        "deduplication_radius_um": {
+                            "type": "number",
+                            "default": 50.0,
+                            "description": "Channel neighborhood radius for deduplication (um)."
+                        },
+                        "featurization_radius_um": {
+                            "type": "number",
+                            "default": 150.0,
+                            "description": "Channel neighborhood radius for featurization (um)."
+                        },
+                        "fit_radius_um": {
+                            "type": "number",
+                            "default": 75.0,
+                            "description": "Channel neighborhood radius for fitting (um)."
+                        },
+                        "localization_radius_um": {
+                            "type": "number",
+                            "default": 100.0,
+                            "description": "Channel neighborhood radius for localization (um)."
+                        },
+                        "nn_denoiser_class_name": {
+                            "type": "string",
+                            "default": "Decollider",
+                            "description": "Class name of the neural network denoiser."
+                        },
+                        "nn_denoiser_pretrained_path": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "default": null,
+                            "description": "Path to pretrained denoiser weights. If null, uses the default."
+                        },
+                        "amplitude_scaling_stddev": {
+                            "type": "number",
+                            "default": 0.01,
+                            "description": "Standard deviation of the amplitude scaling prior."
+                        },
+                        "amplitude_scaling_boundary": {
+                            "type": "number",
+                            "default": 0.3333333333333333,
+                            "description": "Boundary of the amplitude scaling."
+                        },
+                        "temporal_upsamples": {
+                            "type": "integer",
+                            "default": 4,
+                            "description": "Temporal upsampling factor for templates."
+                        },
+                        "postprocessing": {
+                            "type": "string",
+                            "default": "agglomerate_and_clean",
+                            "description": "Postprocessing method (e.g. \"agglomerate_and_clean\")."
+                        },
+                        "rigid": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to use rigid motion correction."
+                        },
+                        "probe_boundary_padding_um": {
+                            "type": "number",
+                            "default": 100.0,
+                            "description": "Padding beyond the probe boundary (um)."
+                        },
+                        "spatial_bin_length_um": {
+                            "type": "number",
+                            "default": 1.0,
+                            "description": "Spatial bin length for motion estimation (um)."
+                        },
+                        "temporal_bin_length_s": {
+                            "type": "number",
+                            "default": 1.0,
+                            "description": "Temporal bin length for motion estimation (s)."
+                        },
+                        "smoothing_um": {
+                            "type": "number",
+                            "default": 3.0,
+                            "description": "Spatial smoothing (um)."
+                        },
+                        "smoothing_s": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "description": "Temporal smoothing (s). If null, disabled."
+                        },
+                        "window_step_um": {
+                            "type": "number",
+                            "default": 400.0,
+                            "description": "Step between non-rigid windows (um)."
+                        },
+                        "window_scale_um": {
+                            "type": "number",
+                            "default": 600.0,
+                            "description": "Scale of non-rigid windows (um)."
+                        },
+                        "window_margin_um": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "description": "Margin of non-rigid windows (um). If null, auto-determined."
+                        },
+                        "max_dt_s": {
+                            "type": "number",
+                            "default": 500.0,
+                            "description": "Maximum time difference for pairwise motion comparison (s)."
+                        },
+                        "max_disp_um": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "description": "Maximum displacement (um). If null, auto-determined."
+                        },
+                        "correlation_threshold": {
+                            "type": "number",
+                            "default": 0.1,
+                            "description": "Correlation threshold for motion estimation."
+                        },
+                        "min_amplitude": {
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "default": null,
+                            "description": "Minimum amplitude of spikes used for motion estimation. If null, no minimum."
+                        },
+                        "speed_limit_um_per_s": {
+                            "type": "number",
+                            "default": 500.0,
+                            "description": "Maximum drift speed (um/s)."
+                        },
+                        "max_dist_from_median_um": {
+                            "type": "number",
+                            "default": 250.0,
+                            "description": "Maximum distance from the median displacement (um)."
+                        },
+                        "median_neighborhood_bins": {
+                            "type": "integer",
+                            "default": 51,
+                            "description": "Number of bins in the median neighborhood."
+                        },
+                        "motion_batching_mode": {
+                            "type": "string",
+                            "default": "full",
+                            "description": "Batching mode for motion estimation (e.g. \"full\")."
+                        },
+                        "motion_chunk_len_s": {
+                            "type": "number",
+                            "default": 3000.0,
+                            "description": "Chunk length for motion estimation (s)."
+                        },
+                        "fit_matching_models_only": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to only fit the matching models."
+                        },
+                        "save_full_final_residual": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Whether to save the full final residual."
                         }
                     }
                 }

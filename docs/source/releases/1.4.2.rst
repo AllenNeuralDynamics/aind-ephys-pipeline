@@ -1,7 +1,7 @@
 .. _1.4.2:
 
-1.4.2 - Oct 23rd 2026
-=====================
+1.4.2 - WIP
+===========
 
 Minor release with a new CI/CD and CodeOcean updates
 
@@ -14,6 +14,7 @@ Pipeline:
   instead of with a ``validate_params`` process. Invalid parameters now stop the pipeline before any process (or container) runs.
   **Requires Nextflow >= 25.10** (``nf-schema@2.7.3``).
 * Add ``PYTHONNOUSERSITE = 1`` to slurm config to prevent apptainer/singularity to use local Python site packages.
+* Add support for the new ``dartsort`` spike sorter.
 
 Refactor:
 
