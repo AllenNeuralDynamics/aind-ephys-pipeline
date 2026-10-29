@@ -1,5 +1,5 @@
 {
-    "pipeline_version": "1.4.1",
+    "pipeline_version": "1.5.0",
     "logging": {
         "package": "logging",
         "logging_cfg": {
@@ -65,6 +65,8 @@
         },
         "custom_preprocessing_pipeline": null,
         "motion_correction": {
+            "compute": true,
+            "apply": false,
             "preset": "dredge_fast",
             "detect_kwargs": {},
             "select_kwargs": {},
@@ -300,25 +302,27 @@
             "figsize": [15, 10]
         }
     },
-    "nwb": {
-        "ecephys": {
-            "backend": "zarr",
-            "stub": false,
-            "stub_seconds": 10,
-            "write_lfp": true,
-            "write_raw": false,
-            "lfp_temporal_factor": 2,
-            "lfp_spatial_factor": 4,
-            "lfp_highpass_freq_min": 0.1,
-            "surface_channel_agar_probes_indices": "",
-            "lfp": {
-                "filter": {
-                    "freq_min": 0.1,
-                    "freq_max": 500
-                },
-                "sampling_rate": 2500
-            }
+    "nwb_ecephys": {
+        "backend": "zarr",
+        "stub": false,
+        "stub_seconds": 10,
+        "write_lfp": true,
+        "write_raw": false,
+        "lfp_temporal_factor": 2,
+        "lfp_spatial_factor": 4,
+        "lfp_highpass_freq_min": 0.1,
+        "surface_channel_agar_probes_indices": "",
+        "lfp": {
+            "filter": {
+                "freq_min": 0.1,
+                "freq_max": 500
+            },
+            "sampling_rate": 2500
         }
+    },
+    "nwb_units": {
+        "stub": false,
+        "stub_units": 10
     },
     "spikesorting": {
         "sorter": null,
@@ -487,5 +491,12 @@
                 "debug": false
             }
         }
+    },
+    "results_collector": {
+        "pipeline_data_path": null,
+        "pipeline_results_path": null
+    },
+    "quality_control": {
+        "pipeline_data_path": null
     }
 }

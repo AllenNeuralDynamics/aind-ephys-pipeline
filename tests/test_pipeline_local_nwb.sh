@@ -51,7 +51,7 @@ if printf '%s\n%s\n' "26.04.0" "$NXF_VERSION" | sort -V -C; then
     export NXF_SYNTAX_PARSER=v1
 fi
 
-PARAMS_FILE="$PIPELINE_PATH/.github/workflows/params_test_default.json"
+PARAMS_FILE="$PIPELINE_PATH/.github/workflows/params_files/params_test_default.json"
 
 # run pipeline
 NXF_VER=$NXF_VERSION DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \

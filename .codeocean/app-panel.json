@@ -102,6 +102,14 @@
 			"description": "Used to override preprocessing to for optical stimulation removal",
 			"type": "text",
 			"value_type": "string"
+		},
+		{
+			"id": "LYsrHK4bG7R5sJGh",
+			"name": "extra params",
+			"param_name": "extra_params",
+			"description": "Additional process-specific params ",
+			"type": "text",
+			"value_type": "string"
 		}
 	]
 }
