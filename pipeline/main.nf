@@ -666,6 +666,7 @@ process spikesort_dartsort {
     input:
     val max_duration_minutes
     path preprocessing_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -686,7 +687,7 @@ process spikesort_dartsort {
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
     # Make sure N_JOBS matches allocated CPUs
-    export N_JOBS_EXT=${task.cpus}
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -695,7 +696,7 @@ process spikesort_dartsort {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${spikesorting_args} ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -1214,7 +1215,8 @@ workflow {
     } else if (sorter == 'dartsort') {
         spikesort_out = spikesort_dartsort(
             max_duration_minutes,
-            preprocessing_out.results
+            preprocessing_out.results,
+            full_params_ch
         )
     } else {
         error "Unsupported sorter: ${sorter}"
