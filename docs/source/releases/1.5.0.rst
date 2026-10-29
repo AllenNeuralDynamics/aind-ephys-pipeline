@@ -1,9 +1,10 @@
-.. _1.4.2:
+.. _1.5.0:
 
-1.4.2 - WIP
-===========
+1.5.0 - Oct 30th 2026
+=====================
 
-Minor release with a new CI/CD and CodeOcean updates
+Major release with new features and updated dependencies.
+You should update your parameter files to be compatible with the new schema.
 
 Pipeline:
 
@@ -14,6 +15,7 @@ Pipeline:
   instead of with a ``validate_params`` process. Invalid parameters now stop the pipeline before any process (or container) runs.
   **Requires Nextflow >= 25.10** (``nf-schema@2.7.3``).
 * Add ``PYTHONNOUSERSITE = 1`` to slurm config to prevent apptainer/singularity to use local Python site packages.
+* Add dotted parameters via command line (e.g. ``--preprocessing.filter_type=bandpass``)
 * Add support for the new ``dartsort`` spike sorter.
 
 Refactor:
@@ -22,16 +24,22 @@ Refactor:
 * Parameters schema (``default_params_schema.json``) moved from JSON Schema draft-07 to draft 2020-12, as required by ``nf-schema``.
   The parameters editor (``params_app``) now uses the AJV 2020-12 validator.
 * Moved ``pipeline/bin/validate_params.py`` to ``validate_params.yml`` (an inline nf-schema script): it is only used by CI.
+* Refactored parameter propagation: each process now takes the full params as ``capsule/params.json``.
+* The ``main.nf`` is now in charge of looking for a ``data_description.json`` file in the input directory and set the ``acquisition_name`` field for ``logging``.
 
 Build:
 
 * Forward AWS credentials to tasks in Code Ocean using the new ``awsCredentialsExports`` function.
 * Update ``figpack`` to version 0.3.21
 
+Deprecations:
+
+* Default schema updated to 1.5.* and incompatible with previous versions
+
 Package versions
 ----------------
 
-* ``spikeinterface`` version: 0.105.3
+* ``spikeinterface`` version: 0.105.4
 * ``aind-data-schema`` version: 2.9.1
 * ``neo`` version: 0.14.5
 * ``pynwb`` version: 4.2.0

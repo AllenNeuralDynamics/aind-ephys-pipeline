@@ -1,8 +1,8 @@
-spikeinterface==0.105.3
-neo==0.14.5
+spikeinterface==0.105.4
+neo==0.14.6
 pyvips==2.2.1
-figpack==0.3.21
-figpack-spike-sorting==0.1.15
+figpack==0.4.1
+figpack-spike-sorting==0.1.17
 matplotlib_venn==1.1.2
 torch==2.6.0
 pynwb==4.2.0
