@@ -24,8 +24,7 @@ flowchart LR
     %% Deployment
     subgraph deploy["🚀 Deployment"]
         direction TB
-        co["Code Ocean<br/><a href='pipeline/main.nf'>main.nf</a>"]
-        sl["SLURM/Local<br/><a href='pipeline/main_multi_backend.nf'>main_multi_backend.nf</a>"]
+        co["Code Ocean / SLURM / Local<br/><a href='pipeline/main.nf'>main.nf</a>"]
     end
 
     %% Infrastructure (link to detailed docs)
@@ -61,11 +60,11 @@ flowchart LR
 **📖 [View detailed architecture diagram](https://aind-ephys-pipeline.readthedocs.io/en/latest/architecture.html)** with all infrastructure components, step details, and data flow.
 
 **Key Points:**
-- **Two Deployment Modes**: Code Ocean ([`main.nf`](pipeline/main.nf)) uses branch-based sorter selection; SLURM/Local ([`main_multi_backend.nf`](pipeline/main_multi_backend.nf)) uses parameter-based selection
+- **Single Pipeline**: [`main.nf`](pipeline/main.nf) runs on Code Ocean (AWS Batch), SLURM, and local — sorter is selected via the `--sorter` parameter or `SORTER` environment variable
 - **11 Processing Steps**:
   - *1*. Job dispatch
   - *2*. Preprocessing
-  - *3*. Spike sorting (KS2.5/KS4/SC2/LUPIN/DARTSORT)
+  - *3*. Spike sorting (KS2.5/KS4/SC2)
   - *4-6*. Postprocessing → Curation → Visualization
   - *7-11*. Results collection → Quality control → NWB export
 - **Infrastructure**: 4 container images from [GHCR](https://github.com/orgs/AllenNeuralDynamics/packages) and [UnitRefine ML models](https://huggingface.co/SpikeInterface) from Hugging Face
@@ -77,3 +76,9 @@ See the [**detailed architecture documentation**](https://aind-ephys-pipeline.re
 # Documentation
 
 The documentation is available at [ReadTheDocs](https://aind-ephys-pipeline.readthedocs.io/en/latest/).
+
+
+## Code Ocean Deployment (AIND)
+
+At AIND, the pipeline is deployed on the Code Ocean platform using a single [`main.nf`](pipeline/main.nf) pipeline.
+The sorter and parameters are configured via environment variables (`SORTER`, `PARAMS_FILE`) or a JSON parameter file, without requiring separate branches per sorter.
