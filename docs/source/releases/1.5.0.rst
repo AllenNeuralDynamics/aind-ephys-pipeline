@@ -1,6 +1,6 @@
 .. _1.5.0:
 
-1.5.0 - Oct 29th 2026
+1.5.0 - Oct 30th 2026
 =====================
 
 Major release with new features and updated dependencies.
@@ -16,6 +16,7 @@ Pipeline:
   **Requires Nextflow >= 25.10** (``nf-schema@2.7.3``).
 * Add ``PYTHONNOUSERSITE = 1`` to slurm config to prevent apptainer/singularity to use local Python site packages.
 * Add dotted parameters via command line (e.g. ``--preprocessing.filter_type=bandpass``)
+* Add support for the new ``dartsort`` spike sorter.
 
 Refactor:
 
@@ -38,8 +39,8 @@ Deprecations:
 Package versions
 ----------------
 
-* ``spikeinterface`` version: 0.105.3
+* ``spikeinterface`` version: 0.105.4
 * ``aind-data-schema`` version: 2.9.1
-* ``neo`` version: 0.14.5
+* ``neo`` version: 0.14.6
 * ``pynwb`` version: 4.2.0
 * ``kilosort4`` version: 4.1.7
