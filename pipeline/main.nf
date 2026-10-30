@@ -657,6 +657,51 @@ process spikesort_lupin {
     """
 }
 
+process spikesort_dartsort {
+    tag 'spikesort-dartsort'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-dartsort:${params.container_tag}"
+    container container_name
+    label 'gpu'
+
+    input:
+    val max_duration_minutes
+    path preprocessing_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+    export CODE_REPO="${versions['SPIKESORT_DARTSORT_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_DARTSORT_VERSION']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+    fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['SPIKESORT_DARTSORT_REPO']}" "${versions['SPIKESORT_DARTSORT_VERSION']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
 process postprocessing {
     tag 'postprocessing'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
@@ -1102,7 +1147,8 @@ workflow {
 
     // Provenance: only the selected sorter's repo/commit is recorded
     def sorter_keys = ['kilosort25': 'spikesort_ks25', 'kilosort4': 'spikesort_ks4',
-                       'spykingcircus2': 'spikesort_sc2', 'lupin': 'spikesort_lupin']
+                       'spykingcircus2': 'spikesort_sc2', 'lupin': 'spikesort_lupin',
+                       'dartsort': 'spikesort_dartsort']
     def used_steps = step_version_keys.findAll { step, keys ->
         !step.startsWith('spikesort_') || step == sorter_keys[sorter]
     }
@@ -1162,6 +1208,12 @@ workflow {
         )
     } else if (sorter == 'lupin') {
         spikesort_out = spikesort_lupin(
+            max_duration_minutes,
+            preprocessing_out.results,
+            full_params_ch
+        )
+    } else if (sorter == 'dartsort') {
+        spikesort_out = spikesort_dartsort(
             max_duration_minutes,
             preprocessing_out.results,
             full_params_ch
