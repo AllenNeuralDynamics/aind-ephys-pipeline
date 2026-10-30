@@ -22,7 +22,7 @@ RUN grep -E 'log-schema|aind-data-schema|scipy' /tmp/package-versions.txt | xarg
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
 
-RUN pip install torch==2.13.0 torchaudio==2.11.0 torchvision==0.28.0
+RUN pip install tbb==2021.13.1 torch==2.13.0 torchaudio==2.11.0 torchvision==0.28.0
 RUN pip install dartsort==0.5.31
 
 # 2. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
