@@ -27,6 +27,10 @@ To use a parameter file, specify it with the ``--params_file`` option:
    --params_file PATH_TO_PARAMS_FILE
    # Example: --params_file pipeline/default_params.json
 
+The parameter file is validated against ``pipeline/default_params_schema.json`` (see below)
+with the `nf-schema <https://nextflow-io.github.io/nf-schema/>`_ plugin when the pipeline starts.
+If it is invalid, the pipeline stops before running any process and lists the invalid parameters.
+
 
 .. note::
 
@@ -70,7 +74,7 @@ JSON Schema
 -----------
 
 The file ``pipeline/default_params_schema.json`` is a
-`JSON Schema (draft-07) <https://json-schema.org/>`_ that formally describes every
+`JSON Schema (draft 2020-12) <https://json-schema.org/>`_ that formally describes every
 parameter, its type, allowed values, and defaults. You can use it for:
 
 * **Editor integration** — VS Code, PyCharm, and other editors can provide
@@ -109,6 +113,26 @@ Each pipeline step can be configured with specific parameters using the format:
 .. code-block:: bash
 
    --{step_name}_args="{args}"
+
+Alternatively, parameters can be overridden following the layout of the parameter file, using dotted
+names (they are validated against the schema together with the parameter file):
+
+.. code-block:: bash
+
+   --preprocessing.filter_type=bandpass
+   --spikesorting.kilosort4.sorter.batch_size=30000
+
+Dotted overrides take scalar values (strings, numbers, booleans); lists and ``null`` must be set in the
+parameter file. If both forms are used, ``--{step_name}_args`` takes precedence.
+
+The same overrides can be packed into a single string with ``--extra_params`` (used on Code Ocean, see
+:doc:`deployments`):
+
+.. code-block:: bash
+
+   --extra_params "--preprocessing.filter_type=bandpass --spikesorting.kilosort4.sorter.batch_size=30000"
+
+Real dotted CLI parameters take precedence over ``--extra_params``.
 
 
 Job Dispatch Parameters
@@ -617,7 +641,7 @@ NWB Ecephys Parameters
 ~~~~~~~~~~~~~~~~~~~~~~
 
 
-Parameter file section (``nwb.ecephys``):
+Parameter file section (``nwb_ecephys``):
 
 .. code-block:: json
 
@@ -679,6 +703,58 @@ Parameter file section (``nwb.ecephys``):
 
 ``lfp.sampling_rate``
    Target sampling rate in Hz for the LFP band after temporal downsampling.
+
+
+NWB Units Parameters
+~~~~~~~~~~~~~~~~~~~~
+
+Parameter file section (``nwb_units``):
+
+.. code-block:: json
+
+   {
+       "stub": false,
+       "stub_units": 10
+   }
+
+``stub``
+   If ``true``, write a truncated file for quick validation and testing.
+
+``stub_units``
+   Number of units written when ``stub`` is ``true``.
+
+
+Pipeline Paths (Result Collector and Quality Control)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Parameter file sections (``results_collector`` and ``quality_control``):
+
+.. code-block:: json
+
+   {
+       "results_collector": {
+           "pipeline_data_path": null,
+           "pipeline_results_path": null
+       },
+       "quality_control": {
+           "pipeline_data_path": null
+       }
+   }
+
+``pipeline_data_path`` / ``pipeline_results_path``
+   Input data and results locations recorded by the step. When ``null``, they are filled in
+   from ``DATA_PATH`` and ``RESULTS_PATH`` (not on Code Ocean, where they are left unset).
+
+
+Logging
+~~~~~~~
+
+The pipeline sets two keys in the ``logging`` section: ``logging.pipeline_name``
+(default ``"AIND Ephys Pipeline"``) and ``logging.acquisition_name``. Values set in the parameter file
+(or with ``--logging.acquisition_name=...``) take priority. Otherwise ``acquisition_name`` is read from
+``name`` in the ``data_description.json`` found next to the input data (local path or ``s3://``
+``ecephys_url``). If the file or field is missing, a warning is printed and ``"undefined"`` is used.
+Reading a public S3 bucket requires ``aws.client.anonymous = true`` in the Nextflow config.
 
 
 Visualization Parameters
@@ -783,7 +859,7 @@ Here's an example of running the pipeline with custom parameters:
 .. code-block:: bash
 
    DATA_PATH=$DATA RESULTS_PATH=$RESULTS \
-   nextflow -C nextflow_local.config run main_multi_backend.nf \
+   nextflow -C nextflow_local.config run main.nf \
      --n_jobs 16 \
      --sorter kilosort4 \
      --job_dispatch_args="--input spikeglx --debug --debug-duration 120" \

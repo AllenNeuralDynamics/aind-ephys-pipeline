@@ -1,0 +1,42 @@
+FROM nvidia/cuda:12.9.2-cudnn-runtime-ubuntu24.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Ubuntu 24.04 marks system Python as externally managed (PEP 668); fine to override in a container.
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+# Install Python 3, Pip, and clean up apt caches to save space
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python-is-python3 \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# 1. Install Python packages as root so they land in the system site-packages,
+#    accessible to any user regardless of UID at runtime.
+COPY package-versions.txt /tmp/package-versions.txt
+RUN grep -E 'log-schema|aind-data-schema|scipy' /tmp/package-versions.txt | xargs pip install
+
+RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
+    pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
+
+RUN pip install tbb==2021.13.1 torch==2.13.0 torchaudio==2.11.0 torchvision==0.28.0
+RUN pip install dartsort==0.5.31
+
+# 2. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+ENV NUMBA_THREADING_LAYER=tbb
+
+# 3. Create non-root user for runtime, with home dir writable by any UID
+#    (see Dockerfile_base for context).
+RUN userdel -r ubuntu && \
+    useradd -m -u 1000 pipelineuser && chmod 777 /home/pipelineuser
+ENV HOME=/home/pipelineuser
+
+# 4. Setup work area
+WORKDIR /home/pipelineuser
+
+# 5. Switch to non-root user
+USER pipelineuser
