@@ -41,6 +41,6 @@ Package versions
 
 * ``spikeinterface`` version: 0.105.4
 * ``aind-data-schema`` version: 2.9.1
-* ``neo`` version: 0.14.5
+* ``neo`` version: 0.14.6
 * ``pynwb`` version: 4.2.0
 * ``kilosort4`` version: 4.1.7
