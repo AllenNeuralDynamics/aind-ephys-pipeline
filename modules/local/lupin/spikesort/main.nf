@@ -3,8 +3,6 @@ process LUPIN_SPIKESORT {
     tag 'spikesort-lupin'
     label 'process_cpu'
 
-    container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${task.ext.container_tag ?: workflow.manifest.version}"
-
     input:
     tuple val(meta), path(preprocessed), path(binary), path(motion)
     path params_file

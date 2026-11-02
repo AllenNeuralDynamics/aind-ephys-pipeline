@@ -3,8 +3,6 @@ process EPHYS_CURATION {
     tag 'curation'
     label 'process_cpu'
 
-    container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${task.ext.container_tag ?: workflow.manifest.version}"
-
     input:
     tuple val(meta), path(postprocessed)
     path params_file

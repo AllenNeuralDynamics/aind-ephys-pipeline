@@ -3,8 +3,6 @@ process KILOSORT4_SPIKESORT {
     tag 'spikesort-kilosort4'
     label 'process_gpu'
 
-    container "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort4:${task.ext.container_tag ?: workflow.manifest.version}"
-
     input:
     tuple val(meta), path(preprocessed), path(binary), path(motion)
     path params_file

@@ -3,8 +3,6 @@ process NWB_ECEPHYS {
     tag 'nwb-ecephys'
     label 'process_cpu'
 
-    container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${task.ext.container_tag ?: workflow.manifest.version}"
-
     input:
     path session, stageAs: 'ecephys_session'
     path jobs

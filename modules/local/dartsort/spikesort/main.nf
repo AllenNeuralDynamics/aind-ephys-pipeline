@@ -3,8 +3,6 @@ process DARTSORT_SPIKESORT {
     tag 'spikesort-dartsort'
     label 'process_gpu'
 
-    container "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-dartsort:${task.ext.container_tag ?: workflow.manifest.version}"
-
     input:
     tuple val(meta), path(preprocessed), path(binary), path(motion)
     path params_file

@@ -17,8 +17,8 @@ Base images are pinned by digest. Every image is published as
 | `aind-ephys-pipeline-nwb` | [`nwb/`](nwb) | continuumio/miniconda3:23.9.0-0 | NWB_ECEPHYS, NWB_UNITS |
 
 `spykingcircus2/` and `lupin/` have no image of their own: they run in the base image.
-The image name of each folder is in its Dockerfile's build comment and in the `container` line of
-the processes that use it.
+The image of every process is set in one place, the `CONTAINERS` section of `nextflow.config`
+(one `withName` selector per image); each Dockerfile's build comment names the same image.
 
 ## Build
 

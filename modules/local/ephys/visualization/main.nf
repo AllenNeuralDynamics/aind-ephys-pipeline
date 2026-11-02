@@ -3,8 +3,6 @@ process EPHYS_VISUALIZATION {
     tag 'visualization'
     label 'process_cpu'
 
-    container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${task.ext.container_tag ?: workflow.manifest.version}"
-
     input:
     tuple val(meta), path(job), path(preprocessed), path(viz), path(motion), path(postprocessed), path(unit_labels), path(sorting_data_process)
     path session, stageAs: 'ecephys_session'

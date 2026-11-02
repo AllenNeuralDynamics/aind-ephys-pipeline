@@ -139,7 +139,8 @@ expected.
 The pipeline version is `manifest.version` in `nextflow.config`. The container images are tagged with that
 version by default, so a given pipeline version always runs the same images and the same vendored step code.
 Use `--container_tag <tag>` (or the `CONTAINER_TAG` environment variable) to run other images, e.g.
-`--container_tag 1.5.0-rc1`.
+`--container_tag 1.5.0-rc1`. The image of every process is set in one place, the `CONTAINERS` section of
+`nextflow.config` (one `withName` selector per image); edit it there to use another registry or image.
 
 ## Profiles
 

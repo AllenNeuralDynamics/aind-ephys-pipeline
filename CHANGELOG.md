@@ -28,7 +28,8 @@ Refactor of the pipeline into the nf-core layout: how the pipeline is laid out, 
 - Step parameters can be overridden with dotted parameters (`--preprocessing.filter_type bandpass`) or packed into
   `--extra_params`; the legacy `--<step>_args` strings still work.
 - The pipeline version is `manifest.version` in `nextflow.config`; the container tag defaults to it unless
-  `--container_tag` or `CONTAINER_TAG` is set.
+  `--container_tag` or `CONTAINER_TAG` is set. The image of every process is set in one place, the `CONTAINERS`
+  section of `nextflow.config`, instead of in each module.
 - Exactly one compute label per process (`process_cpu`, `process_gpu`) in `conf/base.config`, with CPUs and memory
   sized per step and capped by `--max_cpus`, `--max_memory` and `--max_time`.
 - GPU isolation: only the GPU sorters (Kilosort2.5, Kilosort4, DARTsort) get a GPU, and they stop with an error if

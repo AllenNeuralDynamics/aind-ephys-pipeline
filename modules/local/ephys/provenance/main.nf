@@ -3,8 +3,6 @@ process EPHYS_PROVENANCE {
     tag 'provenance'
     label 'process_cpu'
 
-    container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${task.ext.container_tag ?: workflow.manifest.version}"
-
     input:
     val provenance_json
 

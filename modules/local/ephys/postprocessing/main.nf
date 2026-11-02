@@ -3,8 +3,6 @@ process EPHYS_POSTPROCESSING {
     tag 'postprocessing'
     label 'process_cpu'
 
-    container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${task.ext.container_tag ?: workflow.manifest.version}"
-
     input:
     tuple val(meta), path(job), path(preprocessed), path(binary), path(motion), path(spikesorted)
     path session, stageAs: 'ecephys_session'
