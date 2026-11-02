@@ -3,6 +3,8 @@
 # recovered from the published image's layers (every distribution its own layers installed
 # on top of the pinned base image). The Dockerfile next to this file installs the pip
 # section below as-is (pip install --no-deps), after pip==26.2.2.
+# Added to the published image: mtscomp (reader of compressed SpikeGLX .cbin data, used by SpikeInterface
+# when an input needs it; it needs only numpy, pinned below, and tqdm, provided by the base image).
 name: aind-ephys-pipeline-nwb
 channels:
   - conda-forge
@@ -10,8 +12,8 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-      - aind-data-schema==2.9.1
       - aind-data-schema-models==6.3.1
+      - aind-data-schema==2.9.1
       - aind-nwb-utils==0.2.9
       - aiobotocore==3.10.0
       - aiohappyeyeballs==2.7.1
@@ -38,8 +40,8 @@ dependencies:
       - docstring-parser==0.18.0
       - executing==2.3.0
       - fasteners==0.20
-      - figpack==0.4.1
       - figpack-spike-sorting==0.1.17
+      - figpack==0.4.1
       - filelock==4.2.4
       - fonttools==4.68.0
       - frozenlist==1.8.0
@@ -47,30 +49,31 @@ dependencies:
       - h11==0.16.0
       - h5py==3.16.0
       - hdbscan==0.8.44
-      - hdmf==6.2.0
       - hdmf-zarr==0.13.0
+      - hdmf==6.2.0
       - hf-xet==1.7.1
       - httpcore2==2.16.0
       - httpx2==2.16.0
       - huggingface-hub==2.3.0
       - importlib-resources==7.1.0
       - ipympl==0.10.0
-      - ipython==9.17.1
       - ipython-pygments-lexers==1.1.1
+      - ipython==9.17.1
       - ipywidgets==8.1.9
       - jedi==0.20.1
       - jmespath==1.1.0
       - joblib==1.6.0
-      - jsonschema==4.26.0
       - jsonschema-specifications==2025.9.1
+      - jsonschema==4.26.0
       - jupyterlab-widgets==3.0.17
       - kiwisolver==1.5.1
       - llvmlite==0.50.0
       - log-schema==0.2.10.dev1
       - markdown-it-py==4.2.0
-      - matplotlib==3.11.2
       - matplotlib-inline==0.2.2
+      - matplotlib==3.11.2
       - mdurl==0.1.2
+      - mtscomp==1.0.2
       - multidict==7.2.1
       - narwhals==2.28.0
       - neo==0.14.6
@@ -93,10 +96,10 @@ dependencies:
       - psutil==7.2.2
       - ptyprocess==0.7.0
       - pure-eval==0.2.4
-      - pydantic==2.11.10
       - pydantic-core==2.33.2
       - pydantic-extra-types==2.11.1
       - pydantic-settings==2.16.2
+      - pydantic==2.11.10
       - pygments==2.21.0
       - pynapple==0.11.4
       - pynwb==4.2.0

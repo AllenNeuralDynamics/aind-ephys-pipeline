@@ -15,8 +15,6 @@ process EPHYS_CURATION {
     tuple val(meta), path('data_process_curation_*.json', arity: '0..*'), emit: data_process
 
     script:
-    def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
-    def install_cmd = installs ? "echo 'installing extra packages: ${installs.join(', ')}'\n    pip install ${installs.collect { pkg -> "'" + pkg + "'" }.join(' ')}" : ''
     """
     #!/usr/bin/env bash
     set -e
@@ -24,7 +22,6 @@ process EPHYS_CURATION {
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${task.ext.n_jobs ?: task.cpus}
 
-    ${install_cmd}
     # repository and commit the step code comes from (recorded in its processing metadata)
     export CODE_REPO=\$(sed -n 's/^# vendored-from: //p' "\$(command -v curation.py)")
     export CODE_VERSION=\$(sed -n 's/^# vendored-commit: //p' "\$(command -v curation.py)")

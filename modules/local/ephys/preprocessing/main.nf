@@ -18,8 +18,6 @@ process EPHYS_PREPROCESSING {
     tuple val(meta), path('preprocessing_*', arity: '0..*'), emit: metadata
 
     script:
-    def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
-    def install_cmd = installs ? "echo 'installing extra packages: ${installs.join(', ')}'\n    pip install ${installs.collect { pkg -> "'" + pkg + "'" }.join(' ')}" : ''
     """
     #!/usr/bin/env bash
     set -e
@@ -27,10 +25,10 @@ process EPHYS_PREPROCESSING {
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${task.ext.n_jobs ?: task.cpus}
 
-    ${install_cmd}
     # repository and commit the step code comes from (recorded in its processing metadata)
     export CODE_REPO=\$(sed -n 's/^# vendored-from: //p' "\$(command -v preprocessing.py)")
     export CODE_VERSION=\$(sed -n 's/^# vendored-commit: //p' "\$(command -v preprocessing.py)")
+
     echo "[${task.tag}] running preprocessing.py..."
     preprocessing.py \\
         --session ecephys_session \\

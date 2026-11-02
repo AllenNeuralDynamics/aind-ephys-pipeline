@@ -22,8 +22,6 @@ process EPHYS_RESULTSCOLLECTOR {
     path '*.json', emit: metadata
 
     script:
-    def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
-    def install_cmd = installs ? "echo 'installing extra packages: ${installs.join(', ')}'\n    pip install ${installs.collect { pkg -> "'" + pkg + "'" }.join(' ')}" : ''
     def job_arg = jobs ? "--job ${[jobs].flatten().join(' ')}" : ''
     def data_process_arg = data_process ? "--data-process ${[data_process].flatten().join(' ')}" : ''
     def preprocessed_arg = preprocessed ? "--preprocessed ${[preprocessed].flatten().join(' ')}" : ''
@@ -42,7 +40,6 @@ process EPHYS_RESULTSCOLLECTOR {
     export PIPELINE_VERSION=${workflow.manifest.version}
     export PIPELINE_URL=${workflow.manifest.homePage}
 
-    ${install_cmd}
     # repository and commit the step code comes from (recorded in its processing metadata)
     export CODE_REPO=\$(sed -n 's/^# vendored-from: //p' "\$(command -v results_collector.py)")
     export CODE_VERSION=\$(sed -n 's/^# vendored-commit: //p' "\$(command -v results_collector.py)")

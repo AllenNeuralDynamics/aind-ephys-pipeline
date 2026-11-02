@@ -53,7 +53,6 @@ workflow AIND_EPHYS {
         pipeline_url: workflow.manifest.homePage,
         pipeline_version: workflow.manifest.version,
         container_tag: params.container_tag ?: workflow.manifest.version,
-        extra_installs: params.extra_installs,
         sorter: sorter,
         runmode: params.runmode,
         command_line: workflow.commandLine,

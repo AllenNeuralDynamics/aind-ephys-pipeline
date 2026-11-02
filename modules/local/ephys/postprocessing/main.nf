@@ -14,8 +14,6 @@ process EPHYS_POSTPROCESSING {
     tuple val(meta), path('postprocessing_*', arity: '0..*'), emit: metadata
 
     script:
-    def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
-    def install_cmd = installs ? "echo 'installing extra packages: ${installs.join(', ')}'\n    pip install ${installs.collect { pkg -> "'" + pkg + "'" }.join(' ')}" : ''
     def binary_arg = binary ? "--binary ${[binary].flatten().join(' ')}" : ''
     def motion_arg = motion ? "--motion ${[motion].flatten().join(' ')}" : ''
     """
@@ -25,7 +23,6 @@ process EPHYS_POSTPROCESSING {
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${task.ext.n_jobs ?: task.cpus}
 
-    ${install_cmd}
     # repository and commit the step code comes from (recorded in its processing metadata)
     export CODE_REPO=\$(sed -n 's/^# vendored-from: //p' "\$(command -v postprocessing.py)")
     export CODE_VERSION=\$(sed -n 's/^# vendored-commit: //p' "\$(command -v postprocessing.py)")

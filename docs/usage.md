@@ -78,8 +78,10 @@ Set it in a parameter file (lists and maps cannot be given as dotted command lin
 }
 ```
 
-If the reader needs extra Python packages, list them (comma-separated) in `--extra_installs`, e.g.
-`--extra_installs 'mtscomp==1.0.2,other_pkg'`. They are installed with `pip` before the step runs.
+The images contain every package the steps need; nothing is installed while the pipeline runs. Readers that need
+optional packages are covered by the images (e.g. `mtscomp` for compressed SpikeGLX `.cbin` data, in the base and
+NWB images). For an input format that needs another package, add it to the image's `environment.yml` (see
+[modules/local/README.md](../modules/local/README.md)) and rebuild the image.
 
 ### Other job dispatch options
 
@@ -189,7 +191,6 @@ described in [`nextflow_schema.json`](../nextflow_schema.json). There are two ki
 | `--sorter` | `kilosort4` | Spike sorter: `kilosort25`, `kilosort4`, `spykingcircus2`, `lupin` or `dartsort`. `spikesorting.sorter` wins when set. |
 | `--runmode` | `full` | `fast` skips motion correction, LFP export, principal components and spike locations. |
 | `--container_tag` | `CONTAINER_TAG`, else the pipeline version | Tag of the `ghcr.io/allenneuraldynamics` images. |
-| `--extra_installs` | `''` | Extra pip packages (comma-separated) installed before each step (all steps except spike sorting, curation and the QC collector). |
 | `--n_jobs` | the task's cpus | `N_JOBS` used within each step. |
 | `--pass_pipeline_paths` | `true` | Pass `DATA_PATH` / `RESULTS_PATH` to the results collector and QC steps (`results_collector.pipeline_data_path`, `results_collector.pipeline_results_path`, `quality_control.pipeline_data_path`), unless set in the step parameters. |
 | `--pipeline_version` | `1.5.0` | Version of the pipeline the step parameters are compatible with. |
@@ -415,7 +416,7 @@ process {
 nextflow run main.nf -profile apptainer -c site.config ...
 ```
 
-Step parameters can also be set in such a file (`params.extra_installs = "package1==1.0.0,package2==2.0.0"`).
+Pipeline and step parameters can also be set in such a file (e.g. `params.n_jobs = 8`).
 
 ### Figpack
 
@@ -512,7 +513,7 @@ same changes as the current script (compare them with `git diff`):
    (`from utils import ...` becomes `from nwb_units_utils import ...`).
 
 To support a new input format, fork `aind-ephys-job-dispatch` the same way and add the packages the reader needs
-with `--extra_installs`.
+to the images' `environment.yml` (base and NWB images, which read the raw data).
 
 ### Adding a spike sorter
 

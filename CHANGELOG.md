@@ -57,6 +57,9 @@ Refactor of the pipeline into the nf-core layout: how the pipeline is laid out, 
 
 ### Removed
 
+- The `extra_installs` parameter: nothing is installed while the pipeline runs; every package is in the images'
+  `environment.yml` locks. `mtscomp` (reader of compressed SpikeGLX `.cbin` data) is added to the base and NWB
+  images, which read the raw data.
 - In the step scripts: the `--data-dir` / `--results-dir` / `--scratch-dir` folders, and branches the pipeline never
   reaches (test-mode `*_pipeline_output_test` folders, standalone "single sorted asset" inputs, `phy_*`,
   `timestamps/`, legacy non-zarr analyzers, NWB_ECEPHYS input NWB files). The unused `max_duration_minutes` input of

@@ -62,11 +62,6 @@
                     ],
                     "description": "Tag of the ghcr.io/allenneuraldynamics images. Default: CONTAINER_TAG environment variable, else the pipeline version (manifest.version)."
                 },
-                "extra_installs": {
-                    "type": "string",
-                    "description": "Extra pip packages (comma-separated) installed before each step, e.g. 'mtscomp==1.0.2,other_pkg'.",
-                    "default": ""
-                },
                 "n_jobs": {
                     "type": [
                         "integer",

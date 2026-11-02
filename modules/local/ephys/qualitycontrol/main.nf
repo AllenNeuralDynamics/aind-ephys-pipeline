@@ -16,8 +16,6 @@ process EPHYS_QUALITYCONTROL {
     path 'qc_*_data_description.json', arity: '0..*', emit: data_description
 
     script:
-    def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
-    def install_cmd = installs ? "echo 'installing extra packages: ${installs.join(', ')}'\n    pip install ${installs.collect { pkg -> "'" + pkg + "'" }.join(' ')}" : ''
     def preprocessed_arg = preprocessed ? "--preprocessed ${[preprocessed].flatten().join(' ')}" : ''
     def motion_arg = motion ? "--motion ${[motion].flatten().join(' ')}" : ''
     def postprocessed_arg = postprocessed ? "--postprocessed ${[postprocessed].flatten().join(' ')}" : ''
@@ -33,7 +31,6 @@ process EPHYS_QUALITYCONTROL {
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${task.ext.n_jobs ?: task.cpus}
 
-    ${install_cmd}
     # repository and commit the step code comes from (recorded in its processing metadata)
     export CODE_REPO=\$(sed -n 's/^# vendored-from: //p' "\$(command -v quality_control.py)")
     export CODE_VERSION=\$(sed -n 's/^# vendored-commit: //p' "\$(command -v quality_control.py)")
