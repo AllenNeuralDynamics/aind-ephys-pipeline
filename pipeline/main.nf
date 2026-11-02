@@ -405,8 +405,11 @@ process job_dispatch {
     export CODE_REPO="${versions['JOB_DISPATCH_REPO']}"
     export CODE_VERSION="${versions['JOB_DISPATCH_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -464,8 +467,11 @@ process preprocessing {
     export CODE_REPO="${versions['PREPROCESSING_REPO']}"
     export CODE_VERSION="${versions['PREPROCESSING_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -513,8 +519,11 @@ process spikesort_kilosort25 {
     export CODE_REPO="${versions['SPIKESORT_KS25_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_KS25_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -561,8 +570,11 @@ process spikesort_kilosort4 {
     export CODE_REPO="${versions['SPIKESORT_KS4_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_KS4_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -607,8 +619,11 @@ process spikesort_spykingcircus2 {
     export CODE_REPO="${versions['SPIKESORT_SC2_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_SC2_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -654,8 +669,11 @@ process spikesort_lupin {
     export CODE_REPO="${versions['SPIKESORT_LUPIN_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_LUPIN_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -702,8 +720,11 @@ process spikesort_dartsort {
     export CODE_REPO="${versions['SPIKESORT_DARTSORT_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_DARTSORT_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -755,8 +776,11 @@ process postprocessing {
     export CODE_REPO="${versions['POSTPROCESSING_REPO']}"
     export CODE_VERSION="${versions['POSTPROCESSING_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -802,8 +826,11 @@ process curation {
     export CODE_REPO="${versions['CURATION_REPO']}"
     export CODE_VERSION="${versions['CURATION_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -915,9 +942,13 @@ process results_collector {
     ${extra_installs_cmd}
 
     export CODE_REPO="${versions['RESULTS_COLLECTOR_REPO']}"
+<<<<<<< HEAD
     export CODE_VERSION="${versions['RESULTS_COLLECTOR_VERSION']}"
 
     ${streaming ? awsCredentialsExports() : ''}
+=======
+    export CODE_VERSION="${versions['RESULTS_COLLECTOR_VERSION']}"  
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -972,8 +1003,11 @@ process quality_control {
     export CODE_REPO="${versions['QUALITY_CONTROL_REPO']}"
     export CODE_VERSION="${versions['QUALITY_CONTROL_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -1072,8 +1106,11 @@ process nwb_ecephys {
     export CODE_REPO="${versions['NWB_ECEPHYS_REPO']}"
     export CODE_VERSION="${versions['NWB_ECEPHYS_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -1127,8 +1164,11 @@ process nwb_units {
     export CODE_REPO="${versions['NWB_UNITS_REPO']}"
     export CODE_VERSION="${versions['NWB_UNITS_VERSION']}"
 
+<<<<<<< HEAD
     ${streaming ? awsCredentialsExports() : ''}
 
+=======
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -1181,6 +1221,7 @@ workflow {
     // Input channel from ecephys path
     // Value channel so the same params file is reused by every task (File objects are not valid path inputs)
     full_params_ch = Channel.value(file(full_params_file.toString()))
+<<<<<<< HEAD
     if (streaming) {
         // stage a metadata-only copy of the session; the raw data is streamed by every step from the job JSONs
         def metadata_folder = file("${workDir}/streaming_session")
@@ -1194,6 +1235,9 @@ workflow {
     } else {
         ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
     }
+=======
+    ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
+>>>>>>> 4c81956cbae2c39936cc33581998b96a0ce9b50c
 
     // Provenance: only the selected sorter's repo/commit is recorded
     def sorter_keys = ['kilosort25': 'spikesort_ks25', 'kilosort4': 'spikesort_ks4',
