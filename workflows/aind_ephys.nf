@@ -61,7 +61,7 @@ workflow AIND_EPHYS {
             // step parameters from nextflow.config, -params-file and dotted CLI overrides
             // (before --extra_params, the legacy *_args strings and the adjustments above)
             params_file_content: [pipeline_version: params.pipeline_version] + stepSections()
-                .findAll { section -> params.get(section) != null }
+                .findAll { section -> params.containsKey(section) && params.get(section) != null }
                 .collectEntries { section -> [(section): params.get(section)] },
             effective_params: full_params
         ]

@@ -161,7 +161,7 @@ def buildFullParams(String data_path) {
 
     def step_params = [pipeline_version: params.pipeline_version]
     stepSections().each { section ->
-        if (params.get(section) != null) step_params[section] = deepCopy(params.get(section))
+        if (params.containsKey(section) && params.get(section) != null) step_params[section] = deepCopy(params.get(section))
     }
     if (params.extra_params instanceof String) {
         def extra = parseExtraParams(params.extra_params)
