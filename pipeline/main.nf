@@ -1186,36 +1186,49 @@ workflow {
         full_params_ch
     )
 
+    // Jobs whose preprocessing wrote error.txt: don't launch sorting/postprocessing for them
+    def isFailed = { p -> p.name.startsWith('preprocessed_') && p.resolve('error.txt').exists() }
+    preprocessing_ok = preprocessing_out.results.filter { res -> ![res].flatten().any(isFailed) }
+    failed_recordings = preprocessing_out.results
+        .flatMap { res -> [res].flatten().findAll(isFailed).collect { p -> p.name - 'preprocessed_' } }
+        .collect()
+        .ifEmpty([])
+    failed_recordings.view { "Recordings skipped after preprocessing: ${it}" }
+    jobs_ok = job_dispatch_out.results.flatten()
+        .combine(failed_recordings.map { [it] })
+        .filter { job, failed -> !(new groovy.json.JsonSlurper().parse(job.toFile()).recording_name in failed) }
+        .map { job, failed -> job }
+
     // Spike sorting based on selected sorter
     // def spikesort
     if (sorter == 'kilosort25') {
         spikesort_out = spikesort_kilosort25(
             max_duration_minutes,
-            preprocessing_out.results,
+            preprocessing_ok,
             full_params_ch
         )
     } else if (sorter == 'kilosort4') {
         spikesort_out = spikesort_kilosort4(
             max_duration_minutes,
-            preprocessing_out.results,
+            preprocessing_ok,
             full_params_ch
         )
     } else if (sorter == 'spykingcircus2') {
         spikesort_out = spikesort_spykingcircus2(
             max_duration_minutes,
-            preprocessing_out.results,
+            preprocessing_ok,
             full_params_ch
         )
     } else if (sorter == 'lupin') {
         spikesort_out = spikesort_lupin(
             max_duration_minutes,
-            preprocessing_out.results,
+            preprocessing_ok,
             full_params_ch
         )
     } else if (sorter == 'dartsort') {
         spikesort_out = spikesort_dartsort(
             max_duration_minutes,
-            preprocessing_out.results,
+            preprocessing_ok,
             full_params_ch
         )
     } else {
@@ -1226,9 +1239,9 @@ workflow {
     postprocessing_out = postprocessing(
         max_duration_minutes,
         ecephys_ch.collect(),
-        job_dispatch_out.results.flatten(),
-        preprocessing_out.results.collect(),
-        spikesort_out.results.collect(),
+        jobs_ok,
+        preprocessing_ok.collect(),
+        spikesort_out.results.collect().ifEmpty([]),
         full_params_ch
     )
 
@@ -1245,9 +1258,9 @@ workflow {
         ecephys_ch.collect(),
         job_dispatch_out.results.collect(),
         preprocessing_out.results,
-        spikesort_out.results.collect(),
-        postprocessing_out.results.collect(),
-        curation_out.results.collect(),
+        spikesort_out.results.collect().ifEmpty([]),
+        postprocessing_out.results.collect().ifEmpty([]),
+        curation_out.results.collect().ifEmpty([]),
         full_params_ch
     )
 
@@ -1257,9 +1270,9 @@ workflow {
         ecephys_ch.collect(),
         job_dispatch_out.results.collect(),
         preprocessing_out.results.collect(),
-        spikesort_out.results.collect(),
-        postprocessing_out.results.collect(),
-        curation_out.results.collect(),
+        spikesort_out.results.collect().ifEmpty([]),
+        postprocessing_out.results.collect().ifEmpty([]),
+        curation_out.results.collect().ifEmpty([]),
         visualization_out.results.collect(),
         full_params_ch
     )
