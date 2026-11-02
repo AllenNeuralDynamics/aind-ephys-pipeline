@@ -21,8 +21,9 @@ Refactor of the pipeline into the nf-core layout: how the pipeline is laid out, 
   Tasks no longer clone the step repositories at run time.
 - A single `nextflow.config` holds every parameter with its default (pipeline options and step parameters) and the
   profiles; `nextflow_schema.json` describes and validates every parameter when the pipeline starts.
-- Input and output are given with `--ecephys_path` (else `--ecephys_url`, else `DATA_PATH`) and `--results_dir`
-  (else `RESULTS_PATH`, else `./results`).
+- Input is given with `--ecephys_path` (else `--ecephys_url`, else `DATA_PATH`). Results go to the pipeline's
+  `outputDir` (`RESULTS_PATH`, or `-output-dir <dir>`; one is required), published with Nextflow workflow outputs
+  (`publish:` / `output {}` in `main.nf`) instead of per-process `publishDir`.
 - `-params-file` is merged over the defaults: a parameter file only needs the values to change. A postprocessing
   extension is switched off by setting it to `null` (`random_spikes` and `templates` are required).
 - Step parameters can be overridden with dotted parameters (`--preprocessing.filter_type bandpass`) or packed into

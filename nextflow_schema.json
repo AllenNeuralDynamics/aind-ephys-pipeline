@@ -9,7 +9,7 @@
             "title": "Input/output options",
             "type": "object",
             "fa_icon": "fas fa-terminal",
-            "description": "Where the session is read from and the results are written to.",
+            "description": "Where the session is read from. Results go to outputDir: the RESULTS_PATH environment variable, or -output-dir <dir>.",
             "properties": {
                 "ecephys_path": {
                     "type": [
@@ -25,11 +25,6 @@
                         "null"
                     ],
                     "description": "Alternative to --ecephys_path (older name)."
-                },
-                "results_dir": {
-                    "type": "string",
-                    "description": "Results folder. Default: the RESULTS_PATH environment variable, else ./results.",
-                    "format": "directory-path"
                 }
             }
         },
@@ -1790,7 +1785,7 @@
                                 "null"
                             ],
                             "default": null,
-                            "description": "Pipeline results path. If null, set from the pipeline RESULTS_PATH."
+                            "description": "Pipeline results path. If null, set to the pipeline's outputDir (RESULTS_PATH or -output-dir)."
                         }
                     }
                 },

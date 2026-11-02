@@ -26,8 +26,12 @@ workflow AIND_EPHYS {
         error "No input data. ${usage}"
     }
     def sorters = sorterSteps().keySet() as List
+    // results: outputDir (RESULTS_PATH, or -output-dir); unset RESULTS_PATH makes it a folder named "null"
+    if( !System.getenv('RESULTS_PATH') && workflow.outputDir.name == 'null' ) {
+        error "No results directory: set the RESULTS_PATH environment variable or pass -output-dir <dir>. ${usage}"
+    }
     println "DATA_PATH: ${data_path}"
-    println "RESULTS_PATH: ${params.results_dir}"
+    println "OUTPUT DIR: ${workflow.outputDir}"
 
     def built = buildFullParams(data_path)
     def full_params = built[0]
@@ -157,4 +161,11 @@ workflow AIND_EPHYS {
         NWB_ECEPHYS.out.nwb.flatten().collect(),
         ch_full_params
     )
+
+    emit:
+    // published by main.nf into outputDir
+    results = EPHYS_PROVENANCE.out.provenance
+        .mix( EPHYS_RESULTSCOLLECTOR.out.collected, EPHYS_RESULTSCOLLECTOR.out.metadata,
+              EPHYS_QCCOLLECTOR.out.json, EPHYS_QCCOLLECTOR.out.figures )
+    nwb     = NWB_UNITS.out.nwb.mix( NWB_UNITS.out.error )
 }

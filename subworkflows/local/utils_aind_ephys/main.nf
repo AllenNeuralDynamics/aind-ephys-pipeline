@@ -197,7 +197,7 @@ def buildFullParams(String data_path) {
     // Fill in pipeline paths unless set explicitly in the params
     if (params.pass_pipeline_paths) {
         def env_data_path = System.getenv('DATA_PATH')
-        def env_results_path = System.getenv('RESULTS_PATH')
+        def env_results_path = workflow.outputDir.toString()   // where the results are published
         full_params.results_collector.pipeline_data_path = full_params.results_collector.pipeline_data_path ?: env_data_path
         full_params.results_collector.pipeline_results_path = full_params.results_collector.pipeline_results_path ?: env_results_path
         full_params.quality_control.pipeline_data_path = full_params.quality_control.pipeline_data_path ?: env_data_path

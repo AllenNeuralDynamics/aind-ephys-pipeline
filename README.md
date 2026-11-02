@@ -75,7 +75,7 @@ cd aind-ephys-pipeline
 nextflow run main.nf \
     -profile docker \
     --ecephys_path /path/to/session \
-    --results_dir /path/to/results
+    -output-dir /path/to/results
 ```
 
 or without cloning, from GitHub:
@@ -84,9 +84,10 @@ or without cloning, from GitHub:
 nextflow run AllenNeuralDynamics/aind-ephys-pipeline -r <version> \
     -profile docker \
     --ecephys_path /path/to/session \
-    --results_dir /path/to/results
+    -output-dir /path/to/results
 ```
 
+The results go to `outputDir`: the `RESULTS_PATH` environment variable, or `-output-dir` as above.
 Choose the sorter with `--sorter` (`kilosort4` by default) and the input format with
 `--job_dispatch.input` (`aind` by default; `spikeglx`, `openephys`, `nwb`, `spikeinterface`). Every parameter
 and its default is in [`nextflow.config`](nextflow.config) and described in

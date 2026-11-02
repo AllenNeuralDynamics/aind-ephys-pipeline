@@ -97,7 +97,7 @@ If the reader needs extra Python packages, list them (comma-separated) in `--ext
 The typical command for running the pipeline is:
 
 ```bash
-nextflow run main.nf -profile docker --ecephys_path /path/to/session --results_dir ./results
+nextflow run main.nf -profile docker --ecephys_path /path/to/session -output-dir ./results
 ```
 
 This launches the pipeline with the `docker` profile (see [Profiles](#profiles)). The following are created in the
@@ -105,12 +105,14 @@ launch directory:
 
 ```bash
 work/                # Nextflow working directory: one folder per task
-results/             # Pipeline results (--results_dir)
+results/             # Pipeline results (outputDir: -output-dir, or RESULTS_PATH)
 .nextflow.log        # Nextflow log file
 ```
 
-The results go to `--results_dir`; its default is the `RESULTS_PATH` environment variable, else `./results`.
-The input and output can therefore also be given as environment variables:
+The results go to the pipeline's `outputDir`, set in `nextflow.config` from the `RESULTS_PATH` environment variable;
+`-output-dir <dir>` on the command line overrides it. One of the two is required: without them the pipeline stops
+before running anything. Every published output (see [output.md](output.md)) is copied there, as declared in the
+`output {}` block of `main.nf`. The input and output can therefore also be given as environment variables:
 
 ```bash
 DATA_PATH=/path/to/session RESULTS_PATH=/path/to/results nextflow run main.nf -profile docker
@@ -159,7 +161,7 @@ Select the container runtime with `-profile`. It is not detected automatically: 
 nextflow -log ./results/nextflow/nextflow.log \
     run main.nf -profile docker \
     --ecephys_path /path/to/session \
-    --results_dir ./results \
+    -output-dir ./results \
     --n_jobs 8 -resume
 ```
 
@@ -184,7 +186,6 @@ described in [`nextflow_schema.json`](../nextflow_schema.json). There are two ki
 | --- | --- | --- |
 | `--ecephys_path` | `null` | Session folder or `s3://` URL. Falls back to `--ecephys_url`, then the `DATA_PATH` environment variable. |
 | `--ecephys_url` | `null` | Alternative to `--ecephys_path` (older name). |
-| `--results_dir` | `RESULTS_PATH`, else `results` | Results folder. |
 | `--sorter` | `kilosort4` | Spike sorter: `kilosort25`, `kilosort4`, `spykingcircus2`, `lupin` or `dartsort`. `spikesorting.sorter` wins when set. |
 | `--runmode` | `full` | `fast` skips motion correction, LFP export, principal components and spike locations. |
 | `--container_tag` | `CONTAINER_TAG`, else the pipeline version | Tag of the `ghcr.io/allenneuraldynamics` images. |

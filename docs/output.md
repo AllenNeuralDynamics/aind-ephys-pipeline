@@ -4,7 +4,8 @@
 
 This document describes the output produced by the pipeline. The steps run in the Nextflow work directory; the
 results collector, the quality control collector, the NWB units step and the provenance step publish their outputs
-to the results directory (`--results_dir`, default: the `RESULTS_PATH` environment variable, else `./results`).
+to the results directory: the pipeline's `outputDir` (the `RESULTS_PATH` environment variable, or `-output-dir <dir>`),
+as declared in the `output {}` block of `main.nf`.
 The directories listed below are created in the results directory after the pipeline has finished.
 
 ## Pipeline overview
@@ -156,7 +157,7 @@ nextflow run main.nf -profile docker --ecephys_path ... \
 ## Directory structure
 
 ```
-<results_dir>/
+<outputDir>/
 ├── preprocessed/                 # preprocessing
 │   ├── <recording>.json          #   preprocessed recording, one per stream
 │   └── motion/<recording>/       #   estimated motion
