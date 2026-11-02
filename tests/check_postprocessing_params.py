@@ -1,4 +1,4 @@
-"""Check that postprocessing params in default_params.json match SpikeInterface.
+"""Check that the postprocessing params (pipeline defaults by default) match SpikeInterface.
 
 The ``postprocessing.extensions`` block is checked against the installed
 SpikeInterface version:
@@ -22,6 +22,7 @@ Values are not compared: the pipeline deliberately overrides some defaults.
 import argparse
 import inspect
 import json
+import sys
 from pathlib import Path
 
 import spikeinterface
@@ -36,7 +37,7 @@ METRIC_EXTENSIONS = {
     "template_metrics": get_default_template_metrics_params,
 }
 
-here = Path(__file__).parent.parent / "pipeline"
+REPO_ROOT = Path(__file__).parent.parent
 
 
 def check_extension_params(ext_name, ext_params):
@@ -76,12 +77,19 @@ def main():
     parser.add_argument(
         "--params",
         type=Path,
-        default=here / "default_params.json",
-        help="Path to the params JSON file to check.",
+        default=None,
+        help="Path to the params JSON file to check (default: the pipeline defaults in "
+        "nextflow.config, exported with tests/export_default_params.py; needs Nextflow).",
     )
     args = parser.parse_args()
 
-    params = json.loads(args.params.read_text())
+    if args.params is None:
+        sys.path.insert(0, str(REPO_ROOT / "tests"))
+        from export_default_params import export_default_params
+
+        params = export_default_params()
+    else:
+        params = json.loads(args.params.read_text())
     extensions = params.get("postprocessing", {}).get("extensions", {})
 
     print(f"Checking postprocessing params against SpikeInterface {spikeinterface.__version__}...\n")

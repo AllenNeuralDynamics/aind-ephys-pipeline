@@ -1,14 +1,16 @@
 # Data, builds, results, and work directories
+# (explicit names: the pipeline is at the repository root, so /*work*/ would match workflows/ and subworkflows/)
 /data/
-/*data*/
+/data[_-]*/
+/*[_-]data/
 /work/
-/*work*/
+/work[_-]*/
+/*[_-]work/
 **/work/
 /results/
-/*results*/
-/pipeline/work/
+/results[_-]*/
+/*[_-]results/
 **/.nextflow*
-/docs/build/
 tests/.nfs*
 tests/*.sh
 tests/*.json
@@ -18,11 +20,7 @@ tests/sample_dataset/nwb_*/
 tests/sample_dataset/spikeinterface_*/
 tests/sample_dataset/**results
 
-# External repositories
-/external/
-
-# User-specific files
-pipeline/nextflow_slurm_custom.config
-pipeline/process_versions_custom.env
+# User-specific files (site configs added with -c by the test scripts)
+nextflow_local_custom.config
 .idea
 .claude

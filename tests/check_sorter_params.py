@@ -1,4 +1,4 @@
-"""Check that sorter params in default_params.json match SpikeInterface defaults.
+"""Check that the sorter params (pipeline defaults by default) match SpikeInterface defaults.
 
 For each sorter, the keys of its ``sorter`` block are compared (recursively)
 against ``spikeinterface.sorters.get_default_sorter_params``:
@@ -14,6 +14,7 @@ Values are not compared: the pipeline deliberately overrides some defaults.
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import spikeinterface
@@ -27,7 +28,7 @@ SORTER_MAP = {
     "lupin": "lupin",
 }
 
-here = Path(__file__).parent.parent / "pipeline"
+REPO_ROOT = Path(__file__).parent.parent
 
 
 def compare_keys(pipeline, si, path):
@@ -54,12 +55,19 @@ def main():
     parser.add_argument(
         "--params",
         type=Path,
-        default=here / "default_params.json",
-        help="Path to the params JSON file to check.",
+        default=None,
+        help="Path to the params JSON file to check (default: the pipeline defaults in "
+        "nextflow.config, exported with tests/export_default_params.py; needs Nextflow).",
     )
     args = parser.parse_args()
 
-    params = json.loads(args.params.read_text())
+    if args.params is None:
+        sys.path.insert(0, str(REPO_ROOT / "tests"))
+        from export_default_params import export_default_params
+
+        params = export_default_params()
+    else:
+        params = json.loads(args.params.read_text())
     spikesorting = params.get("spikesorting", {})
 
     print(f"Checking sorter params against SpikeInterface {spikeinterface.__version__} defaults...\n")

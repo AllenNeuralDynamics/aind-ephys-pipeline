@@ -1,0 +1,37 @@
+// Merge the QC results (aind-ephys-qc-collector)
+process EPHYS_QCCOLLECTOR {
+    tag 'qc-collector'
+    label 'process_cpu'
+
+    container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${task.ext.container_tag ?: workflow.manifest.version}"
+
+    input:
+    val max_duration_minutes
+    path quality_control_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${task.ext.n_jobs ?: task.cpus}
+
+    echo "[${task.tag}] running capsule..."
+    aind_capsule.sh --step quality_control_collector \\
+        --extra-installs '${task.ext.extra_installs ?: ''}'
+
+    echo "[${task.tag}] completed!"
+    """
+
+    stub:
+    """
+    mkdir -p capsule/results
+    touch capsule/results/quality_control_collector_${task.index}.stub
+    """
+}

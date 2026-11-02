@@ -1,7 +1,6 @@
 # test pipeline with sample_nwb file
 # DOCKER_IMAGE="ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:si-0.102.1"
-# NXF_VERSION="25.04.1"
-NXF_VERSION="26.04.0"
+NXF_VERSION="26.10.4"
 
 
 # Check if arguments are passed
@@ -38,26 +37,21 @@ fi
 DATA_PATH="$SAMPLE_DATASET_PATH/nwb"
 RESULTS_PATH="$SAMPLE_DATASET_PATH/nwb_results"
 
-# check if nextflow_local_custom.config exists
-if [ -f "$PIPELINE_PATH/pipeline/nextflow_local_custom.config" ]; then
-    CONFIG_FILE="$PIPELINE_PATH/pipeline/nextflow_local_custom.config"
-else
-    CONFIG_FILE="$PIPELINE_PATH/pipeline/nextflow_local.config"
-fi
-echo "Using config file: $CONFIG_FILE"
-
-# use legacy syntax parser for Nextflow >= 26.04.0
-if printf '%s\n%s\n' "26.04.0" "$NXF_VERSION" | sort -V -C; then
-    export NXF_SYNTAX_PARSER=v1
+# optional site settings: nextflow_local_custom.config is added with -c when it exists
+CUSTOM_CONFIG=""
+if [ -f "$PIPELINE_PATH/nextflow_local_custom.config" ]; then
+    CUSTOM_CONFIG="-c $PIPELINE_PATH/nextflow_local_custom.config"
+    echo "Using custom config: $PIPELINE_PATH/nextflow_local_custom.config"
 fi
 
-PARAMS_FILE="$PIPELINE_PATH/.github/workflows/params_files/params_test_default.json"
+
+PARAMS_FILE="$PIPELINE_PATH/tests/params/params_test_default.json"
 
 # run pipeline
 NXF_VER=$NXF_VERSION DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
-    -C $CONFIG_FILE -log $RESULTS_PATH/nextflow/nextflow.log \
-    run $PIPELINE_PATH/pipeline/main.nf \
-    --params_file $PARAMS_FILE $ARGS
+    -log $RESULTS_PATH/nextflow/nextflow.log \
+    run $PIPELINE_PATH/main.nf -profile docker $CUSTOM_CONFIG \
+    -params-file $PARAMS_FILE $ARGS
 
 # check results: 3 preprocessed entries and 2 successful spike sorting outputs
 python "$(dirname "$SCRIPT_PATH")/check_pipeline_results.py" \
