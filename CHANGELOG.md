@@ -46,6 +46,15 @@ Refactor of the pipeline into the nf-core layout: how the pipeline is laid out, 
 - `export_default_params.py` moved from `scripts/` to `tests/`.
 - The documentation is now `README.md`, `docs/usage.md`, `docs/output.md` and this changelog.
 
+- Quality control runs per job from the job's own outputs (preprocessed recording, motion, analyzer with the
+  curation labels applied in memory, curation, visualization links, preprocessing data process) instead of the
+  results collector's outputs: it no longer waits for every job and the results collector, and each QC task stages
+  only its own recording.
+- Every per-job `join` fails on a missing or duplicated job (`failOnMismatch`, `failOnDuplicate`) instead of
+  silently dropping it.
+- With Docker (incl. AWS Batch) every task gets a 16 GB `/dev/shm` and `--memory-swappiness 20`; the GPU check runs
+  only where `nvidia-smi` is installed (it runs inside the container on AWS Batch).
+
 ### Removed
 
 - In the step scripts: the `--data-dir` / `--results-dir` / `--scratch-dir` folders, and branches the pipeline never

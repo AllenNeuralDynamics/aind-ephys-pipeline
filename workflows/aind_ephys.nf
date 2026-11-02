@@ -88,18 +88,18 @@ workflow AIND_EPHYS {
     SPIKESORT (
         sorter,
         EPHYS_PREPROCESSING.out.preprocessed
-            .join( EPHYS_PREPROCESSING.out.binary )
-            .join( EPHYS_PREPROCESSING.out.motion ),
+            .join( EPHYS_PREPROCESSING.out.binary, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_PREPROCESSING.out.motion, failOnMismatch: true, failOnDuplicate: true ),
         ch_full_params
     )
 
     // Postprocessing (one task per job)
     EPHYS_POSTPROCESSING (
         ch_jobs
-            .join( EPHYS_PREPROCESSING.out.preprocessed )
-            .join( EPHYS_PREPROCESSING.out.binary )
-            .join( EPHYS_PREPROCESSING.out.motion )
-            .join( SPIKESORT.out.spikesorted ),
+            .join( EPHYS_PREPROCESSING.out.preprocessed, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_PREPROCESSING.out.binary, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_PREPROCESSING.out.motion, failOnMismatch: true, failOnDuplicate: true )
+            .join( SPIKESORT.out.spikesorted, failOnMismatch: true, failOnDuplicate: true ),
         ch_session,
         ch_full_params
     )
@@ -110,12 +110,12 @@ workflow AIND_EPHYS {
     // Visualization (one task per job)
     EPHYS_VISUALIZATION (
         ch_jobs
-            .join( EPHYS_PREPROCESSING.out.preprocessed )
-            .join( EPHYS_PREPROCESSING.out.viz )
-            .join( EPHYS_PREPROCESSING.out.motion )
-            .join( EPHYS_POSTPROCESSING.out.postprocessed )
-            .join( EPHYS_CURATION.out.unit_labels )
-            .join( SPIKESORT.out.data_process ),
+            .join( EPHYS_PREPROCESSING.out.preprocessed, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_PREPROCESSING.out.viz, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_PREPROCESSING.out.motion, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_POSTPROCESSING.out.postprocessed, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_CURATION.out.unit_labels, failOnMismatch: true, failOnDuplicate: true )
+            .join( SPIKESORT.out.data_process, failOnMismatch: true, failOnDuplicate: true ),
         ch_session,
         ch_full_params
     )
@@ -140,10 +140,21 @@ workflow AIND_EPHYS {
         ch_full_params
     )
     def ch_collected = EPHYS_RESULTSCOLLECTOR.out.collected.collect()
-    def ch_collected_metadata = EPHYS_RESULTSCOLLECTOR.out.metadata.collect()
 
-    // Quality control (one task per job)
-    EPHYS_QUALITYCONTROL ( ch_jobs, ch_session, ch_collected, ch_collected_metadata, ch_full_params )
+    // Quality control (one task per job): starts as soon as this job's steps are done, from its own outputs
+    EPHYS_QUALITYCONTROL (
+        ch_jobs
+            .join( EPHYS_PREPROCESSING.out.preprocessed, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_PREPROCESSING.out.motion, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_POSTPROCESSING.out.postprocessed, failOnMismatch: true, failOnDuplicate: true )
+            .join( SPIKESORT.out.motion, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_CURATION.out.curation, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_CURATION.out.unit_labels, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_VISUALIZATION.out.visualization, failOnMismatch: true, failOnDuplicate: true )
+            .join( EPHYS_PREPROCESSING.out.data_process, failOnMismatch: true, failOnDuplicate: true ),
+        ch_session,
+        ch_full_params
+    )
 
     // Quality control collection
     EPHYS_QCCOLLECTOR (

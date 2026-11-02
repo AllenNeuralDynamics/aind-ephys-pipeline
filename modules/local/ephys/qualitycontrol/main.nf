@@ -4,10 +4,10 @@ process EPHYS_QUALITYCONTROL {
     label 'process_cpu'
 
     input:
-    tuple val(meta), path(job)
+    // this job's own outputs (one recording), joined by meta
+    tuple val(meta), path(job), path(preprocessed), path(motion), path(postprocessed), path(spikesorted_motion),
+          path(curation), path(unit_labels), path(visualization), path(data_process)
     path session, stageAs: 'ecephys_session'
-    path collected
-    path metadata
     path params_file
 
     output:
@@ -18,7 +18,14 @@ process EPHYS_QUALITYCONTROL {
     script:
     def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
     def install_cmd = installs ? "echo 'installing extra packages: ${installs.join(', ')}'\n    pip install ${installs.collect { pkg -> "'" + pkg + "'" }.join(' ')}" : ''
-    def metadata_arg = metadata ? "--metadata ${[metadata].flatten().join(' ')}" : ''
+    def preprocessed_arg = preprocessed ? "--preprocessed ${[preprocessed].flatten().join(' ')}" : ''
+    def motion_arg = motion ? "--motion ${[motion].flatten().join(' ')}" : ''
+    def postprocessed_arg = postprocessed ? "--postprocessed ${[postprocessed].flatten().join(' ')}" : ''
+    def spikesorted_motion_arg = spikesorted_motion ? "--spikesorted-motion ${[spikesorted_motion].flatten().join(' ')}" : ''
+    def curation_arg = curation ? "--curation ${[curation].flatten().join(' ')}" : ''
+    def unit_labels_arg = unit_labels ? "--unit-labels ${[unit_labels].flatten().join(' ')}" : ''
+    def visualization_arg = visualization ? "--visualization ${[visualization].flatten().join(' ')}" : ''
+    def data_process_arg = data_process ? "--data-process ${[data_process].flatten().join(' ')}" : ''
     """
     #!/usr/bin/env bash
     set -e
@@ -35,8 +42,14 @@ process EPHYS_QUALITYCONTROL {
     quality_control.py \\
         --session ecephys_session \\
         --job ${job} \\
-        --collected ${collected} \\
-        ${metadata_arg} \\
+        ${preprocessed_arg} \\
+        ${motion_arg} \\
+        ${postprocessed_arg} \\
+        ${spikesorted_motion_arg} \\
+        ${curation_arg} \\
+        ${unit_labels_arg} \\
+        ${visualization_arg} \\
+        ${data_process_arg} \\
         --params ${params_file}
 
     echo "[${task.tag}] completed!"

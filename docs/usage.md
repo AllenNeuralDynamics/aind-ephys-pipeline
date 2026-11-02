@@ -375,14 +375,27 @@ CPUs are fixed per step and memory grows with the attempt number:
 | `NWB_UNITS` | 4 | 32 GB |
 
 - **GPU isolation**: only `process_gpu` tasks get access to a GPU (`--gpus` with Docker, `--nv` with
-  Apptainer/Singularity, and `accelerator = 1`). Before the container starts, a host-side `nvidia-smi`
-  check stops the task if no GPU is visible. `--gpu_id <id>` pins GPU tasks to one device. `process_cpu` tasks
-  start without GPU access.
+  Apptainer/Singularity, and `accelerator = 1`, which makes AWS Batch attach one GPU to the job). Before the task
+  runs, an `nvidia-smi` check stops it if no GPU is visible (on the host locally, inside the container on AWS
+  Batch; skipped where `nvidia-smi` is not installed). `--gpu_id <id>` pins GPU tasks to one device.
+  `process_cpu` tasks start without GPU access.
+- **Shared memory**: with Docker (including AWS Batch, where `docker.runOptions` is not used) every task gets a
+  16 GB `/dev/shm` and `--memory-swappiness 20` (`containerOptions` in `conf/base.config`); SpikeInterface's
+  multiprocessing needs more than Docker's 64 MB default.
 - **Retries**: tasks that exit with codes 130-145 (killed, e.g. out of memory or time), 104 or 175 are retried twice
   with more memory and time. Any other failure lets the running tasks finish and stops the pipeline.
 - **Caps**: no request ever exceeds `--max_cpus`, `--max_memory` and `--max_time`.
 
 `--n_jobs` sets the number of parallel jobs within a step; by default it is the task's CPUs.
+
+### Data movement on AWS Batch
+
+On AWS Batch every task is a separate job and Nextflow copies its inputs from the S3 work directory into it. The
+per-job steps receive only their own recording's files (joined by `meta`), and quality control runs per job from
+the job's own outputs, as soon as that job is done. The raw session is still needed by several steps (job dispatch,
+preprocessing, postprocessing, visualization and QC of every job, the results collector and both NWB steps), so for
+large sessions the largest data movement is copying it into those jobs; a platform that reads inputs lazily
+(Nextflow's Fusion file system, with Wave) avoids those copies without changes to the pipeline.
 
 ## Custom configuration
 

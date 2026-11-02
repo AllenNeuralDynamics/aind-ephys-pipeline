@@ -113,7 +113,8 @@ and execution times in `processing.json`. Its outputs are published at the root 
 ### Quality control
 
 [aind-ephys-processing-qc](https://github.com/AllenNeuralDynamics/aind-ephys-processing-qc) runs quality control
-checks on each job's results (`EPHYS_QUALITYCONTROL`), and
+checks on each job's results (`EPHYS_QUALITYCONTROL`, one task per job, from that job's own outputs: it starts as
+soon as the job's visualization is done, without waiting for the other jobs or the results collector), and
 [aind-ephys-qc-collector](https://github.com/AllenNeuralDynamics/aind-ephys-qc-collector) merges them into a
 single quality control report with its figures (`EPHYS_QCCOLLECTOR`). The collector's outputs are published at the
 root of the results directory.

@@ -13,6 +13,8 @@ import shutil
 import sys
 import json
 import numpy as np
+import pandas as pd
+from types import SimpleNamespace
 import time
 import logging
 from pathlib import Path
@@ -22,8 +24,9 @@ import spikeinterface as si
 import spikeinterface.preprocessing as spre
 
 # AIND
-from aind_data_schema.core.processing import Processing
+from aind_data_schema.core.processing import DataProcess
 from aind_data_schema.core.quality_control import QualityControl
+from aind_metadata_upgrader.processing.v1v2 import ProcessingV1V2
 
 from quality_control_qc_utils import (
     load_preprocessed_recording,
@@ -39,8 +42,15 @@ from quality_control_qc_utils import (
 cli = argparse.ArgumentParser(description="quality_control step of the AIND ephys pipeline")
 cli.add_argument("--session", dest="session", required=True)
 cli.add_argument("--job", dest="job", nargs="+", required=True)
-cli.add_argument("--collected", dest="collected", nargs="+", required=True)
-cli.add_argument("--metadata", dest="metadata", nargs="*", default=[])
+# outputs of this job's steps (the job's own recording only)
+cli.add_argument("--preprocessed", dest="preprocessed", nargs="*", default=[])
+cli.add_argument("--motion", dest="motion", nargs="*", default=[])
+cli.add_argument("--postprocessed", dest="postprocessed", nargs="*", default=[])
+cli.add_argument("--spikesorted-motion", dest="spikesorted_motion", nargs="*", default=[])
+cli.add_argument("--curation", dest="curation", nargs="*", default=[])
+cli.add_argument("--unit-labels", dest="unit_labels", nargs="*", default=[])
+cli.add_argument("--visualization", dest="visualization", nargs="*", default=[])
+cli.add_argument("--data-process", dest="data_process", nargs="*", default=[])
 cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
@@ -64,7 +74,6 @@ def run() -> None:
 
     COMPUTE_EVENT_METRIC = qc_params.get("compute_event_metrics", True)
     MIN_DURATION_ALLOW_FAILED = float(qc_params.get("min_duration_allow_failed", 0))
-    PIPELINE_DATA_PATH = qc_params.get("pipeline_data_path", None)
 
     # setup logging before any other logging call
     if logging_params is None:
@@ -115,8 +124,8 @@ def run() -> None:
     job_kwargs = dict(n_jobs=N_JOBS, progress_bar=False, mp_context="spawn")
     si.set_global_job_kwargs(**job_kwargs)
 
-    # collected results (postprocessed/, preprocessed/, ...) are staged in the task directory
-    if (data_folder / "postprocessed").is_dir() or (data_folder / "preprocessed").is_dir():
+    # this job's processed outputs (preprocessed_<rec>, postprocessed_<rec>.zarr, ...) are staged in the task directory
+    if cli_args.postprocessed or cli_args.preprocessed:
         ecephys_sorted_folder = data_folder
     else:
         logging.info(
@@ -136,19 +145,39 @@ def run() -> None:
     processing = None
     visualization_output = None
     if ecephys_sorted_folder is not None:
-        processing_json_file = ecephys_sorted_folder / "processing.json"
-        if processing_json_file.is_file():
+        # data processes of this job's steps, named as the results collector names them in processing.json
+        # ("<name> - <recording>"); QC reads only the preprocessing channel labels from them
+        data_process_files = [
+            p for p in map(Path, cli_args.data_process) if "data_process" in p.name and p.name.endswith(".json")
+        ]
+        if len(data_process_files) > 0:
             try:
-                with open(processing_json_file) as f:
-                    processing_data = json.load(f)
-                processing = Processing(**processing_data)
+                processing_upgrader = ProcessingV1V2()
+                data_processes = []
+                for json_file in data_process_files:
+                    stream_name = "_".join(json_file.stem.split("_")[3:])
+                    with open(json_file) as f:
+                        data_process_data = json.load(f)
+                    if "code" not in data_process_data:
+                        data_process_data = processing_upgrader._convert_v1_process_to_v2(data_process_data, stage="Processing")
+                    data_process_data["name"] = f"{data_process_data['name']} - {stream_name}"
+                    data_processes.append(DataProcess(**data_process_data))
+                processing = SimpleNamespace(data_processes=data_processes)
             except:
-                logging.info(f"Failed to load processing.json")
+                logging.info(f"Failed to load data processes")
 
-        visualization_json_file = ecephys_sorted_folder / "visualization_output.json"
-        if visualization_json_file.is_file():
-            with open(visualization_json_file) as f:
-                visualization_output = json.load(f)
+        # visualization links of this job's recording, as in the results collector's visualization_output.json
+        visualization_json_files = [
+            p
+            for p in map(Path, cli_args.visualization)
+            if "visualization_" in p.name and p.name.endswith(".json") and "data_process" not in p.name
+        ]
+        if len(visualization_json_files) > 0:
+            visualization_output = {}
+            for visualization_json_file in visualization_json_files:
+                viz_recording_name = visualization_json_file.name[len("visualization_") : len(visualization_json_file.name) - 5]
+                with open(visualization_json_file) as f:
+                    visualization_output[viz_recording_name] = json.load(f)
 
     event_dict = None
     if ecephys_folder is not None:
@@ -217,8 +246,9 @@ def run() -> None:
         logging.info(f"Recording {recording_name}")
         recording_preprocessed = None
         if ecephys_sorted_folder is not None:
-            preprocessed_json_file = ecephys_sorted_folder / "preprocessed" / f"{recording_name}.json"
-            base_folder = data_folder if PIPELINE_DATA_PATH is None else PIPELINE_DATA_PATH
+            preprocessed_json_file = ecephys_sorted_folder / f"preprocessed_{recording_name}.json"
+            # paths in the preprocessed JSON are relative to the task directory, where the session is staged
+            base_folder = data_folder
             recording_preprocessed = load_preprocessed_recording(
                 preprocessed_json_file, session_name, ecephys_folder, base_folder
             )
@@ -226,9 +256,25 @@ def run() -> None:
                 recording_preprocessed.reset_times()
 
             sorting_analyzer = None
-            postprocessed_folder_zarr = ecephys_sorted_folder / "postprocessed" / f"{recording_name}.zarr"
+            postprocessed_folder_zarr = ecephys_sorted_folder / f"postprocessed_{recording_name}.zarr"
             if postprocessed_folder_zarr.is_dir():
                 sorting_analyzer = si.load(postprocessed_folder_zarr, load_extensions=False)
+                # curation labels as the results collector adds them to the analyzer (in memory only: the
+                # staged analyzer is an input and is not modified)
+                unit_labels_file = ecephys_sorted_folder / f"unit_labels_{recording_name}.csv"
+                if unit_labels_file.is_file():
+                    unit_labels_df = pd.read_csv(unit_labels_file, index_col=False)
+                    if len(unit_labels_df) == len(sorting_analyzer.unit_ids):
+                        for label in unit_labels_df.columns:
+                            values = unit_labels_df[label].values
+                            if "_label" in label:
+                                values = np.array(values).astype("str")
+                            sorting_analyzer.set_sorting_property(label, values, save=False)
+                            # backward-compatibility
+                            if label == "unitrefine_label":
+                                sorting_analyzer.set_sorting_property("decoder_label", values, save=False)
+                            if label == "unitrefine_probability":
+                                sorting_analyzer.set_sorting_property("decoder_probability", values, save=False)
             if recording_preprocessed is not None and sorting_analyzer is not None:
                 sorting_analyzer.set_temporary_recording(recording_preprocessed)
 
@@ -260,8 +306,8 @@ def run() -> None:
             logging.info("Skipping computation of event metrics.")
         
         if ecephys_sorted_folder is not None:
-            motion_path = ecephys_sorted_folder / "preprocessed" / "motion" / recording_name
-            motion_sorter_path = ecephys_sorted_folder / "spikesorted" / "motion" / recording_name
+            motion_path = ecephys_sorted_folder / f"motion_{recording_name}"
+            motion_sorter_path = ecephys_sorted_folder / f"spikesortedmotion_{recording_name}"
 
             # open displacement arrays
             if not motion_path.is_dir():
@@ -280,7 +326,7 @@ def run() -> None:
         if ecephys_sorted_folder is not None:
             if sorting_analyzer is not None and sorting_analyzer.has_extension("quality_metrics") \
                 and sorting_analyzer.has_extension("template_metrics"):
-                curation_json_file = ecephys_sorted_folder / "curated" / recording_name / "curation.json"
+                curation_json_file = ecephys_sorted_folder / f"curation_{recording_name}.json"
                 if not curation_json_file.is_file():
                     curation_json_file = None
                 unit_metrics = generate_unit_yield_qc(
