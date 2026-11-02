@@ -82,6 +82,8 @@ aind-ephys-pipeline/
 3. If dependencies changed, update the Dockerfiles in `environment/` and `pipeline_version.txt` / the container tag.
 4. Run the tests in `tests/` or CI (`_nextflow-tests.yml`).
 
+**Running Nextflow (Claude):** Nextflow writes `.nextflow/`, `.nextflow.log*`, `work/` and report folders into the directory it is launched from. Never launch it from inside the repo. `cd` to a fresh temp dir (the session scratchpad, or `mktemp -d`) and call the pipeline and test scripts by absolute path, e.g. `cd "$(mktemp -d)" && NXF_SYNTAX_PARSER=v1 nextflow run <repo>/pipeline/main.nf -preview ...` or `cd "$(mktemp -d)" && bash <repo>/tests/test_pipeline_local_si.sh`. Use `NXF_SYNTAX_PARSER=v1`, as CI does: the strict parser rejects `main.nf`. `pipeline/nextflow.config` is still loaded (it sits next to `main.nf`), and its relative `params_co.json` then fails, so pass `--params_file` as an absolute path.
+
 ## Known Optimization Notes
 
 - `ephys-pipeline-flow.html` (repo root) diagrams the current data flow and the Nextflow / step-code hotspots: raw-session staging, `collect()` barriers, results_collector copies, and more.
