@@ -133,7 +133,7 @@ Zarr by default (`nwb_ecephys.backend`: `zarr` or `hdf5`). Published to `nwb/`.
 `EPHYS_PROVENANCE` writes `provenance.json` at the root of the results directory, with:
 
 - the pipeline URL and version, the container tag, `extra_installs`, the sorter, the run mode and the command line
-- the repository and commit of every step used in the run (from `bin/aind/<step>/VENDORED`; only the selected
+- the repository and commit of every step used in the run (from the header of `bin/<step>.py`; only the selected
   sorter is listed)
 - the parameters: the step parameters from `nextflow.config`, `-params-file` and dotted overrides
   (`params_file_content`), and the final parameter map given to the steps (`effective_params`)

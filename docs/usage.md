@@ -7,7 +7,7 @@ job dispatch, preprocessing, spike sorting, postprocessing, curation, visualizat
 quality control and NWB export (see [output.md](output.md) for what each step produces).
 
 Each step is a Nextflow process that runs in its own container. The code of each step is developed in a separate
-GitHub repository, and a copy of that code at a pinned commit is vendored in the pipeline (`bin/aind/<step>/`).
+GitHub repository; a copy of that code at a pinned commit is the step's script in `bin/` (`bin/<step>.py`).
 Containerized environments plus pinned step code make every run of a given pipeline version reproducible.
 
 Nextflow runs the key steps (preprocessing, spike sorting, postprocessing, curation, visualization and quality
@@ -31,7 +31,7 @@ not threads within one task.
 
 The input session is given with `--ecephys_path` (a local folder or an `s3://` URL). If it is not set, the pipeline
 uses `--ecephys_url`, and then the `DATA_PATH` environment variable. The session is staged into every task as
-`capsule/data/ecephys_session`.
+`data/ecephys_session`.
 
 The format of the session is selected with the `job_dispatch.input` step parameter
 (`--job_dispatch.input <format>`):
@@ -430,55 +430,64 @@ The five images are published as `ghcr.io/allenneuraldynamics/<image>:<tag>` and
 | `aind-ephys-spikesort-dartsort` | `modules/local/dartsort` | `DARTSORT_SPIKESORT` |
 | `aind-ephys-pipeline-nwb` | `modules/local/nwb` | `NWB_ECEPHYS`, `NWB_UNITS` |
 
-## Updating or customizing a vendored step
+## Updating or customizing a step
 
-The pipeline runs a copy of each step repository's code at a pinned commit, vendored in `bin/aind/<step>/`; the
-`VENDORED` file in each folder records the repository (`REPO=`) and commit (`COMMIT=`). Tasks do not clone any
-repository at run time. `bin/aind_capsule.sh` runs a step from its vendored folder.
+Each step runs its script from `bin/`, called by name in its module. The scripts are copies of the `run_capsule.py`
+of each step repository at a pinned commit, made runnable from the task directory: they read `data/` and
+`params.json` and write `results/` (and `scratch/`) there, set with `--data-dir`, `--params`, `--results-dir` and
+`--scratch-dir`. Their header records where the code comes from:
 
-| Step folder (`bin/aind/<step>`) | Repository |
-| --- | --- |
-| `job_dispatch` | `aind-ephys-job-dispatch` |
-| `preprocessing` | `aind-ephys-preprocessing` |
-| `spikesort_kilosort25` | `aind-ephys-spikesort-kilosort25` |
-| `spikesort_kilosort4` | `aind-ephys-spikesort-kilosort4` |
-| `spikesort_spykingcircus2` | `aind-ephys-spikesort-spykingcircus2` |
-| `spikesort_lupin` | `aind-ephys-spikesort-lupin` |
-| `spikesort_dartsort` | `aind-ephys-spikesort-dartsort` |
-| `postprocessing` | `aind-ephys-postprocessing` |
-| `curation` | `aind-ephys-curation` |
-| `visualization` | `aind-ephys-visualization` |
-| `results_collector` | `aind-ephys-results-collector` |
-| `quality_control` | `aind-ephys-processing-qc` |
-| `quality_control_collector` | `aind-ephys-qc-collector` |
-| `nwb_ecephys` | `aind-ecephys-nwb` |
-| `nwb_units` | `aind-units-nwb` |
-
-To update a step to a new commit of the official repository, or to run your own fork (e.g. a preprocessing step
-with an extra artifact removal), replace the vendored code with the `code/` folder of the repository at that
-commit and update `VENDORED`:
-
-```bash
-git clone https://github.com/your_username/aind-ephys-preprocessing /tmp/aind-ephys-preprocessing
-git -C /tmp/aind-ephys-preprocessing checkout <commit>
-
-rsync -a --delete --exclude VENDORED /tmp/aind-ephys-preprocessing/code/ bin/aind/preprocessing/
-cat > bin/aind/preprocessing/VENDORED <<EOT
-REPO=https://github.com/your_username/aind-ephys-preprocessing
-COMMIT=<commit>
-EOT
+```python
+#!/usr/bin/env python
+# preprocessing step of the AIND ephys pipeline
+# vendored-from: https://github.com/AllenNeuralDynamics/aind-ephys-preprocessing
+# vendored-commit: e28c8277c456a29770dc091bcb167be240563871
+# vendored-file: code/run_capsule.py
+# MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
 ```
 
-The repository and commit of every step used in a run are recorded in `provenance.json`. To support a new input
-format, fork `aind-ephys-job-dispatch` the same way and add the packages the reader needs with `--extra_installs`.
+The module exports these as `CODE_REPO` / `CODE_VERSION` (written in the step's processing metadata), and
+`provenance.json` records them for every step of the run.
+
+| Script (`bin/`) | Repository |
+| --- | --- |
+| `job_dispatch.py`, `job_dispatch_get_max_recording_duration_min.py` | `aind-ephys-job-dispatch` |
+| `preprocessing.py` | `aind-ephys-preprocessing` |
+| `spikesort_kilosort25.py` | `aind-ephys-spikesort-kilosort25` |
+| `spikesort_kilosort4.py` | `aind-ephys-spikesort-kilosort4` |
+| `spikesort_spykingcircus2.py` | `aind-ephys-spikesort-spykingcircus2` |
+| `spikesort_lupin.py` | `aind-ephys-spikesort-lupin` |
+| `spikesort_dartsort.py` | `aind-ephys-spikesort-dartsort` |
+| `postprocessing.py` | `aind-ephys-postprocessing` |
+| `curation.py` | `aind-ephys-curation` |
+| `visualization.py` | `aind-ephys-visualization` |
+| `results_collector.py` | `aind-ephys-results-collector` |
+| `quality_control.py`, `quality_control_qc_utils.py` | `aind-ephys-processing-qc` |
+| `quality_control_collector.py` | `aind-ephys-qc-collector` |
+| `nwb_ecephys.py` | `aind-ecephys-nwb` |
+| `nwb_units.py`, `nwb_units_utils.py` | `aind-units-nwb` |
+
+To update a step to a new commit of its repository, or to run your own fork (e.g. a preprocessing step with an
+extra artifact removal), replace the script with the repository's `code/run_capsule.py` at that commit and make the
+same changes as the current script (compare them with `git diff`):
+
+1. the header above, with the new repository and commit;
+2. a parser for the path constants: `data_folder`, `results_folder`, `scratch_folder` and `PARAMS_FILE` are
+   `Path(cli_args.data_dir)`, `Path(cli_args.results_dir)`, `Path(cli_args.scratch_dir)` and
+   `Path(cli_args.params)` (defaults `data`, `results`, `scratch`, `params.json`) instead of `Path("../data")` etc.;
+3. helper modules next to `run_capsule.py` become `bin/<step>_<module>.py`, and their imports are renamed
+   (`from utils import ...` becomes `from nwb_units_utils import ...`).
+
+To support a new input format, fork `aind-ephys-job-dispatch` the same way and add the packages the reader needs
+with `--extra_installs`.
 
 ### Adding a spike sorter
 
 A template repository for new sorters is available at
 [aind-ephys-spikesort-template](https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-template). To add one:
 
-1. Create a repository from the template, fill in `SORTER_NAME`, `URL` and `VERSION` in `run_capsule.py`, and vendor
-   its `code/` folder into `bin/aind/spikesort_newsorter/` with a `VENDORED` file.
+1. Create a repository from the template, fill in `SORTER_NAME`, `URL` and `VERSION` in `run_capsule.py`, and copy
+   it to `bin/spikesort_newsorter.py` as described above.
 2. If the sorter needs packages that are not in an existing image, build and publish an image for it.
 3. Add a module `modules/local/newsorter/spikesort/main.nf`, using an existing sorter module as a template
    (`process_gpu` label if it needs a GPU, `process_cpu` otherwise).

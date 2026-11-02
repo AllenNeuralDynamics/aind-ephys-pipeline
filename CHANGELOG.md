@@ -13,8 +13,10 @@ Refactor of the pipeline into the nf-core layout: how the pipeline is laid out, 
   `utils_aind_ephys`) and one process per `modules/local/<tool>/<step>/main.nf` (e.g. `EPHYS_PREPROCESSING`,
   `KILOSORT4_SPIKESORT`, `NWB_UNITS`). Run it with `nextflow run main.nf` or
   `nextflow run AllenNeuralDynamics/aind-ephys-pipeline -r <version>`.
-- The code of each step is vendored in `bin/aind/<step>/` at a pinned commit, with a `VENDORED` file recording its
-  repository and commit, and run by `bin/aind_capsule.sh`. Tasks no longer clone the step repositories at run time.
+- The code of each step is a script in `bin/` (`bin/<step>.py`), copied from its repository's `run_capsule.py` at a
+  pinned commit; a header records the repository, commit and licence. The scripts run from the task directory
+  (`data/`, `results/`, `scratch/`, `params.json`; the paths are flags) and are called by name in the modules.
+  Tasks no longer clone the step repositories at run time.
 - A single `nextflow.config` holds every parameter with its default (pipeline options and step parameters) and the
   profiles; `nextflow_schema.json` describes and validates every parameter when the pipeline starts.
 - Input and output are given with `--ecephys_path` (else `--ecephys_url`, else `DATA_PATH`) and `--results_dir`
@@ -42,6 +44,9 @@ Refactor of the pipeline into the nf-core layout: how the pipeline is laid out, 
 
 ### Removed
 
+- The Code Ocean capsule layout: `bin/aind_capsule.sh`, the capsule folders (`capsule/data`, `capsule/results`) and
+  the `run` scripts of the step repositories; in the step code, the `CO_CPUS` fallback for `N_JOBS_EXT` and the AWS
+  Batch branch of the results collector.
 - Sphinx documentation (`docs/source/`, Read the Docs configuration).
 - The parameter editor web app (`params_app/`).
 - Code Ocean support: the `codeocean` profile, the `.codeocean/` folder and the forwarding of AWS credentials to

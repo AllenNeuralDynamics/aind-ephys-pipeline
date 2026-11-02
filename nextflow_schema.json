@@ -224,7 +224,7 @@
             "title": "Step parameters",
             "type": "object",
             "fa_icon": "fas fa-sliders-h",
-            "description": "Configuration schema for the AIND electrophysiology analysis pipeline. See https://aind-ephys-pipeline.readthedocs.io/en/latest/parameters.html for documentation. Written to full_params.json and read by every step as capsule/params.json. Override with dotted parameters (--preprocessing.filter_type bandpass) or -params-file.",
+            "description": "Configuration schema for the AIND electrophysiology analysis pipeline. See docs/usage.md. Written to full_params.json and read by every step as params.json. Override with dotted parameters (--preprocessing.filter_type bandpass) or -params-file.",
             "required": [
                 "logging"
             ],

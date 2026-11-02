@@ -26,7 +26,7 @@ def legacyArgParams() {
             quality_control_collector: 'quality_control_collector_args']
 }
 
-// Sorter -> vendored step folder in bin/aind/
+// Sorter -> its step script, bin/<step>.py
 def sorterSteps() {
     return [kilosort25: 'spikesort_kilosort25', kilosort4: 'spikesort_kilosort4',
             spykingcircus2: 'spikesort_spykingcircus2', lupin: 'spikesort_lupin',
@@ -136,20 +136,21 @@ def parseExtraParams(String extra_params) {
     }
 }
 
-// Repository and commit each vendored step was copied from (bin/aind/<step>/VENDORED)
+// Repository and commit the code of a step was copied from: the `# vendored-from:` and
+// `# vendored-commit:` header lines of bin/<step>.py
 def vendoredVersion(String step) {
     def info = [:]
-    file("${projectDir}/bin/aind/${step}/VENDORED").eachLine { line ->
-        if (line.contains('=')) {
-            def parts = line.split('=', 2) as List
-            info[parts[0].trim()] = parts[1].trim()
+    file("${projectDir}/bin/${step}.py").eachLine { line ->
+        def header = line =~ /^# vendored-(from|commit): (\S+)$/
+        if (header) {
+            info[header[0][1]] = header[0][2]
         }
     }
-    return [repo: info.REPO, commit: info.COMMIT]
+    return [repo: info.from, commit: info.commit]
 }
 
 //
-// Build the parameters every step reads from capsule/params.json:
+// Build the parameters every step reads from params.json:
 // params.<section> (config defaults + -params-file + dotted CLI overrides + --extra_params),
 // then the legacy `--<section>_args` strings, the selected sorter, pipeline paths, runmode and logging tags.
 // Validated against nextflow_schema.json; returns [full_params, sorter].
@@ -249,7 +250,7 @@ def buildFullParams(String data_path) {
     return [full_params, sorter]
 }
 
-// Write the full parameter map to the work dir, staged into every task as capsule/params.json.
+// Write the full parameter map to the work dir, staged into every task as params.json.
 // Rewritten only on change: tasks hash the staged file's mtime, so touching it would invalidate -resume.
 def writeFullParams(Map full_params) {
     def full_params_file = file("${workflow.workDir}/full_params.json")

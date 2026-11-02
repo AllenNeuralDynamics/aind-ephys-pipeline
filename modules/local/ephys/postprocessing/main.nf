@@ -7,17 +7,18 @@ process EPHYS_POSTPROCESSING {
 
     input:
     val max_duration_minutes
-    path ecephys_session_input, stageAs: 'capsule/data/ecephys_session'
-    path job_dispatch_results, stageAs: 'capsule/data/*'
-    path preprocessing_results, stageAs: 'capsule/data/*'
-    path spikesort_results, stageAs: 'capsule/data/*'
-    path params_file, stageAs: 'capsule/params.json'
+    path ecephys_session_input, stageAs: 'data/ecephys_session'
+    path job_dispatch_results, stageAs: 'data/*'
+    path preprocessing_results, stageAs: 'data/*'
+    path spikesort_results, stageAs: 'data/*'
+    path params_file, stageAs: 'params.json'
 
     output:
-    path 'capsule/results/*', emit: results
-
+    path 'results/*', emit: results
 
     script:
+    def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
+    def install_cmd = installs ? "echo 'installing extra packages: ${installs.join(', ')}'\n    pip install ${installs.collect { pkg -> "'" + pkg + "'" }.join(' ')}" : ''
     """
     #!/usr/bin/env bash
     set -e
@@ -25,16 +26,21 @@ process EPHYS_POSTPROCESSING {
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${task.ext.n_jobs ?: task.cpus}
 
-    echo "[${task.tag}] running capsule..."
-    aind_capsule.sh --step postprocessing \\
-        --extra-installs '${task.ext.extra_installs ?: ''}'
+    ${install_cmd}
+    # repository and commit the step code comes from (recorded in its processing metadata)
+    export CODE_REPO=\$(sed -n 's/^# vendored-from: //p' "\$(command -v postprocessing.py)")
+    export CODE_VERSION=\$(sed -n 's/^# vendored-commit: //p' "\$(command -v postprocessing.py)")
+    mkdir -p results scratch
+
+    echo "[${task.tag}] running postprocessing.py..."
+    postprocessing.py
 
     echo "[${task.tag}] completed!"
     """
 
     stub:
     """
-    mkdir -p capsule/results
-    touch capsule/results/postprocessing_${task.index}.stub
+    mkdir -p results
+    touch results/postprocessing_${task.index}.stub
     """
 }

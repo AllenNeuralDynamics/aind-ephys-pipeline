@@ -109,8 +109,8 @@ aind-ephys-pipeline is developed and maintained by the
 [Allen Institute for Neural Dynamics](https://alleninstitute.org/division/neural-dynamics/) (AIND).
 
 The code of each step is developed in its own repository under
-[AllenNeuralDynamics](https://github.com/AllenNeuralDynamics) and vendored in [`bin/aind`](bin/aind) at a
-pinned commit. The UnitRefine classifiers used in curation are hosted by
+[AllenNeuralDynamics](https://github.com/AllenNeuralDynamics); a copy at a pinned commit is the step's script in
+[`bin/`](bin). The UnitRefine classifiers used in curation are hosted by
 [SpikeInterface on Hugging Face](https://huggingface.co/SpikeInterface).
 
 ## Contributions and support
