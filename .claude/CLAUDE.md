@@ -6,173 +6,88 @@ This project is an **Electrophysiology Analysis Pipeline** developed by the Alle
 
 ## Architecture
 
-### Dual Deployment Model
+A single Nextflow **DSL2** pipeline (`pipeline/main.nf`) runs on every backend. Only the config changes:
 
-The pipeline supports two deployment environments with different Nextflow implementations:
+| Backend | Config | Executor |
+|---|---|---|
+| Code Ocean | `nextflow.config` (+ `params_co.json`) | `awsbatch`, data on S3 |
+| SLURM | `nextflow_slurm.config` (+ `slurm_submit.sh`) | `slurm`, Apptainer/Singularity |
+| Local | `nextflow_local.config` | `local`, Docker |
 
-1. **Code Ocean Deployment** (`pipeline/main.nf`)
-   - Uses Nextflow DSL1
-   - Deployed on AIND's Code Ocean platform
-   - Clones code from Code Ocean private Git repositories
-   - Pre-configured branches for different spike sorters
-   - Uses Code Ocean container registry
-
-2. **SLURM/Local Deployment** (`pipeline/main_multi_backend.nf`)
-   - Uses Nextflow DSL2 (modern syntax)
-   - Supports both SLURM clusters and local execution
-   - Clones code from public GitHub repositories
-   - Dynamic sorter selection via parameters
-   - Uses GitHub Container Registry (ghcr.io)
-
-### Key Difference
-
-Both pipelines execute the **same processing steps**, but:
-- `main.nf` is Code Ocean-specific with hardcoded capsule IDs
-- `main_multi_backend.nf` is flexible, supporting multiple executors and configurable via parameters
+- Each process clones its step repo from **public GitHub** at the commit pinned in `process_versions.env`. A `process_versions_custom.env`, if present, takes priority. Repo and commit can be overridden per step with `--<step>_repo` / `--<step>_version`.
+- Containers come from `ghcr.io/allenneuraldynamics/<image>:<container_tag>`. The tag is resolved in this order: `--container_tag`, then the `CONTAINER_TAG` env var, then `pipeline/pipeline_version.txt`.
+- Needs Nextflow >= 25.10 (`nf-schema@2.7.3` plugin for parameter validation).
 
 ## Pipeline Steps
 
-The pipeline consists of 11 processing steps executed sequentially (with parallelization where applicable):
+Every step repo is in `../../pipeline-steps/ephys/` locally (spike sorters under `spikesorting/`, NWB under `nwb/`).
 
-### 1. Job Dispatch
-- **Purpose**: Generate JSON job files for parallel processing
-- **Repo**: [aind-ephys-job-dispatch](https://github.com/AllenNeuralDynamics/aind-ephys-job-dispatch)
-- **Parallelization**: Creates jobs per probe and per shank (NP2-4shank probes)
-- **Container**: `aind-ephys-pipeline-base`
+| # | Process | Repo | Container | Runs |
+|---|---|---|---|---|
+| 1 | `job_dispatch` | aind-ephys-job-dispatch | base | once. Writes `job_*.json` (one per probe/shank/segment) + `max_duration.txt` |
+| 2 | `preprocessing` | aind-ephys-preprocessing | base | per job |
+| 3 | `spikesort_<sorter>` | aind-ephys-spikesort-{kilosort4, kilosort25, spykingcircus2, lupin, dartsort} | ks4 / ks25 / dartsort images (GPU); sc2 and lupin use base | per job |
+| 4 | `postprocessing` | aind-ephys-postprocessing | base | per job |
+| 5 | `curation` | aind-ephys-curation (UnitRefine models from Hugging Face) | base | per job |
+| 6 | `visualization` | aind-ephys-visualization (figpack) | base | per job |
+| 7 | `results_collector` | aind-ephys-results-collector | base | once. Publishes to `RESULTS_PATH` |
+| 8 | `quality_control` | aind-ephys-processing-qc | base | per job |
+| 9 | `quality_control_collector` | aind-ephys-qc-collector | base | once. Publishes |
+| 10 | `nwb_ecephys` | aind-ecephys-nwb | nwb | once, alongside sorting |
+| 11 | `nwb_units` | aind-units-nwb | nwb | once. Publishes to `RESULTS_PATH/nwb` |
+| – | `save_provenance` | (inline) | base | once. Writes `provenance.json` |
 
-### 2. Preprocessing
-- **Purpose**: Data preparation and cleaning
-- **Repo**: [aind-ephys-preprocessing](https://github.com/AllenNeuralDynamics/aind-ephys-preprocessing)
-- **Operations**: Phase shift, highpass filter, denoising (bad channel removal + CMR/destripe), motion estimation/correction
-- **Container**: `aind-ephys-pipeline-base`
-
-### 3. Spike Sorting
-Three sorter options (selected via parameter or branch):
-- **Kilosort2.5**: [aind-ephys-spikesort-kilosort25](https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort25)
-  - Container: `aind-ephys-spikesort-kilosort25`
-- **Kilosort4**: [aind-ephys-spikesort-kilosort4](https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort4)
-  - Container: `aind-ephys-spikesort-kilosort4`
-  - Requires GPU
-- **SpykingCircus2**: [aind-ephys-spikesort-spykingcircus2](https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-spykingcircus2)
-  - Container: `aind-ephys-pipeline-base`
-
-### 4. Postprocessing
-- **Purpose**: Compute spike/unit metrics and extensions
-- **Repo**: [aind-ephys-postprocessing](https://github.com/AllenNeuralDynamics/aind-ephys-postprocessing)
-- **Operations**: Remove duplicates, compute amplitudes, locations, PCA, correlograms, template similarity, quality metrics
-- **Container**: `aind-ephys-pipeline-base`
-
-### 5. Curation
-- **Purpose**: Quality control and unit classification
-- **Repo**: [aind-ephys-curation](https://github.com/AllenNeuralDynamics/aind-ephys-curation)
-- **Methods**: Threshold-based filtering (ISI violation, presence ratio, amplitude cutoff), UnitRefine classifier
-- **ML Models**: Uses pretrained models from Hugging Face:
-  - [UnitRefine_noise_neural_classifier](https://huggingface.co/SpikeInterface/UnitRefine_noise_neural_classifier): Classifies units as noise vs neural
-  - [UnitRefine_sua_mua_classifier](https://huggingface.co/SpikeInterface/UnitRefine_sua_mua_classifier): Classifies neural units as single-unit (SUA) vs multi-unit (MUA)
-- **Container**: `aind-ephys-pipeline-base`
-
-### 6. Visualization
-- **Purpose**: Generate plots and interactive Figurl visualizations
-- **Repo**: [aind-ephys-visualization](https://github.com/AllenNeuralDynamics/aind-ephys-visualization)
-- **Outputs**: Timeseries plots, drift maps, motion visualizations, sorting summary
-- **Container**: `aind-ephys-pipeline-base`
-
-### 7. Results Collector
-- **Purpose**: Aggregate parallel job outputs
-- **Repo**: [aind-ephys-result-collector](https://github.com/AllenNeuralDynamics/aind-ephys-result-collector)
-- **Operation**: Copy all results to standardized output structure
-- **Container**: `aind-ephys-pipeline-base`
-
-### 8. Quality Control
-- **Purpose**: Run quality control checks on results
-- **Repo**: [aind-ephys-processing-qc](https://github.com/AllenNeuralDynamics/aind-ephys-processing-qc)
-- **Container**: `aind-ephys-pipeline-base`
-
-### 9. Quality Control Collector
-- **Purpose**: Aggregate QC results
-- **Repo**: [aind-ephys-qc-collector](https://github.com/AllenNeuralDynamics/aind-ephys-qc-collector)
-- **Container**: `aind-ephys-pipeline-base`
-
-### 10. NWB Subject (in multi_backend only)
-- **Purpose**: Create NWB subject metadata
-- **Repo**: [aind-subject-nwb](https://github.com/AllenNeuralDynamics/aind-subject-nwb)
-- **Container**: `aind-ephys-pipeline-nwb`
-
-### 11. NWB Ecephys
-- **Purpose**: Export electrophysiology data to NWB format
-- **Repo**: [aind-ecephys-nwb](https://github.com/AllenNeuralDynamics/aind-ecephys-nwb)
-- **Container**: `aind-ephys-pipeline-nwb`
-
-### 12. NWB Units
-- **Purpose**: Export spike sorting results to NWB format
-- **Repo**: [aind-units-nwb](https://github.com/AllenNeuralDynamics/aind-units-nwb)
-- **Container**: `aind-ephys-pipeline-nwb`
-
-## Version Management
-
-- **capsule_versions.env**: Pins specific Git commit hashes for each step's repository
-- **container_tag**: Derived from SpikeInterface version (e.g., `si-0.103.0`)
-- Ensures reproducibility across pipeline runs
-
-## Container Strategy
-
-Each processing step:
-1. Creates a capsule directory structure (`data/`, `results/`, `scratch/`)
-2. Clones the appropriate Git repository at pinned commit
-3. Executes the repository's `run` script inside the container
-4. Outputs results to `capsule/results/`
+- **Sorter selection:** `spikesorting.sorter` in the params file, or `--sorter`. The default is `kilosort4`.
+- **Inside each task:** the process creates `capsule/{data,results,scratch}`, stages inputs into `capsule/data/`, clones the step repo, optionally `pip install`s `--extra_installs`, then runs `capsule/code/run`. Step code globs `../data` and loops over every recording it finds.
 
 ## Configuration
 
-### Parameters
-- Configured via JSON file (`params_file`) or command-line arguments
-- Separate parameter sets for each step (preprocessing_args, spikesorting_args, etc.)
-- Run modes: `full` (default) or `fast` (skip motion estimation, some extensions)
-
-### Executors
-- `local`: Single machine execution
-- `slurm`: SLURM cluster execution with automatic resource allocation
-
-## Documentation
-
-- **ReadTheDocs**: https://aind-ephys-pipeline.readthedocs.io/en/latest/
-- **Source docs**: `docs/source/` (Sphinx/RST format)
-- **Configuration examples**: `pipeline/default_params.json`
+- **Params file:** `pipeline/default_params.json` is the default. It is validated against `default_params_schema.json` before anything runs, and again after all merges. There is one section per step: `job_dispatch`, `preprocessing`, `spikesorting.<sorter>`, `postprocessing`, `curation`, `visualization`, `results_collector`, `quality_control`, `quality_control_collector`, `nwb_ecephys`, `nwb_units`, `logging`.
+- **Overrides**, merged into the params file:
+  - Dotted CLI flags: `--preprocessing.filter_type=bandpass`.
+  - `--extra_params "<dotted flags>"`, used on Code Ocean because only App Panel params are forwarded there.
+  - Legacy `--<step>_args` strings.
+- **The merged result** is written to `${workDir}/full_params.json` and staged into every task as `capsule/params.json`.
+- **Run modes:** `--runmode full` (default) or `fast`. `fast` turns off motion correction and LFP writing, and drops the `spike_locations` and `principal_components` extensions.
+- **SLURM time limits** scale with `max_duration_minutes`, a `val` input to every process that job_dispatch derives.
+- **`params_app/`** is a static web app for editing and validating params files against the schema.
 
 ## Repository Structure
 
 ```
 aind-ephys-pipeline/
 ├── pipeline/
-│   ├── main.nf                    # Code Ocean pipeline (DSL1)
-│   ├── main_multi_backend.nf      # SLURM/Local pipeline (DSL2)
-│   ├── capsule_versions.env       # Git commit hashes
-│   ├── default_params.json        # Default parameters
-│   ├── nextflow.config            # Base Nextflow config
-│   ├── nextflow_local.config      # Local execution config
-│   ├── nextflow_slurm.config      # SLURM execution config
-│   └── slurm_submit.sh            # SLURM submission script
-├── docs/                          # Sphinx documentation
-├── environment/                   # Environment files
-├── pull_pipeline_images.sh        # Container pre-pull script
-└── README.md                      # Main documentation
-
+│   ├── main.nf                    # the pipeline (DSL2, all backends)
+│   ├── nextflow.config            # Code Ocean / AWS Batch
+│   ├── nextflow_local.config
+│   ├── nextflow_slurm.config
+│   ├── slurm_submit.sh
+│   ├── default_params.json        # default parameters
+│   ├── default_params_schema.json # JSON schema (nf-schema)
+│   ├── params_co.json             # Code Ocean params
+│   ├── process_versions.env       # step repo URLs + pinned commits
+│   └── pipeline_version.txt       # pipeline version = default container tag
+├── environment/                   # Dockerfiles (base, kilosort25, kilosort4, dartsort, nwb), images.json, build/push scripts
+├── params_app/                    # params editor web app
+├── tests/                         # local / SLURM test scripts + result checks
+├── docs/source/                   # Sphinx docs (ReadTheDocs)
+├── scripts/pull_pipeline_images.sh
+└── .github/                       # CI: image builds, Nextflow tests, params validation, releases
 ```
 
 ## Development Workflow
 
-1. Update individual step repositories with new features/fixes
-2. Test changes in respective repositories
-3. Update commit hash in `capsule_versions.env`
-4. Test full pipeline with new versions
-5. Deploy to Code Ocean (update branch) or SLURM (update config)
+1. Change and test the step repo.
+2. Bump its commit in `pipeline/process_versions.env`. For a local trial, use `process_versions_custom.env` or `--<step>_version`.
+3. If dependencies changed, update the Dockerfiles in `environment/` and `pipeline_version.txt` / the container tag.
+4. Run the tests in `tests/` or CI (`_nextflow-tests.yml`).
 
-## Key Technologies
+## Known Optimization Notes
 
-- **Nextflow**: Workflow orchestration
-- **SpikeInterface**: Core spike sorting library
-- **Docker/Singularity**: Containerization
-- **NWB (Neurodata Without Borders)**: Standardized data format
-- **Figurl**: Interactive visualization
-- **Code Ocean**: AIND's execution platform
-- **SLURM**: HPC job scheduling
+- `ephys-pipeline-flow.html` (repo root) diagrams the current data flow and the Nextflow / step-code hotspots: raw-session staging, `collect()` barriers, results_collector copies, and more.
+- `ephys-step-repo-bugs.md` lists bugs found by reading the step repos. None were confirmed by running the code.
+
+## Documentation
+
+- **ReadTheDocs**: https://aind-ephys-pipeline.readthedocs.io/en/latest/
+- **Source docs**: `docs/source/` (Sphinx/RST)

@@ -14,7 +14,9 @@
         "debug_duration": 30,
         "skip_timestamps_check": false,
         "multi_session": false,
-        "input": "aind"
+        "input": "aind",
+        "streaming": false,
+        "pipeline_data_path": null
     },
     "preprocessing": {
         "job_kwargs": {

@@ -323,6 +323,18 @@ if (runmode == 'fast'){
     full_params.postprocessing.extensions?.remove('principal_components')
 }
 
+// Streaming: job_dispatch reads the raw data from the remote session and only metadata JSONs are staged
+// (a local path is a symlink when staged, so streaming only matters for remote URLs)
+streaming = full_params.job_dispatch.streaming ?: false
+if (streaming && !(params.ecephys_path.toString() ==~ /^\w+:\/\/.+/)) {
+    println "WARN: job_dispatch.streaming is set but ${params.ecephys_path} is local: staging it as usual"
+    streaming = false
+}
+if (streaming) {
+    full_params.job_dispatch.pipeline_data_path = full_params.job_dispatch.pipeline_data_path ?: params.ecephys_path.toString()
+}
+println "STREAMING: ${streaming}"
+
 // Tag logs with the acquisition name from data_description.json and the pipeline name;
 // values set by the user in the params file take priority
 // (file() handles both local paths and s3:// URLs from ecephys_url)
@@ -393,6 +405,8 @@ process job_dispatch {
     export CODE_REPO="${versions['JOB_DISPATCH_REPO']}"
     export CODE_VERSION="${versions['JOB_DISPATCH_VERSION']}"
 
+    ${streaming ? awsCredentialsExports() : ''}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -450,6 +464,8 @@ process preprocessing {
     export CODE_REPO="${versions['PREPROCESSING_REPO']}"
     export CODE_VERSION="${versions['PREPROCESSING_VERSION']}"
 
+    ${streaming ? awsCredentialsExports() : ''}
+
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -497,6 +513,8 @@ process spikesort_kilosort25 {
     export CODE_REPO="${versions['SPIKESORT_KS25_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_KS25_VERSION']}"
 
+    ${streaming ? awsCredentialsExports() : ''}
+
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -543,6 +561,8 @@ process spikesort_kilosort4 {
     export CODE_REPO="${versions['SPIKESORT_KS4_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_KS4_VERSION']}"
 
+    ${streaming ? awsCredentialsExports() : ''}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -586,6 +606,8 @@ process spikesort_spykingcircus2 {
     set -e
     export CODE_REPO="${versions['SPIKESORT_SC2_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_SC2_VERSION']}"
+
+    ${streaming ? awsCredentialsExports() : ''}
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -632,6 +654,8 @@ process spikesort_lupin {
     export CODE_REPO="${versions['SPIKESORT_LUPIN_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_LUPIN_VERSION']}"
 
+    ${streaming ? awsCredentialsExports() : ''}
+
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -677,6 +701,8 @@ process spikesort_dartsort {
     set -e
     export CODE_REPO="${versions['SPIKESORT_DARTSORT_REPO']}"
     export CODE_VERSION="${versions['SPIKESORT_DARTSORT_VERSION']}"
+
+    ${streaming ? awsCredentialsExports() : ''}
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -729,6 +755,8 @@ process postprocessing {
     export CODE_REPO="${versions['POSTPROCESSING_REPO']}"
     export CODE_VERSION="${versions['POSTPROCESSING_VERSION']}"
 
+    ${streaming ? awsCredentialsExports() : ''}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -773,6 +801,8 @@ process curation {
 
     export CODE_REPO="${versions['CURATION_REPO']}"
     export CODE_VERSION="${versions['CURATION_VERSION']}"
+
+    ${streaming ? awsCredentialsExports() : ''}
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -885,7 +915,9 @@ process results_collector {
     ${extra_installs_cmd}
 
     export CODE_REPO="${versions['RESULTS_COLLECTOR_REPO']}"
-    export CODE_VERSION="${versions['RESULTS_COLLECTOR_VERSION']}"  
+    export CODE_VERSION="${versions['RESULTS_COLLECTOR_VERSION']}"
+
+    ${streaming ? awsCredentialsExports() : ''}
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -939,6 +971,8 @@ process quality_control {
 
     export CODE_REPO="${versions['QUALITY_CONTROL_REPO']}"
     export CODE_VERSION="${versions['QUALITY_CONTROL_VERSION']}"
+
+    ${streaming ? awsCredentialsExports() : ''}
 
 
     mkdir -p capsule
@@ -1038,6 +1072,8 @@ process nwb_ecephys {
     export CODE_REPO="${versions['NWB_ECEPHYS_REPO']}"
     export CODE_VERSION="${versions['NWB_ECEPHYS_VERSION']}"
 
+    ${streaming ? awsCredentialsExports() : ''}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -1091,6 +1127,8 @@ process nwb_units {
     export CODE_REPO="${versions['NWB_UNITS_REPO']}"
     export CODE_VERSION="${versions['NWB_UNITS_VERSION']}"
 
+    ${streaming ? awsCredentialsExports() : ''}
+
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -1143,7 +1181,19 @@ workflow {
     // Input channel from ecephys path
     // Value channel so the same params file is reused by every task (File objects are not valid path inputs)
     full_params_ch = Channel.value(file(full_params_file.toString()))
-    ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
+    if (streaming) {
+        // stage a metadata-only copy of the session; the raw data is streamed by every step from the job JSONs
+        def metadata_folder = file("${workDir}/streaming_session")
+        metadata_folder.mkdirs()
+        files("${params.ecephys_path}/*.json").each { f ->
+            def target = metadata_folder.resolve(f.name)
+            // shortcut: copy only if missing, to keep mtimes stable for -resume; a changed remote JSON needs a clean workDir
+            if (!target.exists()) f.copyTo(target)
+        }
+        ecephys_ch = Channel.fromPath(metadata_folder.toString() + "/", type: 'any')
+    } else {
+        ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
+    }
 
     // Provenance: only the selected sorter's repo/commit is recorded
     def sorter_keys = ['kilosort25': 'spikesort_ks25', 'kilosort4': 'spikesort_ks4',
