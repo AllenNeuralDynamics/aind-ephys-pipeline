@@ -4,7 +4,7 @@
 # vendored-commit: ecc382fd7d1bc85db30f482b097168ebb436a391
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 """ Writes Units to an NWB file """
 import sys
@@ -30,15 +30,16 @@ from nwb_units_utils import add_waveforms_with_uneven_channels
 
 
 cli = argparse.ArgumentParser(description="nwb_units step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--scratch-dir", dest="scratch_dir", default="scratch")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--session", dest="session", required=True)
+cli.add_argument("--job", dest="job", nargs="+", required=True)
+cli.add_argument("--collected", dest="collected", nargs="+", required=True)
+cli.add_argument("--nwb", dest="nwb", nargs="+", required=True)
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-scratch_folder = Path(cli_args.scratch_dir)
-results_folder = Path(cli_args.results_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
 
 # unit properties to skip
 skip_unit_properties = [
@@ -68,7 +69,7 @@ def run():
     # find raw data
     ecephys_folders = [
         p
-        for p in data_folder.iterdir()
+        for p in map(Path, [cli_args.session])
         if p.is_dir()
         and ("ecephys" in p.name or "behavior" in p.name)
         and "sorted" not in p.name and "nwb" not in p.name
@@ -111,7 +112,7 @@ def run():
     # find base NWB file
     nwb_files = [
         p
-        for p in data_folder.iterdir()
+        for p in map(Path, cli_args.nwb)
         if (p.name.endswith(".nwb") or p.name.endswith(".nwb.zarr")) and "/nwb/" not in str(p)
     ]
     assert len(nwb_files) > 0, "Attach at least one base NWB file"
@@ -135,7 +136,7 @@ def run():
             shutil.copyfile(nwb_file_path, results_folder / nwb_file_path.name)
 
     # find raw data
-    job_json_files = [p for p in data_folder.glob('**/*.json') if "job" in p.name]
+    job_json_files = [p for p in map(Path, cli_args.job) if "job" in p.name]
     job_dicts = []
     recording_names_in_json = []
     for job_json_file in job_json_files:
@@ -145,24 +146,8 @@ def run():
         job_dicts.append(job_dict)
     logging.info(f"Found {len(job_dicts)} JSON job files")
 
-    # check for timestamps to overwrite recording timestamps
-    timestamps_folder = data_folder / "timestamps"
-
-    # find sorted data
-    sorted_folders = [
-        p for p in data_folder.iterdir() if p.is_dir() and "sorted" in p.name and "spikesorted" not in p.name
-    ]
-
-    if len(sorted_folders) == 0:
-        # pipeline mode
-        if (data_folder / "collect_pipeline_output_test").is_dir():
-            logging.info("\n*******************\n**** TEST MODE ****\n*******************\n")
-            sorted_folder = data_folder / "collect_pipeline_output_test"
-        else:
-            sorted_folder = data_folder
-    elif len(sorted_folders) == 1:
-        # a single sorted asset in the data folder
-        sorted_folder = sorted_folders[0]
+    # find sorted data: the collected postprocessed/ and spikesorted/ folders are staged in the task directory
+    sorted_folder = data_folder
 
     postprocessed_folder = sorted_folder / "postprocessed"
     spikesorted_folder = sorted_folder / "spikesorted"
@@ -372,11 +357,6 @@ def run():
                             skip_times = job_dict.get("skip_times", False)
                             if skip_times:
                                 recording.reset_times()
-                            timestamps_file = timestamps_folder / f"{recording_name}.npy"
-                            if timestamps_file.is_file():
-                                logging.info(f"\tSetting synced timestamps from {timestamps_file}")
-                                timestamps = np.load(timestamps_file)
-                                recording.set_times(timestamps)
                             # a zarr-backed time vector stays lazy, and neuroconv indexes it once per unit,
                             # decoding the whole vector each time; a full-range get_times caches it in memory
                             for segment_index in range(recording.get_num_segments()):

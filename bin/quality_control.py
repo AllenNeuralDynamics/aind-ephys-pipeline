@@ -4,7 +4,7 @@
 # vendored-commit: 98d22291ec4560cf7a2919ffaa1b4305af425961
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 """ Quality control for ecephys pipeline """
 
@@ -37,13 +37,16 @@ from quality_control_qc_utils import (
 )
 
 cli = argparse.ArgumentParser(description="quality_control step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--session", dest="session", required=True)
+cli.add_argument("--job", dest="job", nargs="+", required=True)
+cli.add_argument("--collected", dest="collected", nargs="+", required=True)
+cli.add_argument("--metadata", dest="metadata", nargs="*", default=[])
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-results_folder = Path(cli_args.results_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
 
 PARAMS_FILE = Path(cli_args.params)
 
@@ -93,7 +96,7 @@ def run() -> None:
     # session folder staged with the inputs (e.g. ecephys_session)
     ecephys_folders = [
         p
-        for p in data_folder.iterdir()
+        for p in map(Path, [cli_args.session])
         if p.is_dir() and ("ecephys" in p.name or "behavior" in p.name) and "sorted" not in p.name
     ]
 
@@ -112,15 +115,8 @@ def run() -> None:
     job_kwargs = dict(n_jobs=N_JOBS, progress_bar=False, mp_context="spawn")
     si.set_global_job_kwargs(**job_kwargs)
 
-    ecephys_sorted_folders = [
-        p
-        for p in data_folder.iterdir()
-        if p.is_dir() and ("ecephys" in p.name or "behavior" in p.name) and "sorted" in p.name
-    ]
-    # TODO: fix this!
-    if len(ecephys_sorted_folders) == 1:
-        ecephys_sorted_folder = ecephys_sorted_folders[0]
-    elif (data_folder / "postprocessed").is_dir() or (data_folder / "preprocessed").is_dir():
+    # collected results (postprocessed/, preprocessed/, ...) are staged in the task directory
+    if (data_folder / "postprocessed").is_dir() or (data_folder / "preprocessed").is_dir():
         ecephys_sorted_folder = data_folder
     else:
         logging.info(
@@ -129,7 +125,7 @@ def run() -> None:
         )
         ecephys_sorted_folder = None
 
-    job_json_files = [p for p in data_folder.iterdir() if p.suffix == ".json" and "job" in p.name]
+    job_json_files = [p for p in map(Path, cli_args.job) if p.suffix == ".json" and "job" in p.name]
     job_dicts = []
     for job_json_file in job_json_files:
         with open(job_json_file) as f:
@@ -231,12 +227,8 @@ def run() -> None:
 
             sorting_analyzer = None
             postprocessed_folder_zarr = ecephys_sorted_folder / "postprocessed" / f"{recording_name}.zarr"
-            postprocessed_folder = ecephys_sorted_folder / "postprocessed" / recording_name
             if postprocessed_folder_zarr.is_dir():
                 sorting_analyzer = si.load(postprocessed_folder_zarr, load_extensions=False)
-            elif postprocessed_folder.is_dir():
-                # this is for legacy waveform extractor folders
-                sorting_analyzer = si.load_waveforms(postprocessed_folder, output="SortingAnalyzer")
             if recording_preprocessed is not None and sorting_analyzer is not None:
                 sorting_analyzer.set_temporary_recording(recording_preprocessed)
 

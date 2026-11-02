@@ -433,9 +433,26 @@ The five images are published as `ghcr.io/allenneuraldynamics/<image>:<tag>` and
 ## Updating or customizing a step
 
 Each step runs its script from `bin/`, called by name in its module. The scripts are copies of the `run_capsule.py`
-of each step repository at a pinned commit, made runnable from the task directory: they read `data/` and
-`params.json` and write `results/` (and `scratch/`) there, set with `--data-dir`, `--params`, `--results-dir` and
-`--scratch-dir`. Their header records where the code comes from:
+of each step repository at a pinned commit, adapted to how Nextflow passes data: the module declares every input,
+Nextflow stages it into the task directory under its own name (the session as `ecephys_session`), and the module
+passes it to the script as an argument, e.g.
+
+```bash
+postprocessing.py \
+    --session ecephys_session \
+    --job job_1.json \
+    --preprocessed preprocessed_<recording> preprocessed_<recording>.json \
+    --binary binary_<recording>.json \
+    --motion motion_<recording> \
+    --spikesorted spikesorted_<recording> \
+    --params full_params.json
+```
+
+The script writes its outputs into the task directory under their usual names (`postprocessed_<recording>.zarr`,
+`data_process_postprocessing_<recording>.json`, ...), which the module declares as named outputs. Per-job steps
+carry a `meta` map (`[id: job_<n>]`) and their inputs are joined by it, so each task receives only its own
+recording's files. Paths stored inside saved recordings are relative to the task directory, where every step finds
+its inputs. Their header records where the code comes from:
 
 ```python
 #!/usr/bin/env python
@@ -472,9 +489,10 @@ extra artifact removal), replace the script with the repository's `code/run_caps
 same changes as the current script (compare them with `git diff`):
 
 1. the header above, with the new repository and commit;
-2. a parser for the path constants: `data_folder`, `results_folder`, `scratch_folder` and `PARAMS_FILE` are
-   `Path(cli_args.data_dir)`, `Path(cli_args.results_dir)`, `Path(cli_args.scratch_dir)` and
-   `Path(cli_args.params)` (defaults `data`, `results`, `scratch`, `params.json`) instead of `Path("../data")` etc.;
+2. the inputs as arguments: `data_folder` and `results_folder` are `Path(".")` (the task directory),
+   `scratch_folder` is `Path("scratch")` (created by the script), `PARAMS_FILE` is `Path(cli_args.params)`, and every
+   place that listed `data_folder` to find inputs iterates over the matching argument instead, with the same filter
+   (`[p for p in map(Path, cli_args.job) if ...]`); the module passes the new inputs and declares the outputs;
 3. helper modules next to `run_capsule.py` become `bin/<step>_<module>.py`, and their imports are renamed
    (`from utils import ...` becomes `from nwb_units_utils import ...`).
 

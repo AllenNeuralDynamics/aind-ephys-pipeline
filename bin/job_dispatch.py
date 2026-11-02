@@ -4,7 +4,7 @@
 # vendored-commit: 243d4225b84d5af68310ecb9806a875ffaa35de9
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -35,13 +35,13 @@ DEFAULT_MAX_PERCENT_ZERO_TIMESTAMPS_DIFF = 0.02  # percent of zero timestamps di
 
 
 cli = argparse.ArgumentParser(description="job_dispatch step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--session", dest="session", required=True)
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-results_folder = Path(cli_args.results_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
 
 PARAMS_FILE = Path(cli_args.params)
 
@@ -132,7 +132,7 @@ def run() -> None:
     recording_dict = {}
     if INPUT == "aind":
         ecephys_session_folders = [
-            p for p in data_folder.iterdir() if "ecephys" in p.name.lower() or "behavior" in p.name.lower()
+            p for p in [Path(cli_args.session)] if "ecephys" in p.name.lower() or "behavior" in p.name.lower()
         ]
         if len(ecephys_session_folders) == 0:
             raise Exception("No valid ecephys sessions found.")
@@ -229,7 +229,7 @@ def run() -> None:
 
     elif INPUT == "spikeglx":
         # get blocks/experiments and streams info
-        spikeglx_folders = [p for p in data_folder.iterdir() if p.is_dir()]
+        spikeglx_folders = [p for p in [Path(cli_args.session)] if p.is_dir()]
         if len(spikeglx_folders) == 0:
             raise Exception("No valid SpikeGLX folder found.")
         elif len(spikeglx_folders) > 1:
@@ -265,7 +265,11 @@ def run() -> None:
 
     elif INPUT == "openephys":
         # get blocks/experiments and streams info
-        openephys_folders = sorted({p.parent for p in data_folder.rglob("Record Node*") if p.is_dir()})
+        session_folder = Path(cli_args.session)
+        record_node_candidates = [p for p in [session_folder] if p.match("Record Node*")] + list(
+            session_folder.rglob("Record Node*")
+        )
+        openephys_folders = sorted({p.parent for p in record_node_candidates if p.is_dir()})
         if len(openephys_folders) == 0:
             raise Exception("No valid Open Ephys folder found.")
         elif len(openephys_folders) > 1:
@@ -318,13 +322,13 @@ def run() -> None:
         from spikeinterface.extractors.nwbextractors import NwbRecordingExtractor
 
         # get blocks/experiments and streams info
-        all_input_folders = [p for p in data_folder.iterdir() if p.is_dir()]
+        all_input_folders = [p for p in [Path(cli_args.session)] if p.is_dir()]
         if NWB_FILES is not None:
             nwb_files = [Path(p) for p in NWB_FILES.split(",")]
         elif len(all_input_folders) == 1:
             nwb_files = [p for p in all_input_folders[0].iterdir() if p.name.endswith(".nwb")]
         else:
-            nwb_files = [p for p in data_folder.iterdir() if p.name.endswith(".nwb")]
+            nwb_files = [p for p in [Path(cli_args.session)] if p.name.endswith(".nwb")]
         logging.info(f"nwb_files: {nwb_files}")
         if len(nwb_files) == 0:
             raise ValueError("No NWB files found in the data folder")
@@ -525,17 +529,17 @@ def run() -> None:
                         recording_dict[(session_name, recording_name)] = {}
                         recording_dict[(session_name, recording_name)]["raw"] = recording
         else:
-            # We try to find SpikeInterface-readable folders/files in the data folder and load them with the 
-            # SpikeInterface reader. If the data_folder has a single folder, we also look for SpikeInterface-readable 
+            # We try to find SpikeInterface-readable folders/files in the session input and load them with the 
+            # SpikeInterface reader. If the session input is a folder, we also look for SpikeInterface-readable 
             # sub-folders in that folder to give more chances to find the right folder.
             # If no folders are found, we look for files (e.g. JSON or pickle files with the recording information)
             # We consider potential datasets as a single session, with multiple blocks if there are multiple datasets
-            potential_si_datasets = [p for p in data_folder.iterdir() if p.is_dir()]
+            potential_si_datasets = [p for p in [Path(cli_args.session)] if p.is_dir()]
             if len(potential_si_datasets) == 1:
                 potential_si_subfolders = [p for p in potential_si_datasets[0].iterdir() if p.is_dir()]
                 potential_si_datasets.extend(potential_si_subfolders)
             if len(potential_si_datasets) == 0:
-                potential_si_datasets = [p for p in data_folder.iterdir() if p.is_file() and p.suffix in [".json", ".pkl"]]
+                potential_si_datasets = [p for p in [Path(cli_args.session)] if p.is_file() and p.suffix in [".json", ".pkl"]]
 
             logging.info(f"Potential SpikeInterface datasets found in the data folder: {potential_si_datasets}")
             block_index = 0

@@ -14,8 +14,10 @@ Refactor of the pipeline into the nf-core layout: how the pipeline is laid out, 
   `KILOSORT4_SPIKESORT`, `NWB_UNITS`). Run it with `nextflow run main.nf` or
   `nextflow run AllenNeuralDynamics/aind-ephys-pipeline -r <version>`.
 - The code of each step is a script in `bin/` (`bin/<step>.py`), copied from its repository's `run_capsule.py` at a
-  pinned commit; a header records the repository, commit and licence. The scripts run from the task directory
-  (`data/`, `results/`, `scratch/`, `params.json`; the paths are flags) and are called by name in the modules.
+  pinned commit; a header records the repository, commit and licence. Each module declares its inputs, which
+  Nextflow stages into the task directory under their own names, and passes them to the script as arguments
+  (`--session`, `--job`, `--preprocessed`, ...); outputs are written there and declared as named emits. Per-job steps
+  carry a `meta` map (`[id: job_<n>]`) and are joined by it, so each task receives only its own recording's files.
   Tasks no longer clone the step repositories at run time.
 - A single `nextflow.config` holds every parameter with its default (pipeline options and step parameters) and the
   profiles; `nextflow_schema.json` describes and validates every parameter when the pipeline starts.
@@ -44,6 +46,10 @@ Refactor of the pipeline into the nf-core layout: how the pipeline is laid out, 
 
 ### Removed
 
+- In the step scripts: the `--data-dir` / `--results-dir` / `--scratch-dir` folders, and branches the pipeline never
+  reaches (test-mode `*_pipeline_output_test` folders, standalone "single sorted asset" inputs, `phy_*`,
+  `timestamps/`, legacy non-zarr analyzers, NWB_ECEPHYS input NWB files). The unused `max_duration_minutes` input of
+  every process.
 - The Code Ocean capsule layout: `bin/aind_capsule.sh`, the capsule folders (`capsule/data`, `capsule/results`) and
   the `run` scripts of the step repositories; in the step code, the `CO_CPUS` fallback for `N_JOBS_EXT` and the AWS
   Batch branch of the results collector.
@@ -65,6 +71,8 @@ Refactor of the pipeline into the nf-core layout: how the pipeline is laid out, 
 
 ### Fixed
 
+- DARTsort's `tmpdir_parent` default is the task's own `scratch` folder (it was `../scratch`, from the Code Ocean
+  capsule layout).
 - DARTsort was missing from `provenance.json` and from the step parameter overrides.
 
 ## [1.5.0] - 2026-10-30

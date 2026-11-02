@@ -4,7 +4,7 @@
 # vendored-commit: 604127409bff13bd75bf4a7c03c8ee7d60cd847b
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 import warnings
 
@@ -46,15 +46,22 @@ VERSION = os.getenv("CODE_VERSION", "1.0")
 LABEL_CHOICES = ["good", "mua", "noise"]
 
 cli = argparse.ArgumentParser(description="visualization step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--scratch-dir", dest="scratch_dir", default="scratch")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--session", dest="session", required=True)
+cli.add_argument("--job", dest="job", nargs="*", default=[])
+cli.add_argument("--preprocessed", dest="preprocessed", nargs="+", required=True)
+cli.add_argument("--preprocessedviz", dest="preprocessedviz", nargs="+", required=True)
+cli.add_argument("--motion", dest="motion", nargs="*", default=[])
+cli.add_argument("--postprocessed", dest="postprocessed", nargs="*", default=[])
+cli.add_argument("--unit-labels", dest="unit_labels", nargs="*", default=[])
+cli.add_argument("--data-process-spikesorting", dest="data_process_spikesorting", nargs="*", default=[])
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-scratch_folder = Path(cli_args.scratch_dir)
-results_folder = Path(cli_args.results_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
+scratch_folder = Path("scratch")
+scratch_folder.mkdir(exist_ok=True)
 
 PARAMS_FILE = Path(cli_args.params)
 
@@ -116,18 +123,10 @@ def run() -> None:
     t_visualization_start_all = time.perf_counter()
     datetime_start_visualization = datetime.now()
 
-    # check if test
-    if (data_folder / "postprocessing_pipeline_output_test").is_dir():
-        logging.info("\n*******************\n**** TEST MODE ****\n*******************\n")
-        postprocessed_folder = data_folder / "postprocessing_pipeline_output_test"
-        preprocessed_folder = data_folder / "preprocessing_pipeline_output_test"
-        curation_folder = data_folder / "curation_pipeline_output_test"
-        spikesorted_folder = data_folder / "spikesorting_pipeline_output_test"
-    else:
-        postprocessed_folder = data_folder
-        preprocessed_folder = data_folder
-        curation_folder = data_folder
-        spikesorted_folder = data_folder
+    postprocessed_folder = data_folder
+    preprocessed_folder = data_folder
+    curation_folder = data_folder
+    spikesorted_folder = data_folder
 
     # check figpack client
     figpack_set = os.environ.get("FIGPACK_API_KEY", None)
@@ -138,14 +137,14 @@ def run() -> None:
     else:
         logging.info(f"Figpack disabled - FIGPACK_API_KEY not found. Skipping visualization")
 
-    # Retrieve recording_names from preprocessed folder
+    # Retrieve recording_names from preprocessed folders
     recording_names = [
         "_".join(p.name.split("_")[1:])
-        for p in preprocessed_folder.iterdir()
+        for p in map(Path, cli_args.preprocessed)
         if p.is_dir() and "preprocessed_" in p.name
     ]
 
-    job_json_files = [p for p in data_folder.iterdir() if p.suffix == ".json" and "job" in p.name]
+    job_json_files = [p for p in map(Path, cli_args.job) if p.suffix == ".json" and "job" in p.name]
     job_dicts = []
     for job_json_file in job_json_files:
         with open(job_json_file) as f:
@@ -167,7 +166,6 @@ def run() -> None:
         visualization_output = {}
 
         recording_folder = preprocessed_folder / f"preprocessed_{recording_name}"
-        analyzer_binary_folder = postprocessed_folder / f"postprocessed_{recording_name}"
         analyzer_zarr_folder = postprocessed_folder / f"postprocessed_{recording_name}.zarr"
         preprocessedviz_file_json = preprocessed_folder / f"preprocessedviz_{recording_name}.json"
         preprocessedviz_file_pkl = preprocessed_folder / f"preprocessedviz_{recording_name}.pkl"
@@ -210,9 +208,7 @@ def run() -> None:
         # use spike locations
         analyzer_folder = None
         analyzer = None
-        if analyzer_binary_folder.is_dir():
-            analyzer_folder = analyzer_binary_folder
-        elif analyzer_zarr_folder.is_dir():
+        if analyzer_zarr_folder.is_dir():
             analyzer_folder = analyzer_zarr_folder
         motion_is_available = motion_folder.is_dir()
 

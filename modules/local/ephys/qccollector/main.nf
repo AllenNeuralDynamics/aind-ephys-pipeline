@@ -6,12 +6,13 @@ process EPHYS_QCCOLLECTOR {
     container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${task.ext.container_tag ?: workflow.manifest.version}"
 
     input:
-    val max_duration_minutes
-    path quality_control_results, stageAs: 'data/*'
-    path params_file, stageAs: 'params.json'
+    path qc_json
+    path qc_figures
+    path params_file
 
     output:
-    path 'results/*', emit: results
+    path 'quality_control.json', emit: json
+    path 'quality_control', type: 'dir', emit: figures
 
     script:
     def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
@@ -27,17 +28,19 @@ process EPHYS_QCCOLLECTOR {
     # repository and commit the step code comes from (recorded in its processing metadata)
     export CODE_REPO=\$(sed -n 's/^# vendored-from: //p' "\$(command -v quality_control_collector.py)")
     export CODE_VERSION=\$(sed -n 's/^# vendored-commit: //p' "\$(command -v quality_control_collector.py)")
-    mkdir -p results scratch
 
     echo "[${task.tag}] running quality_control_collector.py..."
-    quality_control_collector.py
+    quality_control_collector.py \\
+        --qc-json ${qc_json} \\
+        --qc-figures ${qc_figures} \\
+        --params ${params_file}
 
     echo "[${task.tag}] completed!"
     """
 
     stub:
     """
-    mkdir -p results
-    touch results/quality_control_collector_${task.index}.stub
+    mkdir quality_control
+    touch quality_control.json
     """
 }

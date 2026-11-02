@@ -4,7 +4,7 @@
 # vendored-commit: c6c6e78f259701d5581c4c5d2345f83611ebe244
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 import warnings
 
@@ -54,13 +54,22 @@ PIPELINE_VERSION = os.getenv("PIPELINE_VERSION", "")
 
 
 cli = argparse.ArgumentParser(description="results_collector step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--session", dest="session", required=True)
+cli.add_argument("--job", dest="job", nargs="*", default=[])
+cli.add_argument("--data-process", dest="data_process", nargs="*", default=[])
+cli.add_argument("--preprocessed", dest="preprocessed", nargs="*", default=[])
+cli.add_argument("--motion", dest="motion", nargs="*", default=[])
+cli.add_argument("--spikesorted", dest="spikesorted", nargs="*", default=[])
+cli.add_argument("--spikesorted-motion", dest="spikesorted_motion", nargs="*", default=[])
+cli.add_argument("--postprocessed", dest="postprocessed", nargs="*", default=[])
+cli.add_argument("--curation", dest="curation", nargs="*", default=[])
+cli.add_argument("--visualization", dest="visualization", nargs="*", default=[])
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-results_folder = Path(cli_args.results_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
 
 
 PARAMS_FILE = Path(cli_args.params)
@@ -137,7 +146,7 @@ def run() -> None:
 
     # setup logging before any other logging call
     acquisition_name = None
-    data_description_json = list(data_folder.glob("**/data_description.json"))
+    data_description_json = list(Path(cli_args.session).glob("**/data_description.json"))
     if len(data_description_json) > 0:
         data_description_json = data_description_json[0]
         with open(data_description_json, "r") as f:
@@ -179,51 +188,19 @@ def run() -> None:
         )
         process_name = sanitized_process_name
 
-    # check if test
-    if (data_folder / "postprocessing_pipeline_output_test").is_dir():
-        logging.info("\n*******************\n**** TEST MODE ****\n*******************\n")
-        postprocessed_folder = data_folder / "postprocessing_pipeline_output_test"
-        preprocessed_folder = data_folder / "preprocessing_pipeline_output_test"
-        spikesorted_folder = data_folder / "spikesorting_pipeline_output_test"
-        curated_folder = data_folder / "curation_pipeline_output_test"
-        visualization_folder = data_folder / "visualization_pipeline_output_test"
-        phy_folder = data_folder / "phy_pipeline_output_test"
+    # curation outputs are looked up by name in the task directory
+    curated_folder = data_folder
+    data_process_files = [
+        p for p in map(Path, cli_args.data_process) if "data_process" in p.name and p.name.endswith(".json")
+    ]
 
-        test_folders = [
-            preprocessed_folder,
-            spikesorted_folder,
-            postprocessed_folder,
-            curated_folder,
-            visualization_folder,
-            phy_folder,
-        ]
-
-        data_process_files = []
-        for test_folder_name in test_folders:
-            test_folder = data_folder / test_folder_name
-            if not test_folder.is_dir():
-                continue
-            data_process_files.extend(
-                [p for p in test_folder.iterdir() if "data_process" in p.name and p.name.endswith(".json")]
-            )
-    else:
-        postprocessed_folder = data_folder
-        preprocessed_folder = data_folder
-        spikesorted_folder = data_folder
-        curated_folder = data_folder
-        visualization_folder = data_folder
-        phy_folder = data_folder
-        data_process_files = [
-            p for p in data_folder.iterdir() if "data_process" in p.name and p.name.endswith(".json")
-        ]
-
-    ecephys_sessions = [p for p in data_folder.iterdir() if "ecephys" in p.name.lower()]
+    ecephys_sessions = [p for p in map(Path, [cli_args.session]) if "ecephys" in p.name.lower()]
     assert len(ecephys_sessions) == 1, f"Attach one session at a time {ecephys_sessions}"
     ecephys_session_folder = ecephys_sessions[0]
 
     logging.info("\n\nCOLLECTING RESULTS")
 
-    json_files = [p for p in data_folder.iterdir() if "job" in p.name and p.suffix == ".json"]
+    json_files = [p for p in map(Path, cli_args.job) if "job" in p.name and p.suffix == ".json"]
     # load session_name from any JSON file
     if len(json_files) > 0:
         with open(json_files[0], "r") as f:
@@ -247,7 +224,7 @@ def run() -> None:
     # PREPROCESSED
     logging.info("Copying preprocessed folders to results:")
     preprocessed_files = [
-        p for p in preprocessed_folder.iterdir() if "preprocessed_" in p.name and
+        p for p in map(Path, cli_args.preprocessed) if "preprocessed_" in p.name and
         (p.name.endswith(".json") or p.name.endswith(".pkl"))
     ]
     (results_folder / "preprocessed").mkdir(exist_ok=True)
@@ -295,7 +272,7 @@ def run() -> None:
 
     # MOTION
     motion_folders = [
-        p for p in preprocessed_folder.iterdir() if p.name.startswith("motion_") and p.is_dir()
+        p for p in map(Path, cli_args.motion) if p.name.startswith("motion_") and p.is_dir()
     ]
     if len(motion_folders) > 0:
         logging.info("Copying motion folders to results:")
@@ -308,7 +285,7 @@ def run() -> None:
 
     # SPIKESORTED
     logging.info("Copying spikesorted folders to results:")
-    spikesorted_folders = [p for p in spikesorted_folder.iterdir() if "spikesorted_" in p.name and p.is_dir()]
+    spikesorted_folders = [p for p in map(Path, cli_args.spikesorted) if "spikesorted_" in p.name and p.is_dir()]
     for f in spikesorted_folders:
         if (f / "error.txt").is_file():
             logging.info(f"\tSkipping {f.name} due to error.txt")
@@ -317,7 +294,7 @@ def run() -> None:
         logging.info(f"\t{recording_name}")
         shutil.copytree(f, spikesorted_results_folder / recording_name)
     spikesorted_motion_folders = [
-        p for p in spikesorted_folder.iterdir() if p.name.startswith("spikesortedmotion_") and p.is_dir()
+        p for p in map(Path, cli_args.spikesorted_motion) if p.name.startswith("spikesortedmotion_") and p.is_dir()
     ]
     if len(spikesorted_motion_folders) > 0:
         logging.info("Copying spikesorted motion folders to results:")
@@ -331,7 +308,7 @@ def run() -> None:
     logging.info("Copying postprocessed and curated folders to results:")
     postprocessed_folders = [
         p
-        for p in postprocessed_folder.iterdir()
+        for p in map(Path, cli_args.postprocessed)
         if "postprocessed" in p.name and p.is_dir()
     ]
     for postprocessed_input_folder in postprocessed_folders:
@@ -421,7 +398,7 @@ def run() -> None:
     visualization_output = {}
     visualization_json_files = [
         p
-        for p in visualization_folder.iterdir()
+        for p in map(Path, cli_args.visualization)
         if "visualization_" in p.name and p.name.endswith(".json") and "data_process" not in p.name
     ]
     for visualization_json_file in visualization_json_files:
@@ -432,33 +409,6 @@ def run() -> None:
         visualization_output[recording_name] = visualization_dict
     with open(results_folder / "visualization_output.json", "w") as f:
         json.dump(visualization_output, f, indent=4)
-
-    # Visualization folders
-    visualization_folders = [
-        p for p in visualization_folder.iterdir() if p.is_dir() and p.name.startswith("visualization_")
-    ]
-    if len(visualization_folders) > 0:
-        visualization_output_folder = results_folder / "visualization"
-        for viz_folder in visualization_folders:
-            if (viz_folder / "error.txt").is_file():
-                continue
-            visualization_output_folder.mkdir(exist_ok=True)
-            recording_name = viz_folder.name[len("visualization_") :]
-            shutil.copytree(viz_folder, visualization_output_folder / recording_name)
-
-    # PHY
-    if phy_folder.is_dir():
-        phy_folders = [
-            p for p in phy_folder.iterdir() if p.is_dir() and p.name.startswith("phy_")
-        ]
-        for phy_input_folder in phy_folders:
-            if (phy_input_folder / "error.txt").is_file():
-                continue
-            recording_name = phy_input_folder.name[len("phy_") :]
-            logging.info(f"\tCopying phy folder for {recording_name}")
-            phy_output_folder = results_folder / "phy" / recording_name
-            phy_output_folder.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(phy_input_folder, phy_output_folder, dirs_exist_ok=True)
 
     # PROCESSING
     logging.info("Generating processing metadata")

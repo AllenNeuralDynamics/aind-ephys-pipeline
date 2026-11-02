@@ -6,18 +6,21 @@ process EPHYS_QUALITYCONTROL {
     container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${task.ext.container_tag ?: workflow.manifest.version}"
 
     input:
-    val max_duration_minutes
-    path ecephys_session_input, stageAs: 'data/ecephys_session'
-    path job_dispatch_results, stageAs: 'data/*'
-    path results_data, stageAs: 'data/*'
-    path params_file, stageAs: 'params.json'
+    tuple val(meta), path(job)
+    path session, stageAs: 'ecephys_session'
+    path collected
+    path metadata
+    path params_file
 
     output:
-    path 'results/*', emit: results
+    path 'quality_control_*.json', emit: json
+    path 'quality_control_*', type: 'dir', emit: figures
+    path 'qc_*_data_description.json', arity: '0..*', emit: data_description
 
     script:
     def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
     def install_cmd = installs ? "echo 'installing extra packages: ${installs.join(', ')}'\n    pip install ${installs.collect { pkg -> "'" + pkg + "'" }.join(' ')}" : ''
+    def metadata_arg = metadata ? "--metadata ${[metadata].flatten().join(' ')}" : ''
     """
     #!/usr/bin/env bash
     set -e
@@ -29,17 +32,21 @@ process EPHYS_QUALITYCONTROL {
     # repository and commit the step code comes from (recorded in its processing metadata)
     export CODE_REPO=\$(sed -n 's/^# vendored-from: //p' "\$(command -v quality_control.py)")
     export CODE_VERSION=\$(sed -n 's/^# vendored-commit: //p' "\$(command -v quality_control.py)")
-    mkdir -p results scratch
 
     echo "[${task.tag}] running quality_control.py..."
-    quality_control.py
+    quality_control.py \\
+        --session ecephys_session \\
+        --job ${job} \\
+        --collected ${collected} \\
+        ${metadata_arg} \\
+        --params ${params_file}
 
     echo "[${task.tag}] completed!"
     """
 
     stub:
     """
-    mkdir -p results
-    touch results/quality_control_${task.index}.stub
+    mkdir quality_control_${meta.id}
+    touch quality_control_${meta.id}.json
     """
 }

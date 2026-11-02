@@ -6,13 +6,12 @@ process NWB_ECEPHYS {
     container "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${task.ext.container_tag ?: workflow.manifest.version}"
 
     input:
-    val max_duration_minutes
-    path ecephys_session_input, stageAs: 'data/ecephys_session'
-    path job_dispatch_results, stageAs: 'data/*'
-    path params_file, stageAs: 'params.json'
+    path session, stageAs: 'ecephys_session'
+    path jobs
+    path params_file
 
     output:
-    path 'results/*', emit: results
+    path '*.nwb', emit: nwb
 
     script:
     def installs = (task.ext.extra_installs ?: '').tokenize(',').collect { pkg -> pkg.trim() }.findAll { pkg -> pkg }
@@ -28,17 +27,18 @@ process NWB_ECEPHYS {
     # repository and commit the step code comes from (recorded in its processing metadata)
     export CODE_REPO=\$(sed -n 's/^# vendored-from: //p' "\$(command -v nwb_ecephys.py)")
     export CODE_VERSION=\$(sed -n 's/^# vendored-commit: //p' "\$(command -v nwb_ecephys.py)")
-    mkdir -p results scratch
 
     echo "[${task.tag}] running nwb_ecephys.py..."
-    nwb_ecephys.py
+    nwb_ecephys.py \\
+        --session ecephys_session \\
+        --job ${jobs} \\
+        --params ${params_file}
 
     echo "[${task.tag}] completed!"
     """
 
     stub:
     """
-    mkdir -p results
-    touch results/nwb_ecephys_${task.index}.stub
+    touch ecephys_session_block0_recording1.nwb
     """
 }

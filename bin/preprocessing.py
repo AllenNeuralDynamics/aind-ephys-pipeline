@@ -4,7 +4,7 @@
 # vendored-commit: e28c8277c456a29770dc091bcb167be240563871
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 import warnings
 
@@ -43,15 +43,14 @@ VERSION = os.getenv("CODE_VERSION", "1.0")
 
 
 cli = argparse.ArgumentParser(description="preprocessing step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--scratch-dir", dest="scratch_dir", default="scratch")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--session", dest="session", required=True)
+cli.add_argument("--job", dest="job", nargs="+", required=True)
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-scratch_folder = Path(cli_args.scratch_dir)
-results_folder = Path(cli_args.results_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
 PARAMS_FILE = Path(cli_args.params)
 
 motion_presets = spre.get_motion_presets()
@@ -101,7 +100,7 @@ def run() -> None:
     N_JOBS = int(N_JOBS_EXT) if N_JOBS_EXT is not None else N_JOBS
 
     ecephys_session_folders = [
-        p for p in data_folder.iterdir()
+        p for p in [Path(cli_args.session)]
         if p.is_dir() and "ecephys" in p.name.lower() or "behavior" in p.name.lower()
     ]
     ecephys_session_folder = None
@@ -172,7 +171,7 @@ def run() -> None:
     MIN_DURATION_FOR_PREPROCESSING = float(MIN_DURATION_FOR_PREPROCESSING)
 
     # Load job files
-    job_config_files = [p for p in data_folder.iterdir() if (p.suffix == ".json" or p.suffix == ".pickle" or p.suffix == ".pkl") and "job" in p.name]
+    job_config_files = [p for p in map(Path, cli_args.job) if (p.suffix == ".json" or p.suffix == ".pickle" or p.suffix == ".pkl") and "job" in p.name]
     logging.info(f"Found {len(job_config_files)} configurations")
 
     if len(job_config_files) > 0:

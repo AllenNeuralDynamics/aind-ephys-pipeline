@@ -4,7 +4,7 @@
 # vendored-commit: 243d4225b84d5af68310ecb9806a875ffaa35de9
 # vendored-file: code/get_max_recording_duration_min.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 """
 Print the maximum recording duration in minutes.
@@ -16,14 +16,12 @@ import numpy as np
 
 
 cli = argparse.ArgumentParser(description="job_dispatch step of the AIND ephys pipeline")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
+cli.add_argument("--jobs", dest="jobs", nargs="+", required=True)
 cli_args = cli.parse_args()
-
-results_folder = Path(cli_args.results_dir)
 
 
 if __name__ == "__main__":
-    json_job_files = [p for p in results_folder.iterdir() if p.suffix == ".json" and "job" in p.name]
+    json_job_files = [p for p in map(Path, cli_args.jobs) if p.suffix == ".json" and "job" in p.name]
     durations = []
     for json_file in json_job_files:
         with open(json_file, "r") as f:

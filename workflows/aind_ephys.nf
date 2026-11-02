@@ -65,100 +65,96 @@ workflow AIND_EPHYS {
     ]
     EPHYS_PROVENANCE ( groovy.json.JsonOutput.toJson(provenance) )
 
-    // Value channel so the same params file is reused by every task
+    // Value channels: the same params file and session are staged into every task
     def ch_full_params = channel.value(full_params_file)
-    def ch_ecephys = channel.fromPath(data_path + "/", type: 'any')
+    def ch_session = channel.fromPath(data_path + "/", type: 'any').collect()
 
-    // Job dispatch
-    EPHYS_JOBDISPATCH ( ch_ecephys.collect(), ch_full_params )
+    // Job dispatch: one job_<n>.json per probe/shank; each job carries meta [id: job_<n>]
+    EPHYS_JOBDISPATCH ( ch_session, ch_full_params )
 
     def ch_max_duration = EPHYS_JOBDISPATCH.out.max_duration_file.map { duration_file -> duration_file.text.trim() }
     ch_max_duration.view { minutes -> "Max recording duration: ${minutes}min" }
 
+    def ch_jobs = EPHYS_JOBDISPATCH.out.jobs.flatten().map { job -> [ [ id: job.baseName ], job ] }
+
     // Preprocessing (one task per job)
-    EPHYS_PREPROCESSING (
-        ch_max_duration,
-        ch_ecephys.collect(),
-        EPHYS_JOBDISPATCH.out.results.flatten(),
-        ch_full_params
-    )
+    EPHYS_PREPROCESSING ( ch_jobs, ch_session, ch_full_params )
 
     // Spike sorting with the selected sorter (one task per job)
-    SPIKESORT ( sorter, ch_max_duration, EPHYS_PREPROCESSING.out.results, ch_full_params )
+    SPIKESORT (
+        sorter,
+        EPHYS_PREPROCESSING.out.preprocessed
+            .join( EPHYS_PREPROCESSING.out.binary )
+            .join( EPHYS_PREPROCESSING.out.motion ),
+        ch_full_params
+    )
 
-    // Postprocessing
+    // Postprocessing (one task per job)
     EPHYS_POSTPROCESSING (
-        ch_max_duration,
-        ch_ecephys.collect(),
-        EPHYS_JOBDISPATCH.out.results.flatten(),
-        EPHYS_PREPROCESSING.out.results.collect(),
-        SPIKESORT.out.results.collect(),
+        ch_jobs
+            .join( EPHYS_PREPROCESSING.out.preprocessed )
+            .join( EPHYS_PREPROCESSING.out.binary )
+            .join( EPHYS_PREPROCESSING.out.motion )
+            .join( SPIKESORT.out.spikesorted ),
+        ch_session,
         ch_full_params
     )
 
-    // Curation
-    EPHYS_CURATION (
-        ch_max_duration,
-        EPHYS_POSTPROCESSING.out.results,
-        ch_full_params
-    )
+    // Curation (one task per job)
+    EPHYS_CURATION ( EPHYS_POSTPROCESSING.out.postprocessed, ch_full_params )
 
-    // Visualization
+    // Visualization (one task per job)
     EPHYS_VISUALIZATION (
-        ch_max_duration,
-        ch_ecephys.collect(),
-        EPHYS_JOBDISPATCH.out.results.collect(),
-        EPHYS_PREPROCESSING.out.results,
-        SPIKESORT.out.results.collect(),
-        EPHYS_POSTPROCESSING.out.results.collect(),
-        EPHYS_CURATION.out.results.collect(),
+        ch_jobs
+            .join( EPHYS_PREPROCESSING.out.preprocessed )
+            .join( EPHYS_PREPROCESSING.out.viz )
+            .join( EPHYS_PREPROCESSING.out.motion )
+            .join( EPHYS_POSTPROCESSING.out.postprocessed )
+            .join( EPHYS_CURATION.out.unit_labels )
+            .join( SPIKESORT.out.data_process ),
+        ch_session,
         ch_full_params
     )
 
-    // Results collection
+    // Results collection: the files of every job (an empty list when a step produced none)
+    def ch_data_process = EPHYS_PREPROCESSING.out.data_process
+        .mix( SPIKESORT.out.data_process, EPHYS_POSTPROCESSING.out.data_process,
+              EPHYS_CURATION.out.data_process, EPHYS_VISUALIZATION.out.data_process )
     EPHYS_RESULTSCOLLECTOR (
-        ch_max_duration,
-        ch_ecephys.collect(),
-        EPHYS_JOBDISPATCH.out.results.collect(),
-        EPHYS_PREPROCESSING.out.results.collect(),
-        SPIKESORT.out.results.collect(),
-        EPHYS_POSTPROCESSING.out.results.collect(),
-        EPHYS_CURATION.out.results.collect(),
-        EPHYS_VISUALIZATION.out.results.collect(),
+        ch_session,
+        EPHYS_JOBDISPATCH.out.jobs,
+        EPHYS_PREPROCESSING.out.preprocessed.map { _meta, files -> files }.flatten().collect().ifEmpty([]),
+        EPHYS_PREPROCESSING.out.binary.map { _meta, files -> files }.flatten().collect().ifEmpty([]),
+        EPHYS_PREPROCESSING.out.motion.map { _meta, files -> files }.flatten().collect().ifEmpty([]),
+        SPIKESORT.out.spikesorted.map { _meta, files -> files }.flatten().collect().ifEmpty([]),
+        SPIKESORT.out.motion.map { _meta, files -> files }.flatten().collect().ifEmpty([]),
+        EPHYS_POSTPROCESSING.out.postprocessed.map { _meta, files -> files }.flatten().collect().ifEmpty([]),
+        EPHYS_CURATION.out.curation.mix( EPHYS_CURATION.out.unit_labels )
+            .map { _meta, files -> files }.flatten().collect().ifEmpty([]),
+        EPHYS_VISUALIZATION.out.visualization.map { _meta, files -> files }.flatten().collect().ifEmpty([]),
+        ch_data_process.map { _meta, files -> files }.flatten().collect().ifEmpty([]),
         ch_full_params
     )
+    def ch_collected = EPHYS_RESULTSCOLLECTOR.out.collected.collect()
+    def ch_collected_metadata = EPHYS_RESULTSCOLLECTOR.out.metadata.collect()
 
-    // Quality control
-    EPHYS_QUALITYCONTROL (
-        ch_max_duration,
-        ch_ecephys.collect(),
-        EPHYS_JOBDISPATCH.out.results.flatten(),
-        EPHYS_RESULTSCOLLECTOR.out.results.collect(),
-        ch_full_params
-    )
+    // Quality control (one task per job)
+    EPHYS_QUALITYCONTROL ( ch_jobs, ch_session, ch_collected, ch_collected_metadata, ch_full_params )
 
     // Quality control collection
     EPHYS_QCCOLLECTOR (
-        ch_max_duration,
-        EPHYS_QUALITYCONTROL.out.results.collect(),
+        EPHYS_QUALITYCONTROL.out.json.collect(),
+        EPHYS_QUALITYCONTROL.out.figures.collect(),
         ch_full_params
     )
 
-    // NWB ecephys
-    NWB_ECEPHYS (
-        ch_max_duration,
-        ch_ecephys.collect(),
-        EPHYS_JOBDISPATCH.out.results.collect(),
-        ch_full_params
-    )
-
-    // NWB units
+    // NWB: raw/LFP data, then the sorted units added to it
+    NWB_ECEPHYS ( ch_session, EPHYS_JOBDISPATCH.out.jobs, ch_full_params )
     NWB_UNITS (
-        ch_max_duration,
-        ch_ecephys.collect(),
-        EPHYS_JOBDISPATCH.out.results.collect(),
-        EPHYS_RESULTSCOLLECTOR.out.results.collect(),
-        NWB_ECEPHYS.out.results.collect(),
+        ch_session,
+        EPHYS_JOBDISPATCH.out.jobs,
+        ch_collected,
+        NWB_ECEPHYS.out.nwb.flatten().collect(),
         ch_full_params
     )
 }

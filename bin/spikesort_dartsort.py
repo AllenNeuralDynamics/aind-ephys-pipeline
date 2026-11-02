@@ -4,7 +4,7 @@
 # vendored-commit: 8348cc4050e7db3f1a119decbdcb90b624edb072
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2026 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 import warnings
 
@@ -44,15 +44,17 @@ MOTION_CORRECTION_SUPPORTED = True  # set to True if the sorter supports motion 
 MOTION_CORRECTION_PARAM_NAME = "do_motion_estimation"  # set to the actual parameter name used by the sorter to enable/disable motion correction
 
 cli = argparse.ArgumentParser(description="spikesort_dartsort step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--scratch-dir", dest="scratch_dir", default="scratch")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--preprocessed", dest="preprocessed", nargs="+", required=True)
+cli.add_argument("--binary", dest="binary", nargs="*", default=[])
+cli.add_argument("--motion", dest="motion", nargs="*", default=[])
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-results_folder = Path(cli_args.results_dir)
-scratch_folder = Path(cli_args.scratch_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
+scratch_folder = Path("scratch")
+scratch_folder.mkdir(exist_ok=True)
 
 PARAMS_FILE = Path(cli_args.params)
 
@@ -134,16 +136,11 @@ def run() -> None:
     si.set_global_job_kwargs(**job_kwargs)
     t_sorting_start_all = time.perf_counter()
 
-    # check if test
-    if (data_folder / "preprocessing_pipeline_output_test").is_dir():
-        logging.info("\n*******************\n**** TEST MODE ****\n*******************\n")
-        preprocessed_folder = data_folder / "preprocessing_pipeline_output_test"
-    else:
-        preprocessed_folder = data_folder
+    preprocessed_folder = data_folder
 
     spikesorted_raw_output_folder = (scratch_folder / "spikesorted_raw").resolve()
 
-    preprocessed_folders = [p for p in preprocessed_folder.iterdir() if p.is_dir() and "preprocessed_" in p.name]
+    preprocessed_folders = [p for p in map(Path, cli_args.preprocessed) if p.is_dir() and "preprocessed_" in p.name]
     for recording_folder in preprocessed_folders:
         datetime_start_sorting = datetime.now()
         t_sorting_start = time.perf_counter()

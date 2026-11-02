@@ -4,7 +4,7 @@
 # vendored-commit: 3f999a9f64b0866fca563bfa2b6661afcc858fde
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 import warnings
 
@@ -60,15 +60,13 @@ URL = os.getenv("CODE_REPO", "https://github.com/AllenNeuralDynamics/aind-ephys-
 VERSION = os.getenv("CODE_VERSION", "2.0")
 
 cli = argparse.ArgumentParser(description="curation step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--scratch-dir", dest="scratch_dir", default="scratch")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--postprocessed", dest="postprocessed", nargs="+", required=True)
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-scratch_folder = Path(cli_args.scratch_dir)
-results_folder = Path(cli_args.results_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
 
 PARAMS_FILE = Path(cli_args.params)
 
@@ -174,12 +172,6 @@ def run() -> None:
     job_kwargs["n_jobs"] = N_JOBS
     si.set_global_job_kwargs(**job_kwargs)
 
-    ecephys_sorted_folders = [
-        p
-        for p in data_folder.iterdir()
-        if p.is_dir() and "ecephys" in p.name or "behavior" in p.name and "sorted" in p.name
-    ]
-
     # setup logging before any other logging call
     if LOGGING is None:
         logging.basicConfig(level="INFO", stream=sys.stdout, format="%(message)s")
@@ -209,34 +201,13 @@ def run() -> None:
 
     logging.info(f"Running curation with the following parameters:")
 
-    pipeline_mode = True
-    if len(ecephys_sorted_folders) > 0:
-        # a single sorted asset in the data folder
-        assert len(ecephys_sorted_folders) == 1, "Attach one sorted asset at a time"
-        ecephys_sorted_folder = ecephys_sorted_folders[0]
-        postprocessed_base_folder = ecephys_sorted_folder / "postprocessed"
-        pipeline_mode = False
-    elif (data_folder / "postprocessing_pipeline_output_test").is_dir():
-        logging.info("\n*******************\n**** TEST MODE ****\n*******************\n")
-        postprocessed_base_folder = data_folder / "postprocessing_pipeline_output_test"
-    else:
-        postprocessed_base_folder = data_folder
-
-    if pipeline_mode:
-        postprocessed_folders = [
-            p for p in postprocessed_base_folder.iterdir() if "postprocessed_" in p.name
-        ]
-    else:
-        postprocessed_folders = [
-            p for p in postprocessed_base_folder.iterdir() if "postprocessed-sorting" not in p.name and p.is_dir()
-        ]
+    postprocessed_folders = [
+        p for p in map(Path, cli_args.postprocessed) if "postprocessed_" in p.name
+    ]
     for postprocessed_folder in postprocessed_folders:
         datetime_start_curation = datetime.now()
         t_curation_start = time.perf_counter()
-        if pipeline_mode:
-            recording_name = ("_").join(postprocessed_folder.name.split("_")[1:])
-        else:
-            recording_name = postprocessed_folder.name
+        recording_name = ("_").join(postprocessed_folder.name.split("_")[1:])
         if recording_name.endswith(".zarr"):
             recording_name = recording_name[:recording_name.find(".zarr")]
         curation_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"

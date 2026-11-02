@@ -4,7 +4,7 @@
 # vendored-commit: 42c7ef0d670924edcdac74438d8e3041e02ac9ec
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 """ Writes RAW ephys and LFP to an NWB file """
 
@@ -59,15 +59,16 @@ default_electrical_series_compressors = dict(hdf5="gzip", zarr=Blosc(cname="zstd
 
 # default event line from open ephys
 cli = argparse.ArgumentParser(description="nwb_ecephys step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--scratch-dir", dest="scratch_dir", default="scratch")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--session", dest="session", required=True)
+cli.add_argument("--job", dest="job", nargs="+", required=True)
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-scratch_folder = Path(cli_args.scratch_dir)
-results_folder = Path(cli_args.results_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
+scratch_folder = Path("scratch")
+scratch_folder.mkdir(exist_ok=True)
 
 PARAMS_FILE = Path(cli_args.params)
 
@@ -137,36 +138,19 @@ def run() -> None:
     logging.info(f"Highpass filter frequency: {HIGHPASS_FILTER_FREQ_MIN}")
     logging.info(f"Surface channel indices for agar probes: {SURFACE_CHANNEL_AGAR_PROBES_INDICES}")
 
-    # find base NWB file
-    nwb_files = [p for p in data_folder.iterdir() if p.name.endswith(".nwb") or p.name.endswith(".nwb.zarr")]
-    nwbfile_input_path = None
-    if len(nwb_files) == 1:
-        nwbfile_input_path = nwb_files[0]
-
-    if nwbfile_input_path is not None:
-        logging.info(f"Found NWB file: {nwbfile_input_path}. Setting up NWB backend based on input file type.")
-        if nwbfile_input_path.is_dir():
-            assert (nwbfile_input_path / ".zattrs").is_file(), f"{nwbfile_input_path.name} is not a valid Zarr folder"
-            NWB_BACKEND = "zarr"
-        else:
-            NWB_BACKEND = "hdf5"
-
     logging.info(f"NWB backend: {NWB_BACKEND}")
     if NWB_BACKEND == "zarr":
         io_class = NWBZarrIO
     else:
         io_class = NWBHDF5IO
 
-    job_json_files = [p for p in data_folder.glob('**/*.json') if "job" in p.name]
+    job_json_files = [p for p in map(Path, cli_args.job) if "job" in p.name]
     job_dicts = []
     for job_json_file in job_json_files:
         with open(job_json_file) as f:
             job_dict = json.load(f)
         job_dicts.append(job_dict)
     logging.info(f"Found {len(job_dicts)} JSON job files")
-
-    # check for timestamps to overwrite recording timestamps
-    timestamps_folder = data_folder / "timestamps"
 
     # we create a result NWB file for each experiment/recording
     session_names = np.unique([job_dict["session_name"] for job_dict in job_dicts])
@@ -177,7 +161,11 @@ def run() -> None:
         job_dicts_session = [jd for jd in job_dicts if jd["session_name"] == session_name]
         input_folder = job_dicts_session[0].get("input_folder")
         # the metadata JSONs live in the session folder, which can differ from the raw data input folder
-        data_description_jsons = list(data_folder.glob("*ecephys*/data_description.json"))
+        data_description_jsons = [
+            p / "data_description.json"
+            for p in map(Path, [cli_args.session])
+            if "ecephys" in p.name and (p / "data_description.json").exists()
+        ]
         if len(data_description_jsons) > 0:
             input_folder = data_description_jsons[0].parent
 
@@ -236,50 +224,39 @@ def run() -> None:
                     continue
                 # add recording/experiment id if needed
                 nwbfile = None
-                read_io = None
-                if nwbfile_input_path is not None:
-                    nwb_original_file_name = nwbfile_input_path.stem
-                    if block_str in nwb_original_file_name and recording_str in nwb_original_file_name:
-                        nwb_file_name = nwb_original_file_name
-                    else:
-                        nwb_file_name = f"{nwb_original_file_name}_{block_str}_{recording_str}"
-                    read_io = io_class(str(nwbfile_input_path), "r")
-                    logging.info(f"Using existing NWB file: {nwb_file_name}")
-                    nwbfile = read_io.read()
-                else:
-                    # if no input file, create a new one
-                    nwb_file_name = f"{session_name}_{block_str}_{recording_str}"
+                # if no input file, create a new one
+                nwb_file_name = f"{session_name}_{block_str}_{recording_str}"
 
-                        
-                    if input_folder is not None:
-                        try:
-                            from aind_nwb_utils.utils import create_base_nwb_file
-                            nwbfile = create_base_nwb_file(Path(input_folder))
-                        except Exception as e:
-                            logging.info(f"Failed to create base NWB file from metadata: {e}")
+                    
+                if input_folder is not None:
+                    try:
+                        from aind_nwb_utils.utils import create_base_nwb_file
+                        nwbfile = create_base_nwb_file(Path(input_folder))
+                    except Exception as e:
+                        logging.info(f"Failed to create base NWB file from metadata: {e}")
 
-                    if nwbfile is None:
-                        from pynwb.testing.mock.file import mock_Subject
-                        logging.info(f"Creating NWB file with info.")
-                        
-                        subject = mock_Subject()
-                        timezone_info = datetime.now(dt.timezone.utc).astimezone().tzinfo
-                        session_start_date_time = datetime.now().replace(
-                            tzinfo=timezone_info
-                        )
-                        institution = None
-                        session_id = session_name
-                        asset_name = session_id
+                if nwbfile is None:
+                    from pynwb.testing.mock.file import mock_Subject
+                    logging.info(f"Creating NWB file with info.")
+                    
+                    subject = mock_Subject()
+                    timezone_info = datetime.now(dt.timezone.utc).astimezone().tzinfo
+                    session_start_date_time = datetime.now().replace(
+                        tzinfo=timezone_info
+                    )
+                    institution = None
+                    session_id = session_name
+                    asset_name = session_id
 
-                        # Store and write NWB file
-                        nwbfile = NWBFile(
-                            session_description="NWB file generated by AIND pipeline",
-                            identifier=str(uuid4()),
-                            session_start_time=session_start_date_time,
-                            institution=institution,
-                            subject=subject,
-                            session_id=session_id,
-                        )
+                    # Store and write NWB file
+                    nwbfile = NWBFile(
+                        session_description="NWB file generated by AIND pipeline",
+                        identifier=str(uuid4()),
+                        session_start_time=session_start_date_time,
+                        institution=institution,
+                        subject=subject,
+                        session_id=session_id,
+                    )
 
                 # add suffix for stub test
                 if STUB_TEST:
@@ -335,11 +312,6 @@ def run() -> None:
                                 "Converting to signed integer."
                             )
                             recording = spre.unsigned_to_signed(recording)
-                        timestamps_file = timestamps_folder / f"{recording_name}.npy"
-                        if timestamps_file.is_file():
-                            logging.info(f"\tSetting synced timestamps from {timestamps_file}")
-                            timestamps = np.load(timestamps_file, mmap_mode="r")
-                            recording.set_times(timestamps)
                         recordings.append(recording)
 
                         logging.info(f"\t\t{recording_job_dict['recording_name']}")
@@ -354,11 +326,6 @@ def run() -> None:
                                     "Converting to signed integer."
                                 )
                                 recording_lfp = spre.unsigned_to_signed(recording_lfp)
-                            timestamps_file_lfp = timestamps_folder / f"{recording_name}_lfp.npy"
-                            if timestamps_file_lfp.is_file():
-                                logging.info(f"\tSetting synced LFP timestamps from {timestamps_file_lfp}")
-                                timestamps_lfp = np.load(timestamps_file_lfp, mmap_mode="r")
-                                recording_lfp.set_times(timestamps_lfp)
                             recordings_lfp.append(recording_lfp)
                             logging.info(f"\t\t{recording_lfp}")
 
@@ -681,17 +648,11 @@ def run() -> None:
                     write_args = {}
 
                 t_write_start = time.perf_counter()
-                if nwbfile_input_path is not None:
-                    # if we have an input file, we read it and write it to the output file
-                    export_io = io_class(str(nwbfile_output_path), "w")
-                    export_io.export(src_io=read_io, nwbfile=nwbfile, write_args=write_args)
-                    read_io.close()
-                else:
-                    # if no input file, we create a new one
-                    nwbfile_output_path = results_folder / f"{nwb_file_name}.nwb"
-                    # write the nwb file
-                    with io_class(str(nwbfile_output_path), "w") as write_io:
-                        write_io.write(nwbfile)
+                # no input NWB file: we create a new one
+                nwbfile_output_path = results_folder / f"{nwb_file_name}.nwb"
+                # write the nwb file
+                with io_class(str(nwbfile_output_path), "w") as write_io:
+                    write_io.write(nwbfile)
                 t_write_end = time.perf_counter()
                 elapsed_time_write = np.round(t_write_end - t_write_start, 2)
                 logging.info(f"Writing time: {elapsed_time_write}s")

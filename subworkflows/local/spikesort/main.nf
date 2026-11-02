@@ -10,32 +10,50 @@ include { DARTSORT_SPIKESORT       } from '../../../modules/local/dartsort/spike
 workflow SPIKESORT {
 
     take:
-    sorter                  // string: kilosort25 | kilosort4 | spykingcircus2 | lupin | dartsort
-    max_duration_minutes    // channel: val(minutes)
-    preprocessing_results   // channel: path(preprocessing job results), one per job
-    full_params             // channel: path(full_params.json)
+    sorter          // string: kilosort25 | kilosort4 | spykingcircus2 | lupin | dartsort
+    ch_input        // channel: [ val(meta), path(preprocessed), path(binary), path(motion) ], one per job
+    full_params     // channel: path(full_params.json)
 
     main:
-    def ch_results = channel.empty()
+    def ch_spikesorted = channel.empty()
+    def ch_motion = channel.empty()
+    def ch_data_process = channel.empty()
     if( sorter == 'kilosort25' ) {
-        ch_results = KILOSORT25_SPIKESORT ( max_duration_minutes, preprocessing_results, full_params ).results
+        KILOSORT25_SPIKESORT ( ch_input, full_params )
+        ch_spikesorted = KILOSORT25_SPIKESORT.out.spikesorted
+        ch_motion = KILOSORT25_SPIKESORT.out.motion
+        ch_data_process = KILOSORT25_SPIKESORT.out.data_process
     }
     else if( sorter == 'kilosort4' ) {
-        ch_results = KILOSORT4_SPIKESORT ( max_duration_minutes, preprocessing_results, full_params ).results
+        KILOSORT4_SPIKESORT ( ch_input, full_params )
+        ch_spikesorted = KILOSORT4_SPIKESORT.out.spikesorted
+        ch_motion = KILOSORT4_SPIKESORT.out.motion
+        ch_data_process = KILOSORT4_SPIKESORT.out.data_process
     }
     else if( sorter == 'spykingcircus2' ) {
-        ch_results = SPYKINGCIRCUS2_SPIKESORT ( max_duration_minutes, preprocessing_results, full_params ).results
+        SPYKINGCIRCUS2_SPIKESORT ( ch_input, full_params )
+        ch_spikesorted = SPYKINGCIRCUS2_SPIKESORT.out.spikesorted
+        ch_motion = SPYKINGCIRCUS2_SPIKESORT.out.motion
+        ch_data_process = SPYKINGCIRCUS2_SPIKESORT.out.data_process
     }
     else if( sorter == 'lupin' ) {
-        ch_results = LUPIN_SPIKESORT ( max_duration_minutes, preprocessing_results, full_params ).results
+        LUPIN_SPIKESORT ( ch_input, full_params )
+        ch_spikesorted = LUPIN_SPIKESORT.out.spikesorted
+        ch_motion = LUPIN_SPIKESORT.out.motion
+        ch_data_process = LUPIN_SPIKESORT.out.data_process
     }
     else if( sorter == 'dartsort' ) {
-        ch_results = DARTSORT_SPIKESORT ( max_duration_minutes, preprocessing_results, full_params ).results
+        DARTSORT_SPIKESORT ( ch_input, full_params )
+        ch_spikesorted = DARTSORT_SPIKESORT.out.spikesorted
+        ch_motion = DARTSORT_SPIKESORT.out.motion
+        ch_data_process = DARTSORT_SPIKESORT.out.data_process
     }
     else {
         error "Unsupported sorter: ${sorter}"
     }
 
     emit:
-    results = ch_results   // channel: path(spike sorting job results), one per job
+    spikesorted  = ch_spikesorted    // channel: [ val(meta), path(spikesorted_<rec>) ]
+    motion       = ch_motion         // channel: [ val(meta), [ path(spikesortedmotion_<rec>) ] ] (kilosort4 only)
+    data_process = ch_data_process   // channel: [ val(meta), [ path(data_process_spikesorting_<rec>.json) ] ]
 }

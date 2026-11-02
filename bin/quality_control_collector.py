@@ -4,7 +4,7 @@
 # vendored-commit: 9ab2e58dcea8eec8d183b2bf97dc6bed20686112
 # vendored-file: code/run_capsule.py
 # MIT License, Copyright (c) 2023 Allen Institute for Neural Dynamics (see LICENSE at the repository root)
-# Run from the task directory: data/, results/, scratch/ and params.json are side by side.
+# Inputs are passed as arguments (staged by Nextflow in the task directory); outputs are written there.
 import argparse
 import sys
 import re
@@ -20,13 +20,14 @@ from aind_data_schema.core.quality_control import QualityControl
 
 
 cli = argparse.ArgumentParser(description="quality_control_collector step of the AIND ephys pipeline")
-cli.add_argument("--data-dir", dest="data_dir", default="data")
-cli.add_argument("--results-dir", dest="results_dir", default="results")
-cli.add_argument("--params", dest="params", default="params.json")
+cli.add_argument("--qc-json", dest="qc_json", nargs="+", required=True)
+cli.add_argument("--qc-figures", dest="qc_figures", nargs="+", required=True)
+cli.add_argument("--params", dest="params", required=True)
 cli_args = cli.parse_args()
 
-data_folder = Path(cli_args.data_dir)
-results_folder = Path(cli_args.results_dir)
+# Nextflow stages every input into the task directory; outputs are written there too
+data_folder = Path(".")
+results_folder = Path(".")
 
 PARAMS_FILE = Path(cli_args.params)
 
@@ -68,9 +69,10 @@ def run() -> None:
     logging.info("Begin processing...", extra={"event_type": "stage_start"})
 
     logging.info("\nEPHYS QC COLLECTION")
-    # find quality_metrics JSON files in data_folder
+    # find quality_metrics JSON files among the --qc-json inputs
+    # (never the task directory: the output quality_control.json is written there too)
     quality_control_json_files = [
-        p for p in data_folder.iterdir() if p.name.startswith("quality_control") and p.suffix == ".json"
+        p for p in map(Path, cli_args.qc_json) if p.name.startswith("quality_control") and p.suffix == ".json"
     ]
     # this ensures that metrics are also sorted by recording name
     quality_control_json_files = sorted(quality_control_json_files)
