@@ -74,7 +74,8 @@ jobs:
             params: params_test_si_concat.json
             check: --num-streams 3 --num-success 2 --num-nwb 3 --num-segments 2 --no-split-segments
           - name: Test AIND Pipeline streaming
-            packages: spikeinterface|neuroconv|pynwb|hdmf-zarr
+            # s3fs + wavpack-numcodecs: the check script opens the compressed raw data on S3
+            packages: spikeinterface|pynwb|hdmf-zarr|s3fs|wavpack-numcodecs
             data: s3://aind-open-data/ecephys_873725_2026-10-07_13-46-07
             results: tests/sample_dataset/aind_streaming_results
             params: params_test_streaming.json
