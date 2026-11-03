@@ -395,8 +395,8 @@ process job_dispatch {
 
     input:
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
-    path params_file, stageAs: 'capsule/params.json'
     path session_zarrs, stageAs: zarrStage
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
