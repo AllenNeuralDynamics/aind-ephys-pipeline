@@ -1,0 +1,19 @@
+.. _1.5.1:
+
+1.5.1 - WIP
+===========
+
+Minor release with bug fixes and performance improvements:
+
+Pipeline:
+
+* Skip spike sorting and postprocessing for "failed" preprocessing steps (too short/too many bad channels) (#151)
+
+Package versions
+----------------
+
+* ``spikeinterface`` version: 0.105.4
+* ``aind-data-schema`` version: 2.9.1
+* ``neo`` version: 0.14.6
+* ``pynwb`` version: 4.2.0
+* ``kilosort4`` version: 4.1.7
