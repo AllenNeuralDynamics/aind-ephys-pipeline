@@ -3,22 +3,23 @@
 1.5.1 - TBD
 ===========
 
-Minor release with minor updates:
+Minor release with bug fixes and performance improvements:
 
 Pipeline:
 
-* Job dispatch: Add option to stream from remote zarr files in aind mode (#40)
+* Job dispatch: Add option to stream from remote zarr files in aind mode (job-dispatch PR#40)
+* Skip spike sorting and postprocessing for "failed" preprocessing steps (too short/too many bad channels) (#151)
 
+CI:
 
-TODO: 
+* Add workflow with remote zarr streaming test
 
-* add workflow with remote zarr streaming test
 
 Package versions
 ----------------
 
 * ``spikeinterface`` version: 0.105.4
 * ``aind-data-schema`` version: 2.9.1
-* ``neo`` version: 0.14.5
+* ``neo`` version: 0.14.6
 * ``pynwb`` version: 4.2.0
 * ``kilosort4`` version: 4.1.7
