@@ -9,6 +9,11 @@ Pipeline:
 
 * Skip spike sorting and postprocessing for "failed" preprocessing steps (too short/too many bad channels) (#151)
 
+
+Parameters
+
+* Added ``min_recording_duration`` parameter to skip recordings shorter than the specified duration (-1 disables this check) (#153)
+
 Package versions
 ----------------
 
