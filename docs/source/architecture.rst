@@ -70,9 +70,9 @@ Detailed Architecture Diagram
 
            step6["<b>6. Visualization</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-visualization'>aind-ephys-visualization</a><br/>Timeseries • Drift maps<br/>Figurl sorting summary"]
 
-           step7["<b>7. Results Collector</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-result-collector'>aind-ephys-result-collector</a><br/>Aggregate parallel outputs"]
+           step7["<b>8. Results Collector</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-result-collector'>aind-ephys-result-collector</a><br/>Aggregate parallel outputs"]
 
-           step8["<b>8. Quality Control</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-processing-qc'>aind-ephys-processing-qc</a><br/>Run QC checks"]
+           step8["<b>7. Quality Control</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-processing-qc'>aind-ephys-processing-qc</a><br/>Run QC checks (per stream)"]
 
            step9["<b>9. QC Collector</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-ephys-qc-collector'>aind-ephys-qc-collector</a><br/>Aggregate QC results"]
 
@@ -80,13 +80,14 @@ Detailed Architecture Diagram
 
            step11["<b>11. NWB Units</b><br/><a href='https://github.com/AllenNeuralDynamics/aind-units-nwb'>aind-units-nwb</a><br/>Export spike sorting results"]
 
-           step1 --> step2
+           %% steps 2-7 run per stream, each as soon as its own upstream steps finish
+           step1 -->|"per stream"| step2
            step2 --> step3a & step3b & step3c & step3d
            step3a & step3b & step3c & step3d --> step4
            step4 --> step5
            step5 --> step6
            step2 & step3a & step3b & step3c & step3d & step4 & step5 & step6 --> step7
-           step1 & step7 --> step8
+           step6 -->|"per stream"| step8
            step8 --> step9
            step1 --> step10
            step10 & step7 --> step11
@@ -173,10 +174,10 @@ Data Flow
 
 **Input**: Electrophysiology session data is mounted from ``DATA_PATH`` into each container at ``capsule/data/ecephys_session``
 
-**Processing**: 11 sequential steps with parallelization at steps 2-6 (per probe/shank)
+**Processing**: 11 sequential steps with parallelization at steps 2-7 (per probe/shank)
 
 **Output**: Results published to ``RESULTS_PATH`` including:
-   - Collected parallel job results - preprocessing, sorting, postprocessing, curation, visualizations (step 7)
+   - Collected parallel job results - preprocessing, sorting, postprocessing, curation, visualizations (step 8)
    - Quality control reports (step 9)
    - NWB files with raw/LFP data and spike sorting units (steps 10-11)
 
@@ -214,11 +215,11 @@ Pipeline Steps Detailed Breakdown
 6. **Visualization** (`aind-ephys-visualization <https://github.com/AllenNeuralDynamics/aind-ephys-visualization>`_):
    Timeseries, drift maps, and sorting output in `figurl <https://github.com/flatironinstitute/figurl>`_.
 
-7. **Result Collection** (`aind-ephys-result-collector <https://github.com/AllenNeuralDynamics/aind-ephys-result-collector>`_):
-   This step collects the output of all parallel jobs and copies the output folders to the results folder.
+7. **Quality Control** (`aind-ephys-processing-qc <https://github.com/AllenNeuralDynamics/aind-ephys-processing-qc>`_):
+   Run quality control checks on each stream's processing results, as soon as its visualization finishes.
 
-8. **Quality Control** (`aind-ephys-processing-qc <https://github.com/AllenNeuralDynamics/aind-ephys-processing-qc>`_):
-   Run quality control checks on the processing results.
+8. **Result Collection** (`aind-ephys-result-collector <https://github.com/AllenNeuralDynamics/aind-ephys-result-collector>`_):
+   This step collects the output of all parallel jobs and copies the output folders to the results folder.
 
 9. **QC Collector** (`aind-ephys-qc-collector <https://github.com/AllenNeuralDynamics/aind-ephys-qc-collector>`_):
    Aggregate quality control results from parallel jobs.
