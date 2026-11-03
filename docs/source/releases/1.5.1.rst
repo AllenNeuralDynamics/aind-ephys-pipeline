@@ -17,6 +17,11 @@ CI:
 * Add workflow with remote zarr streaming test
 
 
+
+Parameters
+
+* Added ``min_recording_duration`` parameter to skip recordings shorter than the specified duration (-1 disables this check) (#153)
+
 Package versions
 ----------------
 
