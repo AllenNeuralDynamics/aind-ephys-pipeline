@@ -8,6 +8,8 @@ Minor release with bug fixes and performance improvements:
 Pipeline:
 
 * Skip spike sorting and postprocessing for "failed" preprocessing steps (too short/too many bad channels) (#151)
+* Per-stream channels joined on recording name: each stream's postprocessing, curation and visualization start as soon as its own upstream steps finish (#<PR>)
+* Run quality control per stream right after visualization, instead of after the results collector (#<PR>)
 
 Package versions
 ----------------
