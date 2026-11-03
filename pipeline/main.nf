@@ -73,19 +73,6 @@ def coerceToSchema(value, Map node, Map root) {
     return value
 }
 
-// Forward the head job's temporary AWS credentials (Code Ocean ECS endpoint) to a task.
-// Used in beforeScript, evaluated at task creation so the token is fresh, and not hashed so -resume
-// still works; returns '' outside Code Ocean.
-def awsCredentialsExports() {
-    def uri = System.getenv('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
-    if (!uri) return ''
-    def creds = new groovy.json.JsonSlurper().parseText(new URL("http://169.254.170.2${uri}").text)
-    return """export AWS_ACCESS_KEY_ID='${creds.AccessKeyId}'
-    export AWS_SECRET_ACCESS_KEY='${creds.SecretAccessKey}'
-    export AWS_SESSION_TOKEN='${creds.Token}'
-    echo "forwarded AWS credentials (expire ${creds.Expiration})\""""
-}
-
 println "DATA_PATH: ${params.ecephys_path}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
@@ -385,7 +372,6 @@ process job_dispatch {
     tag 'job-dispatch'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
     container container_name
-    beforeScript { awsCredentialsExports() }
 
     input:
     path input_folder, stageAs: 'capsule/data/ecephys_session'
@@ -443,7 +429,6 @@ process preprocessing {
     tag 'preprocessing'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
     container container_name
-    beforeScript { awsCredentialsExports() }
 
     input:
     val max_duration_minutes
@@ -721,7 +706,6 @@ process postprocessing {
     tag 'postprocessing'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
     container container_name
-    beforeScript { awsCredentialsExports() }
 
     input:
     val max_duration_minutes
@@ -818,7 +802,6 @@ process visualization {
     tag 'visualization'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
     container container_name
-    beforeScript { awsCredentialsExports() }
 
     input:
     val max_duration_minutes
@@ -872,7 +855,6 @@ process results_collector {
     tag 'result-collector'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
     container container_name
-    beforeScript { awsCredentialsExports() }
 
     publishDir "$RESULTS_PATH", saveAs: { filename -> new File(filename).getName() }, mode: 'copy'
 
@@ -934,7 +916,6 @@ process quality_control {
     tag 'quality-control'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
     container container_name
-    beforeScript { awsCredentialsExports() }
 
     input:
     val max_duration_minutes
@@ -1034,7 +1015,6 @@ process nwb_ecephys {
     tag 'nwb-ecephys'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${params.container_tag}"
     container container_name
-    beforeScript { awsCredentialsExports() }
 
     input:
     val max_duration_minutes
@@ -1084,7 +1064,6 @@ process nwb_units {
     tag 'nwb-units'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:${params.container_tag}"
     container container_name
-    beforeScript { awsCredentialsExports() }
 
     publishDir "$RESULTS_PATH/nwb", saveAs: { filename -> new File(filename).getName() }, mode: 'copy'
 
