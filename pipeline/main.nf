@@ -73,18 +73,6 @@ def coerceToSchema(value, Map node, Map root) {
     return value
 }
 
-// Forward the head job's temporary AWS credentials (Code Ocean ECS endpoint) to a task.
-// Called at task creation so the session token is fresh; returns '' outside Code Ocean.
-def awsCredentialsExports() {
-    def uri = System.getenv('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
-    if (!uri) return ''
-    def creds = new groovy.json.JsonSlurper().parseText(new URL("http://169.254.170.2${uri}").text)
-    return """export AWS_ACCESS_KEY_ID='${creds.AccessKeyId}'
-    export AWS_SECRET_ACCESS_KEY='${creds.SecretAccessKey}'
-    export AWS_SESSION_TOKEN='${creds.Token}'
-    echo "forwarded AWS credentials (expire ${creds.Expiration})\""""
-}
-
 println "DATA_PATH: ${params.ecephys_path}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
@@ -322,6 +310,18 @@ if (runmode == 'fast'){
     full_params.postprocessing.extensions?.remove('spike_locations')
     full_params.postprocessing.extensions?.remove('principal_components')
 }
+
+// Streaming: job_dispatch reads the raw data from the remote session and only metadata JSONs are staged
+// (a local path is a symlink when staged, so streaming only matters for remote URLs)
+streaming = full_params.job_dispatch.streaming ?: false
+if (streaming && !(params.ecephys_path.toString() ==~ /^\w+:\/\/.+/)) {
+    println "WARN: job_dispatch.streaming is set but ${params.ecephys_path} is local: staging it as usual"
+    streaming = false
+}
+if (streaming) {
+    full_params.job_dispatch.pipeline_data_path = full_params.job_dispatch.pipeline_data_path ?: params.ecephys_path.toString()
+}
+println "STREAMING: ${streaming}"
 
 // Tag logs with the acquisition name from data_description.json and the pipeline name;
 // values set by the user in the params file take priority
@@ -829,8 +829,6 @@ process visualization {
     export CODE_REPO="${versions['VISUALIZATION_REPO']}"
     export CODE_VERSION="${versions['VISUALIZATION_VERSION']}"
 
-    ${awsCredentialsExports()}
-
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -882,7 +880,7 @@ process results_collector {
     ${extra_installs_cmd}
 
     export CODE_REPO="${versions['RESULTS_COLLECTOR_REPO']}"
-    export CODE_VERSION="${versions['RESULTS_COLLECTOR_VERSION']}"  
+    export CODE_VERSION="${versions['RESULTS_COLLECTOR_VERSION']}"
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -1142,9 +1140,19 @@ PROVENANCE_EOF
 
 workflow {
     full_params_ch = Channel.value(file(full_params_file.toString()))
-
-    // Input channel from ecephys path
-    ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
+    if (streaming) {
+        // stage a metadata-only copy of the session; the raw data is streamed by every step from the job JSONs
+        def metadata_folder = file("${workDir}/streaming_session")
+        metadata_folder.mkdirs()
+        files("${params.ecephys_path}/*.json").each { f ->
+            def target = metadata_folder.resolve(f.name)
+            // shortcut: copy only if missing, to keep mtimes stable for -resume; a changed remote JSON needs a clean workDir
+            if (!target.exists()) f.copyTo(target)
+        }
+        ecephys_ch = Channel.fromPath(metadata_folder.toString() + "/", type: 'any')
+    } else {
+        ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
+    }
 
     // Provenance: only the selected sorter's repo/commit is recorded
     def sorter_keys = ['kilosort25': 'spikesort_ks25', 'kilosort4': 'spikesort_ks4',
