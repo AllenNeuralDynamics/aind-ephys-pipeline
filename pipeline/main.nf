@@ -1,11 +1,10 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
-params.ecephys_path = DATA_PATH
-params.params_file = null
+include { validate } from 'plugin/nf-schema'
 
-// Git repository prefix - can be overridden via command line or environment variable
-params.git_repo_prefix = System.getenv('GIT_REPO_PREFIX') ?: 'https://github.com/AllenNeuralDynamics/aind-'
+params.ecephys_path = params.ecephys_url ?: DATA_PATH
+params.params_file = null
 
 // Helper function for git cloning
 gitCloneFunction = '''
@@ -23,11 +22,8 @@ clone_repo() {
 }
 '''
 
-def buildStepArgs(Map json_section, String cli_param_name, Map logging_params = null) {
+def buildStepArgs(Map json_section, String cli_param_name) {
     def args_map = json_section ? new LinkedHashMap(json_section) : [:]
-    if (logging_params && !args_map.containsKey('logging')) {
-        args_map['logging'] = logging_params
-    }
     if (cli_param_name in params_keys && params[cli_param_name] instanceof String) {
         println "Merging ${cli_param_name} from JSON with CLI args: ${params[cli_param_name]}"
         def cli_tokens = params[cli_param_name].trim().split(/\s+/) as List
@@ -39,10 +35,57 @@ def buildStepArgs(Map json_section, String cli_param_name, Map logging_params = 
             }
         }
     }
-    return args_map ? "--params '${groovy.json.JsonOutput.toJson(args_map)}'" : "--params '{}'"
+    return args_map
 }
 
-println "DATA_PATH: ${DATA_PATH}"
+// Recursively merge `over` into `base` (returns a new map)
+def deepMerge(Map base, Map over) {
+    def out = new LinkedHashMap(base)
+    over.each { k, v ->
+        out[k] = (out[k] instanceof Map && v instanceof Map) ? deepMerge(out[k], v) : v
+    }
+    return out
+}
+
+// Coerce a CLI value (Nextflow guesses int/float/boolean from the text) to the type the schema expects.
+// Values already matching an allowed type, or that cannot be converted, are left for validation to report.
+def coerceToSchema(value, Map node, Map root) {
+    if (node?.get('$ref')) {
+        node = node['$ref'].replaceFirst('^#/', '').split('/').inject(root) { n, k -> n[k] }
+    }
+    if (value instanceof Map) {
+        return value.collectEntries { k, v -> [(k): coerceToSchema(v, node?.properties?.get(k) ?: [:], root)] }
+    }
+    def types = node?.type instanceof List ? node.type : (node?.type ? [node.type] : [])
+    if (!types) return value
+    def matches = { t ->
+        (t == 'string' && value instanceof String) || (t == 'boolean' && value instanceof Boolean) ||
+        (t == 'integer' && value instanceof Integer) || (t == 'number' && value instanceof Number)
+    }
+    if (types.any(matches)) return value
+    def text = value.toString()
+    if ('null' in types && text == 'null') return null
+    if ('integer' in types && value instanceof Number && value == value.intValue()) return value.intValue()
+    if ('integer' in types && text.isInteger()) return text.toInteger()
+    if ('number' in types && text.isNumber()) return text.toBigDecimal()
+    if ('boolean' in types && text in ['true', 'false']) return text == 'true'
+    if ('string' in types) return text
+    return value
+}
+
+// Forward the head job's temporary AWS credentials (Code Ocean ECS endpoint) to a task.
+// Called at task creation so the session token is fresh; returns '' outside Code Ocean.
+def awsCredentialsExports() {
+    def uri = System.getenv('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
+    if (!uri) return ''
+    def creds = new groovy.json.JsonSlurper().parseText(new URL("http://169.254.170.2${uri}").text)
+    return """export AWS_ACCESS_KEY_ID='${creds.AccessKeyId}'
+    export AWS_SECRET_ACCESS_KEY='${creds.SecretAccessKey}'
+    export AWS_SESSION_TOKEN='${creds.Token}'
+    echo "forwarded AWS credentials (expire ${creds.Expiration})\""""
+}
+
+println "DATA_PATH: ${params.ecephys_path}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
 // Load parameters from custom JSON file, or default_params
@@ -56,6 +99,43 @@ else {
     json_params = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text)
     println "Loaded parameters from DEFAULT_PARAMS"
 }
+
+// Dotted CLI overrides following the JSON layout, e.g. --preprocessing.filter_type=bandpass
+// (Nextflow turns them into nested maps in `params`); merged before validation so they are checked too
+def step_keys = ['logging', 'job_dispatch', 'preprocessing', 'spikesorting', 'postprocessing', 'curation', 'visualization',
+                 'results_collector', 'nwb_ecephys', 'nwb_units', 'quality_control', 'quality_control_collector']
+def cli_overrides = [:]
+// Same overrides packed in one string, for Code Ocean (only App Panel params are forwarded), e.g.
+// --extra_params "--preprocessing.filter_type=bandpass --spikesorting.kilosort4.sorter.batch_size=30000"
+// shortcut: whitespace split, so values can't contain spaces; use the params file for those
+if (params.containsKey('extra_params') && params.extra_params instanceof String) {
+    def tokens = params.extra_params.trim().split(/\s+/) as List
+    for (int i = 0; i < tokens.size(); i++) {
+        if (!tokens[i].startsWith('--')) continue
+        def (key, value) = tokens[i].substring(2).contains('=') ? tokens[i].substring(2).split('=', 2) as List :
+            [tokens[i].substring(2), (i + 1 < tokens.size() && !tokens[i + 1].startsWith('--')) ? tokens[++i] : 'true']
+        def path = key.split(/\./) as List
+        if (!(path[0] in step_keys) || path.size() < 2) {
+            println "WARN: ignoring extra_params entry '--${key}' (must start with one of ${step_keys})"
+            continue
+        }
+        cli_overrides = deepMerge(cli_overrides, path.reverse().inject(value) { acc, k -> [(k): acc] })
+    }
+}
+cli_overrides = deepMerge(cli_overrides, step_keys.findAll { params.containsKey(it) && params[it] instanceof Map }.collectEntries { [(it): params[it]] })
+if (cli_overrides) {
+    println "Merging dotted CLI parameters: ${cli_overrides}"
+    def schema = new groovy.json.JsonSlurper().parseText(new File("${projectDir}/default_params_schema.json").text)
+    json_params = deepMerge(json_params, coerceToSchema(cli_overrides, schema, schema))
+}
+
+// Validate the parameters file against the schema before any process runs
+def params_file_name = params.params_file ?: "default_params.json"
+def params_errors = validate(json_params, "${projectDir}/default_params_schema.json", exitOnError: false)
+if (params_errors) {
+    error "Invalid parameters in ${params_file_name}:\n" + params_errors.collect { "  * ${it}" }.join('\n')
+}
+println "Parameters in ${params_file_name} are valid"
 
 println "PARAMS: ${params}"
 
@@ -108,12 +188,12 @@ def step_version_keys = [
     'nwb_units':                 ['NWB_UNITS_REPO',                 'NWB_UNITS_VERSION'],
 ]
 step_version_keys.each { step, keys ->
-    if (params.containsKey("${step}_repo")) {
-        versions[keys[0]] = params["${step}_repo"]
+    if (params.containsKey(step + "_repo")) {
+        versions[keys[0]] = params[step + "_repo"]
         println "OVERRIDE ${keys[0]} (from CLI): ${versions[keys[0]]}"
     }
-    if (params.containsKey("${step}_version")) {
-        versions[keys[1]] = params["${step}_version"]
+    if (params.containsKey(step + "_version")) {
+        versions[keys[1]] = params[step + "_version"]
         println "OVERRIDE ${keys[1]} (from CLI): ${versions[keys[1]]}"
     }
 }
@@ -135,8 +215,6 @@ println "PIPELINE URL: ${pipelineUrl}"
 // Pass pipeline data/results paths to the collector (disabled on Code Ocean, where
 // RESULTS_PATH is unique per run and would invalidate the task cache)
 params.pass_pipeline_paths = true
-pipeline_paths_args = params.pass_pipeline_paths ? "--pipeline-data-path ${DATA_PATH} --pipeline-results-path ${RESULTS_PATH}" : ""
-pipeline_data_path_args = params.pass_pipeline_paths ? "--pipeline-data-path ${DATA_PATH}" : ""
 
 println "PASS PIPELINE PATHS: ${params.pass_pipeline_paths}"
 
@@ -181,10 +259,6 @@ if (params.executor == "local")
         n_jobs = -1
     }
     println "N JOBS: ${n_jobs}"
-    job_args=" --n-jobs ${n_jobs}"
-}
-else {
-    job_args=""
 }
 
 // set runmode
@@ -202,19 +276,6 @@ if (params.params_file) {
     println "No parameters file provided, using default parameters."
 }
 
-// Build params: merge CLI overrides, stringify once
-job_dispatch_args = buildStepArgs(json_params.job_dispatch, "job_dispatch_args", json_params.logging)
-preprocessing_args = buildStepArgs(json_params.preprocessing, "preprocessing_args", json_params.logging)
-postprocessing_args = buildStepArgs(json_params.postprocessing, "postprocessing_args", json_params.logging)
-curation_args = buildStepArgs(json_params.curation, "curation_args", json_params.logging)
-visualization_kwargs = buildStepArgs(json_params.visualization, "visualization_kwargs", json_params.logging)
-result_collector_args = buildStepArgs(json_params.result_collector, "result_collector_args", json_params.logging)
-nwb_ecephys_args = buildStepArgs(json_params.nwb?.ecephys, "nwb_ecephys_args", json_params.logging)
-nwb_units_args = buildStepArgs(json_params.nwb?.units, "nwb_units_args", json_params.logging)
-quality_control_args = buildStepArgs(json_params.quality_control, "quality_control_args", json_params.logging)
-quality_control_collector_args = buildStepArgs(json_params.quality_control_collector, "quality_control_collector_args", json_params.logging)
-
-
 // Spikesorting: resolve sorter-specific sub-map
 def sorter = null
 if (params.params_file && json_params.spikesorting) {
@@ -227,21 +288,39 @@ if (sorter == null) {
     println "No sorter specified, defaulting to kilosort4"
     sorter = "kilosort4"
 }
-spikesorting_args = buildStepArgs(
-    json_params.spikesorting ? json_params.spikesorting[sorter] : null,
-    "spikesorting_args",
-    json_params.logging
-)
-println "Using SORTER: ${sorter} with args: ${spikesorting_args}"
+
+// Full parameter map: start from the JSON (keeps its layout, pipeline_version, ...) and replace
+// every step section with the version merged with the legacy CLI `*_args` strings
+def full_params = new groovy.json.JsonSlurper().parseText(groovy.json.JsonOutput.toJson(json_params))
+[logging: "logging_args",
+ job_dispatch: "job_dispatch_args",
+ preprocessing: "preprocessing_args",
+ postprocessing: "postprocessing_args",
+ curation: "curation_args",
+ visualization: "visualization_kwargs",
+ results_collector: "results_collector_args",
+ nwb_ecephys: "nwb_ecephys_args",
+ nwb_units: "nwb_units_args",
+ quality_control: "quality_control_args",
+ quality_control_collector: "quality_control_collector_args"].each { section, cli_name ->
+    full_params[section] = buildStepArgs(json_params[section], cli_name)
+}
+// Spikesorting: record the selected sorter and replace its sub-map
+full_params.spikesorting = (full_params.spikesorting ?: [:]) + [sorter: sorter]
+full_params.spikesorting[sorter] = buildStepArgs(json_params.spikesorting?.get(sorter), "spikesorting_args")
+
+// Fill in pipeline paths unless set explicitly in the params
+if (params.pass_pipeline_paths) {
+    full_params.results_collector.pipeline_data_path = full_params.results_collector.pipeline_data_path ?: DATA_PATH
+    full_params.results_collector.pipeline_results_path = full_params.results_collector.pipeline_results_path ?: RESULTS_PATH
+    full_params.quality_control.pipeline_data_path = full_params.quality_control.pipeline_data_path ?: DATA_PATH
+}
 
 if (runmode == 'fast'){
-    preprocessing_args = "--motion skip"
-    postprocessing_args = "--skip-extensions spike_locations,principal_components"
-    nwb_ecephys_args = "--skip-lfp"
-    println "Running in fast mode. Setting parameters:"
-    println "preprocessing_args: ${preprocessing_args}"
-    println "postprocessing_args: ${postprocessing_args}"
-    println "nwb_ecephys_args: ${nwb_ecephys_args}"
+    full_params.preprocessing.motion_correction = (full_params.preprocessing.motion_correction ?: [:]) + [compute: false]
+    full_params.nwb_ecephys.write_lfp = false
+    full_params.postprocessing.extensions?.remove('spike_locations')
+    full_params.postprocessing.extensions?.remove('principal_components')
 }
 
 // AIND sessions are staged per stream: each task gets only the zarr(s) its job reads, placed where the
@@ -264,34 +343,51 @@ def zarrNames(obj) {
     return []
 }
 
+// Tag logs with the acquisition name from data_description.json and the pipeline name;
+// values set by the user in the params file take priority
+// (file() handles both local paths and s3:// URLs from ecephys_url)
+full_params.logging = full_params.logging ?: [:]
+if (!full_params.logging.acquisition_name) {
+    def acquisition_name = null
+    try {
+        def data_description = file("${params.ecephys_path}/data_description.json")
+        if (data_description.exists()) {
+            acquisition_name = new groovy.json.JsonSlurper().parseText(data_description.text).name
+        }
+    } catch (Exception e) {
+        println "WARN: could not read data_description.json: ${e.message}"
+    }
+    if (!acquisition_name) {
+        println "WARN: no name found in ${params.ecephys_path}/data_description.json, using 'undefined'"
+        acquisition_name = 'undefined'
+    }
+    full_params.logging.acquisition_name = acquisition_name
+}
+if (!full_params.logging.pipeline_name) {
+    full_params.logging.pipeline_name = 'AIND Ephys Pipeline'
+}
+println "Logging acquisition_name: ${full_params.logging.acquisition_name}"
+
+// Dump the full map to the work dir so it can be inspected/attached to tasks
+def full_params_file = new File("${workDir}/full_params.json")
+full_params_file.parentFile.mkdirs()
+// Rewrite only on change: tasks hash the staged file's mtime, so touching it would invalidate -resume
+def full_params_text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(full_params))
+if (!full_params_file.exists() || full_params_file.text != full_params_text) {
+    full_params_file.text = full_params_text
+}
+println "Full parameters written to ${full_params_file}"
+
+// Validate the final map (JSON + CLI + runmode/log/path adjustments) against the schema
+def full_params_errors = validate(new groovy.json.JsonSlurper().parseText(full_params_file.text), "${projectDir}/default_params_schema.json", exitOnError: false)
+if (full_params_errors) {
+    error "Invalid full parameters (${full_params_file}):\n" + full_params_errors.collect { "  * ${it}" }.join('\n')
+}
+println "Full parameters are valid"
+
+println "Using SORTER: ${sorter}"
 
 // Process definitions
-process validate_params {
-    tag 'validate_params'
-    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
-    container container_name
-
-    input:
-    path params_file
-    path schema_file
-    output:
-    path 'validation.ok', emit: ok
-    script:
-    """
-    #!/usr/bin/env bash
-    set -e
-
-    validate_params.py ${params_file} ${schema_file}
-    touch validation.ok
-    """
-
-    stub:
-    """
-    touch validation.ok
-    """
-}
-
-
 process job_dispatch {
     tag 'job-dispatch'
     def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:${params.container_tag}"
@@ -299,9 +395,9 @@ process job_dispatch {
 
     input:
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
+    path params_file, stageAs: 'capsule/params.json'
     path session_zarrs, stageAs: zarrStage
-    val validation_ok
-    
+
     output:
     path 'capsule/results/*', emit: results
     path 'max_duration.txt', emit: max_duration_file  // file containing the value
@@ -326,6 +422,8 @@ process job_dispatch {
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     TASK_DIR=\$(pwd)
 
@@ -336,7 +434,7 @@ process job_dispatch {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${job_dispatch_args}
+    ./run
 
     MAX_DURATION_MIN=\$(python get_max_recording_duration_min.py)
 
@@ -362,6 +460,7 @@ process preprocessing {
     val max_duration_minutes
     tuple val(meta), path(job_json, stageAs: 'capsule/data/*'), path(stream_zarrs, stageAs: zarrStage)
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
@@ -385,9 +484,9 @@ process preprocessing {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -396,7 +495,7 @@ process preprocessing {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${preprocessing_args} ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -416,6 +515,7 @@ process spikesort_kilosort25 {
     input:
     val max_duration_minutes
     tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
@@ -436,9 +536,9 @@ process spikesort_kilosort25 {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -447,7 +547,7 @@ process spikesort_kilosort25 {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${spikesorting_args} ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -467,6 +567,7 @@ process spikesort_kilosort4 {
     input:
     val max_duration_minutes
     tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
@@ -485,9 +586,9 @@ process spikesort_kilosort4 {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -496,7 +597,7 @@ process spikesort_kilosort4 {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${spikesorting_args} ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -515,6 +616,7 @@ process spikesort_spykingcircus2 {
     input:
     val max_duration_minutes
     tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
@@ -533,9 +635,9 @@ process spikesort_spykingcircus2 {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -544,7 +646,7 @@ process spikesort_spykingcircus2 {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${spikesorting_args} ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -563,6 +665,7 @@ process spikesort_lupin {
     input:
     val max_duration_minutes
     tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
@@ -583,9 +686,9 @@ process spikesort_lupin {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -594,7 +697,52 @@ process spikesort_lupin {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${spikesorting_args} ${job_args}
+    ./run
+
+    echo "[${task.tag}] completed!"
+    """
+}
+
+process spikesort_dartsort {
+    tag 'spikesort-dartsort'
+    def container_name = "ghcr.io/allenneuraldynamics/aind-ephys-spikesort-dartsort:${params.container_tag}"
+    container container_name
+    label 'gpu'
+
+    input:
+    val max_duration_minutes
+    path preprocessing_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
+
+    output:
+    path 'capsule/results/*', emit: results
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -e
+    export CODE_REPO="${versions['SPIKESORT_DARTSORT_REPO']}"
+    export CODE_VERSION="${versions['SPIKESORT_DARTSORT_VERSION']}"
+
+    mkdir -p capsule
+    mkdir -p capsule/data
+    mkdir -p capsule/results
+    mkdir -p capsule/scratch
+
+    if [[ ${params.executor} == "slurm" ]]; then
+        echo "[${task.tag}] allocated task time: ${task.time}"
+    fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+
+    echo "[${task.tag}] cloning git repo..."
+    ${gitCloneFunction}
+    clone_repo "${versions['SPIKESORT_DARTSORT_REPO']}" "${versions['SPIKESORT_DARTSORT_VERSION']}"
+
+    echo "[${task.tag}] running capsule..."
+    cd capsule/code
+    chmod +x run
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -614,6 +762,7 @@ process postprocessing {
     val max_duration_minutes
     tuple val(meta), path(job_json, stageAs: 'capsule/data/*'), path(stream_zarrs, stageAs: zarrStage), path(preprocessing_results, stageAs: 'capsule/data/*'), path(spikesort_results, stageAs: 'capsule/data/*')
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
@@ -636,9 +785,9 @@ process postprocessing {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -647,7 +796,7 @@ process postprocessing {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${postprocessing_args} ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -666,6 +815,7 @@ process curation {
     input:
     val max_duration_minutes
     tuple val(meta), path(postprocessing_results, stageAs: 'capsule/data/*')
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
@@ -685,9 +835,9 @@ process curation {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -696,7 +846,7 @@ process curation {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${curation_args} ${job_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -715,6 +865,7 @@ process visualization {
     input:
     val max_duration_minutes
     tuple val(meta), path(job_json, stageAs: 'capsule/data/*'), path(stream_zarrs, stageAs: zarrStage), path(preprocessing_results, stageAs: 'capsule/data/*'), path(spikesort_results, stageAs: 'capsule/data/*'), path(postprocessing_results, stageAs: 'capsule/data/*'), path(curation_results, stageAs: 'capsule/data/*')
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
@@ -730,6 +881,7 @@ process visualization {
     export CODE_REPO="${versions['VISUALIZATION_REPO']}"
     export CODE_VERSION="${versions['VISUALIZATION_VERSION']}"
 
+    ${awsCredentialsExports()}
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -738,9 +890,9 @@ process visualization {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -749,7 +901,7 @@ process visualization {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${visualization_kwargs}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -772,6 +924,7 @@ process results_collector {
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
     path job_dispatch_results, stageAs: 'capsule/data/*'
     path stream_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -795,6 +948,8 @@ process results_collector {
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     export PIPELINE_VERSION=${pipelineVersion}
     export PIPELINE_URL=${pipelineUrl}
@@ -806,8 +961,7 @@ process results_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    echo ${result_collector_args}
-    ./run ${pipeline_paths_args} ${result_collector_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -828,6 +982,7 @@ process quality_control {
     // QC reads this stream's slice of the collector's layout, so each piece keeps its folder under data/
     tuple val(meta), path(job_json, stageAs: 'capsule/data/*'), path(stream_zarrs, stageAs: zarrStage), path(preprocessed_json, stageAs: 'capsule/data/preprocessed/*'), path(preprocessed_motion, stageAs: 'capsule/data/preprocessed/motion/*'), path(spikesorted_motion, stageAs: 'capsule/data/spikesorted/motion/*'), path(postprocessed, stageAs: 'capsule/data/postprocessed/*'), path(curated, stageAs: 'capsule/data/curated/*'), path(collector_session_files, stageAs: 'capsule/data/*')
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
@@ -851,9 +1006,9 @@ process quality_control {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -862,7 +1017,7 @@ process quality_control {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${pipeline_data_path_args} ${quality_control_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -883,6 +1038,7 @@ process quality_control_collector {
     input:
     val max_duration_minutes
     path quality_control_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*'
@@ -903,6 +1059,8 @@ process quality_control_collector {
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -911,7 +1069,7 @@ process quality_control_collector {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${quality_control_collector_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -933,6 +1091,7 @@ process nwb_ecephys {
     path session_files, stageAs: 'capsule/data/ecephys_session/*'
     path session_zarrs, stageAs: zarrStage
     path job_dispatch_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*', emit: results
@@ -955,9 +1114,9 @@ process nwb_ecephys {
 
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
-        # Make sure N_JOBS matches allocated CPUs on SLURM
-        export N_JOBS_EXT=${task.cpus}
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -966,7 +1125,7 @@ process nwb_ecephys {
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${nwb_ecephys_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -992,6 +1151,7 @@ process nwb_units {
     path job_dispatch_results, stageAs: 'capsule/data/*'
     path results_data, stageAs: 'capsule/data/*'
     path nwb_ecephys_results, stageAs: 'capsule/data/*'
+    path params_file, stageAs: 'capsule/params.json'
 
     output:
     path 'capsule/results/*'
@@ -1019,11 +1179,13 @@ process nwb_units {
     if [[ ${params.executor} == "slurm" ]]; then
         echo "[${task.tag}] allocated task time: ${task.time}"
     fi
+    # Make sure N_JOBS matches allocated CPUs
+    export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
     chmod +x run
-    ./run ${nwb_units_args}
+    ./run
 
     echo "[${task.tag}] completed!"
     """
@@ -1059,6 +1221,8 @@ PROVENANCE_EOF
 }
 
 workflow {
+    full_params_ch = Channel.value(file(full_params_file.toString()))
+
     def session_root = file(params.ecephys_path)
     def zarr_root = session_root.resolve(compressedRel)
     def by_stream = zarr_root.exists()
@@ -1074,15 +1238,10 @@ workflow {
     )
     def all_zarrs_ch = Channel.value(by_stream ? zarr_root.listFiles().findAll { it.name.endsWith('.zarr') } : [])
 
-    params_file = file(params.params_file)
-    schema_file = file("${projectDir}/default_params_schema.json")
-
-    validation_out = validate_params(params_file, schema_file)
-
-
     // Provenance: only the selected sorter's repo/commit is recorded
     def sorter_keys = ['kilosort25': 'spikesort_ks25', 'kilosort4': 'spikesort_ks4',
-                       'spykingcircus2': 'spikesort_sc2', 'lupin': 'spikesort_lupin']
+                       'spykingcircus2': 'spikesort_sc2', 'lupin': 'spikesort_lupin',
+                       'dartsort': 'spikesort_dartsort']
     def used_steps = step_version_keys.findAll { step, keys ->
         !step.startsWith('spikesort_') || step == sorter_keys[sorter]
     }
@@ -1100,27 +1259,13 @@ workflow {
         parameters: [
             params_file: params.params_file ?: 'default_params.json',
             params_file_content: json_params,
-            effective_args: [
-                job_dispatch: job_dispatch_args,
-                preprocessing: preprocessing_args,
-                spikesorting: spikesorting_args,
-                postprocessing: postprocessing_args,
-                curation: curation_args,
-                visualization: visualization_kwargs,
-                result_collector: result_collector_args,
-                nwb_ecephys: nwb_ecephys_args,
-                nwb_units: nwb_units_args,
-                quality_control: quality_control_args,
-                quality_control_collector: quality_control_collector_args
-            ]
+            effective_params: full_params
         ]
     ]
     save_provenance(groovy.json.JsonOutput.toJson(provenance))
 
     // Job dispatch
-    // validation_out.ok is mapped to a constant so that it only acts as a gate and
-    // does not invalidate the job_dispatch cache hash when validate_params re-runs
-    job_dispatch_out = job_dispatch(session_files_ch, all_zarrs_ch, validation_out.ok.map { true })
+    job_dispatch_out = job_dispatch(session_files_ch, all_zarrs_ch, full_params_ch)
 
     max_duration_file = job_dispatch_out.max_duration_file
     max_duration_minutes = max_duration_file.map { it.text.trim() }
@@ -1147,30 +1292,54 @@ workflow {
     preprocessing_out = preprocessing(
         max_duration_minutes,
         streams,
-        session_files_ch
+        session_files_ch,
+        full_params_ch
     )
+
+    // Jobs whose preprocessing wrote error.txt: don't launch sorting/postprocessing for them
+    def isFailed = { p -> p.name.startsWith('preprocessed_') && p.resolve('error.txt').exists() }
+    preprocessing_ok = preprocessing_out.results.filter { res -> ![res].flatten().any(isFailed) }
+    failed_recordings = preprocessing_out.results
+        .flatMap { res -> [res].flatten().findAll(isFailed).collect { p -> p.name - 'preprocessed_' } }
+        .collect()
+        .ifEmpty([])
+    failed_recordings.view { "Recordings skipped after preprocessing: ${it}" }
+    jobs_ok = job_dispatch_out.results.flatten()
+        .combine(failed_recordings.map { [it] })
+        .filter { job, failed -> !(new groovy.json.JsonSlurper().parse(job.toFile()).recording_name in failed) }
+        .map { job, failed -> job }
 
     // Spike sorting based on selected sorter
     // def spikesort
     if (sorter == 'kilosort25') {
         spikesort_out = spikesort_kilosort25(
             max_duration_minutes,
-            preprocessing_out.results
+            preprocessing_ok,
+            full_params_ch
         )
     } else if (sorter == 'kilosort4') {
         spikesort_out = spikesort_kilosort4(
             max_duration_minutes,
-            preprocessing_out.results
+            preprocessing_ok,
+            full_params_ch
         )
     } else if (sorter == 'spykingcircus2') {
         spikesort_out = spikesort_spykingcircus2(
             max_duration_minutes,
-            preprocessing_out.results
+            preprocessing_ok,
+            full_params_ch
         )
     } else if (sorter == 'lupin') {
         spikesort_out = spikesort_lupin(
             max_duration_minutes,
-            preprocessing_out.results
+            preprocessing_ok,
+            full_params_ch
+        )
+    } else if (sorter == 'dartsort') {
+        spikesort_out = spikesort_dartsort(
+            max_duration_minutes,
+            preprocessing_ok,
+            full_params_ch
         )
     } else {
         error "Unsupported sorter: ${sorter}"
@@ -1180,13 +1349,15 @@ workflow {
     postprocessing_out = postprocessing(
         max_duration_minutes,
         streams.join(preprocessing_out.results, failOnMismatch: true).join(spikesort_out.results, failOnMismatch: true),
-        session_files_ch
+        session_files_ch,
+        full_params_ch
     )
 
     // Curation
     curation_out = curation(
         max_duration_minutes,
-        postprocessing_out.results
+        postprocessing_out.results,
+        full_params_ch
     )
 
     // Visualization: only its own stream; sorting contributes just its sorter name
@@ -1196,7 +1367,8 @@ workflow {
             .join(preprocessing_out.results, failOnMismatch: true)
             .join(spikesort_out.results.map { meta, files -> [meta, files.findAll { it.name.startsWith('data_process_spikesorting') }] }, failOnMismatch: true)
             .join(postprocessing_out.results, failOnMismatch: true)
-            .join(curation_out.results, failOnMismatch: true)
+            .join(curation_out.results, failOnMismatch: true),
+        full_params_ch
     )
 
     // Results collection: everything except the preprocessed binaries, which the collector never reads
@@ -1214,7 +1386,8 @@ workflow {
         max_duration_minutes,
         session_files_ch,
         job_jsons.collect(),
-        collector_stream_results
+        collector_stream_results,
+        full_params_ch
     )
     collector_items = results_collector_out.results.collect()
 
@@ -1242,13 +1415,15 @@ workflow {
     quality_control_out = quality_control(
         max_duration_minutes,
         qc_inputs,
-        qc_session_files_ch
+        qc_session_files_ch,
+        full_params_ch
     )
 
     // Quality control collection
     quality_control_collector(
         max_duration_minutes,
-        quality_control_out.results.map { meta, files -> files }.collect()
+        quality_control_out.results.map { meta, files -> files }.collect(),
+        full_params_ch
     )
 
     // NWB: session-level, all streams
@@ -1259,6 +1434,7 @@ workflow {
         session_files_ch,
         nwb_zarrs,
         job_jsons.collect(),
+        full_params_ch
     )
 
     nwb_units(
@@ -1267,6 +1443,7 @@ workflow {
         nwb_zarrs,
         job_jsons.collect(),
         collector_items.map { items -> items.findAll { it.name in ['postprocessed', 'spikesorted'] } },
-        nwb_ecephys_out.results.collect()
+        nwb_ecephys_out.results.collect(),
+        full_params_ch
     )
 }

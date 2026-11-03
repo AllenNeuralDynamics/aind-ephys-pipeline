@@ -16,7 +16,7 @@ Requirements
 
 For local deployment, you need:
 
-* ``nextflow`` (version 22.10.8 recommended)
+* ``nextflow`` (version 25.10 or newer, required by the ``nf-schema`` plugin used to validate parameters)
 * ``docker`` (19.03+ if going to use GPUs, e.g. for spikesort_kilosort* workflows)
 * ``figurl`` (optional, for cloud visualization)
 
@@ -70,7 +70,7 @@ Requirements
 
 For SLURM cluster deployment:
 
-* ``nextflow`` (version 22.10.8 recommended)
+* ``nextflow`` (version 25.10 or newer, required by the ``nf-schema`` plugin used to validate parameters)
 *  ``apptainer`` or ``singularity``
 * Access to a SLURM cluster
 * ``figurl`` (optional, for cloud visualization)
@@ -98,7 +98,6 @@ Installation Steps
    cd pipeline
 
 
-Code Ocean Setup
 Code Ocean Deployment
 ---------------------
 
@@ -128,25 +127,23 @@ This example shows how to run the pipeline using the Code Ocean Python API:
       mount="ecephys",
    )
 
-   # Set the sorter as a named parameter (e.g., "kilosort25", "kilosort4", "spykingcircus2", "lupin")
+   # Set the sorter and preprocessing filter_type as a named parameter
    named_parameters = [
       NamedRunParam(
          param_name="sorter",
          value="kilosort4"
+      ),
+      NamedRunParam(
+         param_name="preprocessing.filter_type",
+         value="bandpass"
       )
    ]
 
-   # Set process parameters (e.g., preprocessing)
-   preprocessing_params = PipelineProcessParams(
-      name="preprocessing",
-      parameters=["--motion", "skip", "--filter", "bandpass"]
-   )
 
    run_params = RunParams(
       pipeline_id=PIPELINE_ID,
       data_assets=[data_asset],
       named_parameters=named_parameters,
-      processes=[preprocessing_params],
    )
 
    # Run the pipeline

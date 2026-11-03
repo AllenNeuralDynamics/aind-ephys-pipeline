@@ -132,3 +132,18 @@ The following environment variables can be set in the Code Ocean pipeline config
 * ``PARAMS_FILE`` — path to a JSON parameter file (e.g. ``params_co.json``). When set, all step-specific parameters are read from this file.
 
 These can also be overridden at run time with the ``--sorter`` and ``--params_file`` CLI arguments.
+
+Code Ocean only forwards the parameters declared in the App Panel, so dotted overrides
+(``--preprocessing.filter_type=bandpass``) can't be passed directly. Pack them into the
+``extra_params`` App Panel parameter instead, as one space-separated string:
+
+.. code-block:: python
+
+   NamedRunParam(
+       param_name="extra_params",
+       value="--preprocessing.filter_type=bandpass --spikesorting.kilosort4.sorter.batch_size=30000",
+   )
+
+Each entry must start with a parameter file section (``preprocessing``, ``spikesorting``, ...); other
+entries are ignored with a warning. Values can't contain spaces. Top-level options such as ``sorter``
+keep their own App Panel parameters.

@@ -137,7 +137,7 @@ jobs:
           set +e
           DATA_PATH="$(pwd)/${{ matrix.data }}" RESULTS_PATH="$(pwd)/${{ matrix.results }}" \
           nextflow -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main.nf \
-          --params_file "$(pwd)/.github/workflows/${{ matrix.params }}"
+          --params_file "$(pwd)/.github/workflows/params_files/${{ matrix.params }}"
           STATUS=$?
           if [[ "${{ matrix.expect_fail }}" == "true" ]]; then
             [[ $STATUS -ne 0 ]] && echo "Pipeline failed as expected" && exit 0
