@@ -1206,7 +1206,7 @@ workflow {
     failed_recordings.view { "Recordings skipped after preprocessing: ${it}" }
     jobs_ok = job_dispatch_out.results.flatten()
         .combine(failed_recordings.map { [it] })
-        .filter { job, failed -> !(new groovy.json.JsonSlurper().parse(job.toFile()).recording_name in failed) }
+        .filter { job, failed -> !(new groovy.json.JsonSlurper().parseText(job.text).recording_name in failed) }
         .map { job, failed -> job }
 
     // Spike sorting based on selected sorter
