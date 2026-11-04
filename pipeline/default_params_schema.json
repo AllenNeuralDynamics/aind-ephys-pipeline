@@ -75,6 +75,12 @@
                     "default": false,
                     "description": "Whether to enable multi-session processing."
                 },
+                "min_recording_duration": {
+                    "type": "number",
+                    "default": -1,
+                    "minimum": -1,
+                    "description": "Minimum duration in seconds for a recording to be processed. -1 means this check is disabled."
+                },
                 "input": {
                     "type": "string",
                     "enum": ["aind", "spikeglx", "openephys", "nwb", "spikeinterface"],
