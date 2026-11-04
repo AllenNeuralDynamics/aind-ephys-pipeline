@@ -24,8 +24,7 @@ flowchart LR
     %% Deployment
     subgraph deploy["🚀 Deployment"]
         direction TB
-        co["Code Ocean<br/><a href='pipeline/main.nf'>main.nf</a>"]
-        sl["SLURM/Local<br/><a href='pipeline/main_multi_backend.nf'>main_multi_backend.nf</a>"]
+        co["Code Ocean / SLURM / Local<br/><a href='pipeline/main.nf'>main.nf</a>"]
     end
 
     %% Infrastructure (link to detailed docs)
@@ -61,7 +60,7 @@ flowchart LR
 **📖 [View detailed architecture diagram](https://aind-ephys-pipeline.readthedocs.io/en/latest/architecture.html)** with all infrastructure components, step details, and data flow.
 
 **Key Points:**
-- **Two Deployment Modes**: Code Ocean ([`main.nf`](pipeline/main.nf)) uses branch-based sorter selection; SLURM/Local ([`main_multi_backend.nf`](pipeline/main_multi_backend.nf)) uses parameter-based selection
+- **Single Pipeline**: [`main.nf`](pipeline/main.nf) runs on Code Ocean (AWS Batch), SLURM, and local — sorter is selected via the `--sorter` parameter or `SORTER` environment variable
 - **11 Processing Steps**:
   - *1*. Job dispatch
   - *2*. Preprocessing
@@ -81,13 +80,5 @@ The documentation is available at [ReadTheDocs](https://aind-ephys-pipeline.read
 
 ## Code Ocean Deployment (AIND)
 
-At AIND, the pipeline is deployed on the Code Ocean platform. Since currently Code Ocean does not support conditional processes, pipelines running different sorters and AIND-specific options are implemented in separate branches.
-
-This is a list of the available pipeline branches that are deployed in Code Ocean:
-
-- `main`/`co_kilosort4`: pipeline with Kilosort4 sorter
-- `co_kilosort25`: pipeline with Kilosort2.5 sorter
-- `co_spykingcircus2`: pipeline with Spyking Circus 2 sorter
-- `co_kilosort25_opto`: pipeline with Kilosort2.5 sorter and optogenetics artifact removal
-- `co_kilosort4_opto`: pipeline with Kilosort4 sorter and optogenetics artifact removal
-- `co_spykingcircus2_opto`: pipeline with Spyking Circus 2 sorter and optogenetics artifact removal
+At AIND, the pipeline is deployed on the Code Ocean platform using a single [`main.nf`](pipeline/main.nf) pipeline.
+The sorter and parameters are configured via environment variables (`SORTER`, `PARAMS_FILE`) or a JSON parameter file, without requiring separate branches per sorter.

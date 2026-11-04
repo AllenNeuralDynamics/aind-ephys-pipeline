@@ -17,7 +17,7 @@
     }
 
     /* ───────── AJV validator ───────── */
-    const ajv = new ajv7({ allErrors: true, strict: false });
+    const ajv = new ajv2020({ allErrors: true, strict: false });
     const validate = ajv.compile(schema);
 
     /* ───────── Tab switching ───────── */

@@ -42,7 +42,7 @@ An optional port argument is supported: `python params_app/serve.py 9000`.
 | `index.html` | App shell with Editor and Validate tabs |
 | `style.css` | Responsive styling |
 | `app.js` | Form builder, JSON generation, and AJV validation logic |
-| `ajv7.min.js` | Local copy of AJV v8.17.1 (JSON Schema draft-07 validator) |
+| `ajv2020.min.js` | Local copy of AJV v8.17.1 (JSON Schema draft 2020-12 validator) |
 | `serve.py` | Cross-platform launcher (starts server, opens browser) |
 
 ## Dependencies

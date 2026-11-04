@@ -11,6 +11,10 @@
         "dockerfile": "Dockerfile_kilosort25",
         "image_name": "aind-ephys-spikesort-kilosort25"
     },
+    "dartsort": {
+        "dockerfile": "Dockerfile_dartsort",
+        "image_name": "aind-ephys-spikesort-dartsort"
+    },
     "nwb": {
         "dockerfile": "Dockerfile_nwb",
         "image_name": "aind-ephys-pipeline-nwb"
