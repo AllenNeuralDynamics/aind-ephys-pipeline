@@ -7,22 +7,30 @@ Requirements
 The pipeline has different requirements depending on your deployment target. 
 Here are the core requirements for each deployment option:
 
-
 Local Deployment
-----------------
-
-Requirements
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 For local deployment, you need:
 
-* ``nextflow`` (version 25.10 or newer, required by the ``nf-schema`` plugin used to validate parameters)
+* ``nextflow`` (version 22.10.8 recommended)
 * ``docker`` (19.03+ if going to use GPUs, e.g. for spikesort_kilosort* workflows)
 * ``figurl`` (optional, for cloud visualization)
 
-Installation Steps
-~~~~~~~~~~~~~~~~~~
+SLURM Deployment
+~~~~~~~~~~~~~~~~
 
+For SLURM cluster deployment:
+
+* ``nextflow`` (version 22.10.8 recommended)
+*  ``apptainer`` or ``singularity``
+* Access to a SLURM cluster
+* ``figurl`` (optional, for cloud visualization)
+
+Installation Steps
+------------------
+
+Local Setup
+~~~~~~~~~~~
 
 1. Install Nextflow:
 
@@ -53,30 +61,8 @@ Installation Steps
       setting up your own bucket for Figpack to use. You can easily set it up 
       using the ``Buckets`` section in the Figpack web interface.
 
-4. Clone the pipeline repository:
-
-.. code-block:: bash
-
-   git clone https://github.com/AllenNeuralDynamics/aind-ephys-pipeline.git
-   cd aind-ephys-pipeline
-   cd pipeline
-
-
-SLURM Deployment
-----------------
-
-Requirements
-~~~~~~~~~~~~
-
-For SLURM cluster deployment:
-
-* ``nextflow`` (version 25.10 or newer, required by the ``nf-schema`` plugin used to validate parameters)
-*  ``apptainer`` or ``singularity``
-* Access to a SLURM cluster
-* ``figurl`` (optional, for cloud visualization)
-
-Installation Steps
-~~~~~~~~~~~~~~~~~~
+SLURM Setup
+~~~~~~~~~~~
 
 1. Install Nextflow on your cluster environment
 2. Ensure Apptainer/Singularity is available
@@ -89,7 +75,11 @@ Installation Steps
       # export NXF_SINGULARITY_CACHEDIR="/path/to/cache"
 
 4. (Optional) Follow the same Figurl setup steps as in the local deployment
-5. Clone the pipeline repository:
+
+Clone the Repository
+--------------------
+
+Clone the pipeline repository:
 
 .. code-block:: bash
 
@@ -97,54 +87,4 @@ Installation Steps
    cd aind-ephys-pipeline
    cd pipeline
 
-
-Code Ocean Deployment
----------------------
-
-To setup the pipeline in Code Ocean, you can simply "Create New" --> "Pipeline" --> "Clone from Git"
-and point to the repository URL: ``https://github.com/AllenNeuralDynamics/aind-ephys-pipeline.git``
-
-Once the pipeline is created, a ``PIPELINE_ID`` will be assigned, and you can run it directly in Code 
-Ocean or with the Code Ocean Python API. Ephys data should be mounted on the `ecephys` mount point.
-
-This example shows how to run the pipeline using the Code Ocean Python API:
-
-.. code-block:: python
-
-   from codeocean.client import CodeOcean
-   from codeocean.computation import (
-      RunParams,
-      NamedRunParam,
-      DataAssetsRunParam,
-      PipelineProcessParams,
-   )
-   from codeocean.data_asset import DataAssetParams
-
-   co_client = CodeOcean(domain=YOUR_DOMAIN, token=YOUR_TOKEN)
-
-   data_asset = DataAssetsRunParam(
-      id=YOUR_ASSET_ID,
-      mount="ecephys",
-   )
-
-   # Set the sorter and preprocessing filter_type as a named parameter
-   named_parameters = [
-      NamedRunParam(
-         param_name="sorter",
-         value="kilosort4"
-      ),
-      NamedRunParam(
-         param_name="preprocessing.filter_type",
-         value="bandpass"
-      )
-   ]
-
-
-   run_params = RunParams(
-      pipeline_id=PIPELINE_ID,
-      data_assets=[data_asset],
-      named_parameters=named_parameters,
-   )
-
-   # Run the pipeline
-   computation = co_client.computations.run_capsule(run_params)
+The pipeline is now ready to be configured and run on your chosen platform.
