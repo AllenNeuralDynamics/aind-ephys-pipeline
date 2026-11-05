@@ -175,8 +175,8 @@ process capsule_aind_ephys_job_dispatch_4 {
 
 // capsule - Postprocess Ecephys
 process capsule_aind_ephys_postprocessing_5 {
-	tag 'capsule-5473620'
-	container "$REGISTRY_HOST/capsule/6020e947-d8ea-4b64-998b-37404eb5ea51:4cae5f32822c2ea1670166440aec4733"
+	tag 'capsule-1963990'
+	container "$REGISTRY_HOST/capsule/a5b6da96-ac60-47cb-92ca-0ac0d556d57a:e38e8cbb53b2b99d73231db583a84165"
 
 	cpus 16
 	memory '128 GB'
@@ -207,8 +207,8 @@ process capsule_aind_ephys_postprocessing_5 {
 	mkdir -p capsule/scratch && ln -s \$PWD/capsule/scratch /scratch
 
 	echo "[${task.tag}] cloning git repo..."
-	git clone "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-5473620.git" capsule-repo
-	git -C capsule-repo checkout d3c43c7006e7c6b5e100880c71e3d14c3e9d1fd2 --quiet
+	git clone "https://\$GIT_ACCESS_TOKEN@\$GIT_HOST/capsule-1963990.git" capsule-repo
+	git -C capsule-repo checkout 773707198b01b7cefbd6ed9040c8097deb075726 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
