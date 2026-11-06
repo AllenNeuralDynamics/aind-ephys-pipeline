@@ -83,8 +83,8 @@
 		},
 		{
 			"id": "g3bB9V3wPda3pR7H",
-			"name": "result collector",
-			"param_name": "result_collector_args",
+			"name": "results collector",
+			"param_name": "results_collector_args",
 			"type": "text",
 			"value_type": "string"
 		},

@@ -73,18 +73,6 @@ def coerceToSchema(value, Map node, Map root) {
     return value
 }
 
-// Forward the head job's temporary AWS credentials (Code Ocean ECS endpoint) to a task.
-// Called at task creation so the session token is fresh; returns '' outside Code Ocean.
-def awsCredentialsExports() {
-    def uri = System.getenv('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
-    if (!uri) return ''
-    def creds = new groovy.json.JsonSlurper().parseText(new URL("http://169.254.170.2${uri}").text)
-    return """export AWS_ACCESS_KEY_ID='${creds.AccessKeyId}'
-    export AWS_SECRET_ACCESS_KEY='${creds.SecretAccessKey}'
-    export AWS_SESSION_TOKEN='${creds.Token}'
-    echo "forwarded AWS credentials (expire ${creds.Expiration})\""""
-}
-
 println "DATA_PATH: ${params.ecephys_path}"
 println "RESULTS_PATH: ${RESULTS_PATH}"
 
@@ -322,6 +310,23 @@ if (runmode == 'fast'){
     full_params.postprocessing.extensions?.remove('spike_locations')
     full_params.postprocessing.extensions?.remove('principal_components')
 }
+
+// Streaming: job_dispatch reads the raw data from the remote session and only metadata JSONs are staged
+// (a local path is a symlink when staged, so streaming only matters for remote URLs)
+streaming = full_params.job_dispatch.streaming ?: false
+if (streaming && !(params.ecephys_path.toString() ==~ /^\w+:\/\/.+/)) {
+    println "WARN: job_dispatch.streaming is set but ${params.ecephys_path} is local: staging it as usual"
+    streaming = false
+}
+// job_dispatch only streams the AIND layout (ecephys_compressed zarrs); other inputs need the full session staged
+if (streaming && full_params.job_dispatch.input != 'aind') {
+    println "WARN: job_dispatch.streaming is only supported with input 'aind' (got '${full_params.job_dispatch.input}'): staging the full session"
+    streaming = false
+}
+if (streaming) {
+    full_params.job_dispatch.remote_path = full_params.job_dispatch.remote_path ?: params.ecephys_path.toString()
+}
+println "STREAMING: ${streaming}"
 
 // Tag logs with the acquisition name from data_description.json and the pipeline name;
 // values set by the user in the params file take priority
@@ -829,8 +834,6 @@ process visualization {
     export CODE_REPO="${versions['VISUALIZATION_REPO']}"
     export CODE_VERSION="${versions['VISUALIZATION_VERSION']}"
 
-    ${awsCredentialsExports()}
-
     mkdir -p capsule
     mkdir -p capsule/data
     mkdir -p capsule/results
@@ -882,7 +885,7 @@ process results_collector {
     ${extra_installs_cmd}
 
     export CODE_REPO="${versions['RESULTS_COLLECTOR_REPO']}"
-    export CODE_VERSION="${versions['RESULTS_COLLECTOR_VERSION']}"  
+    export CODE_VERSION="${versions['RESULTS_COLLECTOR_VERSION']}"
 
     mkdir -p capsule
     mkdir -p capsule/data
@@ -1140,11 +1143,42 @@ PROVENANCE_EOF
     """
 }
 
+// Streaming (AIND input): copy only the small metadata of a remote session into metadata_folder:
+// - session JSONs
+// - behavior JSONs (opto/QC triggers), plus a raw.harp placeholder next to them
+// - from ecephys_clipped: opto CSVs, settings XMLs, structure.oebin, sync_messages.txt and the events/ folders
+//   (the continuous/ folders hold GBs of timestamps and are skipped)
+def aind_partial_staging(session_path, metadata_folder) {
+    def session_root = file(session_path)
+    def behavior_jsons = files("${session_path}/behavior/**.json")
+    def clipped_patterns = ['**.{csv,xml,oebin}', '**/sync_messages.txt', '**/events/**']
+    def metadata_files = files("${session_path}/*.json") + behavior_jsons +
+        ['ecephys_clipped', 'ecephys/ecephys_clipped'].collectMany { clipped ->
+            clipped_patterns.collectMany { files("${session_path}/${clipped}/${it}") }
+        }
+    metadata_folder.mkdirs()
+    metadata_files.each { f ->
+        def target = metadata_folder.resolve(session_root.relativize(f).toString())
+        // shortcut: copy only if missing, to keep mtimes stable for -resume; a changed remote file needs a clean workDir
+        if (!target.exists()) { target.parent.mkdirs(); f.copyTo(target) }
+    }
+    // opto/QC locate the behavior JSONs by globbing for the raw.harp folder: stage a placeholder instead of the HARP binaries
+    behavior_jsons*.parent.unique().findAll { it.resolve('raw.harp').exists() }.each { d ->
+        def marker = metadata_folder.resolve(session_root.relativize(d).toString()).resolve('raw.harp/PLACEHOLDER')
+        if (!marker.exists()) { marker.parent.mkdirs(); marker.text = 'HARP data is not staged in streaming mode\n' }
+    }
+    return metadata_folder
+}
+
 workflow {
     full_params_ch = Channel.value(file(full_params_file.toString()))
-
-    // Input channel from ecephys path
-    ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
+    if (streaming) {
+        // the raw data is streamed by every step from the job JSONs: only stage the session metadata
+        def metadata_folder = aind_partial_staging(params.ecephys_path, file("${workDir}/streaming_session"))
+        ecephys_ch = Channel.fromPath(metadata_folder.toString() + "/", type: 'any')
+    } else {
+        ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')
+    }
 
     // Provenance: only the selected sorter's repo/commit is recorded
     def sorter_keys = ['kilosort25': 'spikesort_ks25', 'kilosort4': 'spikesort_ks4',
@@ -1195,12 +1229,18 @@ workflow {
         full_params_ch
     )
 
-    // Streams whose preprocessing wrote error.txt: don't launch sorting/postprocessing for them
-    def isFailed = { files -> files.any { p -> p.name.startsWith('preprocessed_') && p.resolve('error.txt').exists() } }
-    preprocessing_ok = preprocessing_out.results.filter { meta, files -> !isFailed(files) }
-    preprocessing_out.results
-        .filter { meta, files -> isFailed(files) }
-        .view { meta, files -> "Recording skipped after preprocessing: ${meta.id}" }
+    // Jobs whose preprocessing wrote error.txt: don't launch sorting/postprocessing for them
+    def isFailed = { p -> p.name.startsWith('preprocessed_') && p.resolve('error.txt').exists() }
+    preprocessing_ok = preprocessing_out.results.filter { res -> ![res].flatten().any(isFailed) }
+    failed_recordings = preprocessing_out.results
+        .flatMap { res -> [res].flatten().findAll(isFailed).collect { p -> p.name - 'preprocessed_' } }
+        .collect()
+        .ifEmpty([])
+    failed_recordings.view { "Recordings skipped after preprocessing: ${it}" }
+    jobs_ok = job_dispatch_out.results.flatten()
+        .combine(failed_recordings.map { [it] })
+        .filter { job, failed -> !(new groovy.json.JsonSlurper().parseText(job.text).recording_name in failed) }
+        .map { job, failed -> job }
 
     // Spike sorting based on selected sorter
     // def spikesort
