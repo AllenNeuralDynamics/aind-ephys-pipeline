@@ -9,12 +9,13 @@ Pipeline:
 
 * Job dispatch: Add option to stream from remote zarr files in aind mode (job-dispatch PR#40)
 * Skip spike sorting and postprocessing for "failed" preprocessing steps (too short/too many bad channels) (#151)
+* Per-stream channels joined on recording name: each stream's postprocessing, curation and visualization start as soon as its own upstream steps finish (#152)
+* Run quality control per stream right after visualization, instead of after the results collector (#152)
 * Fix NWB ecephys chunking/margins for performance (nwb-ecephys PR#31)
 
 CI:
 
 * Add workflow with remote zarr streaming test
-
 
 
 Parameters
