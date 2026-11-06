@@ -358,6 +358,33 @@
                                     "description": "Normalized cutoff frequency for the Butterworth filter."
                                 }
                             }
+                        },
+                        "detect_and_remove_artifacts": {
+                            "type": "object",
+                            "description": "Parameters for detecting and removing artifacts.",
+                            "additionalProperties": true,
+                            "properties": {
+                                "recording_to_detect": {
+                                    "type": "string",
+                                    "default": "pipeline[raw]",
+                                    "description": "Recording to use for artifact detection."
+                                },
+                                "method": {
+                                    "type": "string",
+                                    "default": "saturation",
+                                    "description": "Method for artifact detection and removal."
+                                },
+                                "method_kwargs": {
+                                    "type": ["object", "null"],
+                                    "default": {},
+                                    "description": "Keyword arguments for the artifact detection method."
+                                },
+                                "mode": {
+                                    "type": "string",
+                                    "default": "zeros",
+                                    "description": "Mode for artifact detection and removal."
+                                }
+                            }
                         }
                     }
                 },

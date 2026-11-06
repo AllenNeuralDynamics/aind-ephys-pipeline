@@ -58,6 +58,9 @@ def generate_spikeinterface(num_segments=1):
     recording_unsigned.set_channel_gains(1)
     recording_unsigned.set_channel_offsets(0)
 
+    # annotate the main recording with a saturation threshold to exercise artifact detection/removal
+    recording_main.annotate(saturation_threshold_uV=1000.0)
+
     # save spikeinterface recording zarr format for testing the job dispatch
     for recording_name, recording in zip(["main", "short", "unsigned"], [recording_main, recording_short, recording_unsigned]):
         recording.save(folder=output_folder / f"sample_recording_{recording_name}.zarr", format="zarr", overwrite=True)

@@ -58,14 +58,14 @@ jobs:
             data: tests/sample_dataset/spikeinterface
             results: tests/sample_dataset/spikeinterface_results
             params: params_test_si.json
-            check: --num-streams 3 --num-success 2 --num-nwb 3
+            check: --num-streams 3 --num-success 2 --num-nwb 3 --check-artifacts
           - name: Test Pipeline from SpikeInterface - multi-segment
             packages: spikeinterface|pynwb|hdmf-zarr
             generate: python tests/sample_dataset/create_test_spikeinterface.py --num-segments 2
             data: tests/sample_dataset/spikeinterface
             results: tests/sample_dataset/spikeinterface_results
             params: params_test_si.json
-            check: --num-streams 3 --num-success 2 --num-nwb 3 --num-segments 2
+            check: --num-streams 3 --num-success 2 --num-nwb 3 --num-segments 2 --check-artifacts
           - name: Test Pipeline from SpikeInterface - multi-segment + not split-segments
             packages: spikeinterface|pynwb|hdmf-zarr
             generate: python tests/sample_dataset/create_test_spikeinterface.py --num-segments 2

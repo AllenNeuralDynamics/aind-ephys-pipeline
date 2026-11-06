@@ -8,7 +8,7 @@ Minor release with bug fixes and performance improvements:
 Pipeline:
 
 * Skip spike sorting and postprocessing for "failed" preprocessing steps (too short/too many bad channels) (#151)
-
+* Add saturation detection and removal in preprocessing, and reuse pre-compute ones in QC
 
 Parameters
 
