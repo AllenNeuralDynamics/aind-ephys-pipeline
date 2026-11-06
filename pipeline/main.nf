@@ -318,8 +318,13 @@ if (streaming && !(params.ecephys_path.toString() ==~ /^\w+:\/\/.+/)) {
     println "WARN: job_dispatch.streaming is set but ${params.ecephys_path} is local: staging it as usual"
     streaming = false
 }
+// job_dispatch only streams the AIND layout (ecephys_compressed zarrs); other inputs need the full session staged
+if (streaming && full_params.job_dispatch.input != 'aind') {
+    println "WARN: job_dispatch.streaming is only supported with input 'aind' (got '${full_params.job_dispatch.input}'): staging the full session"
+    streaming = false
+}
 if (streaming) {
-    full_params.job_dispatch.pipeline_data_path = full_params.job_dispatch.pipeline_data_path ?: params.ecephys_path.toString()
+    full_params.job_dispatch.remote_path = full_params.job_dispatch.remote_path ?: params.ecephys_path.toString()
 }
 println "STREAMING: ${streaming}"
 
@@ -1137,19 +1142,40 @@ PROVENANCE_EOF
     """
 }
 
+// Streaming (AIND input): copy only the small metadata of a remote session into metadata_folder:
+// - session JSONs
+// - behavior JSONs (opto/QC triggers), plus a raw.harp placeholder next to them
+// - from ecephys_clipped: opto CSVs, settings XMLs, structure.oebin, sync_messages.txt and the events/ folders
+//   (the continuous/ folders hold GBs of timestamps and are skipped)
+def aind_partial_staging(session_path, metadata_folder) {
+    def session_root = file(session_path)
+    def behavior_jsons = files("${session_path}/behavior/**.json")
+    def clipped_patterns = ['**.{csv,xml,oebin}', '**/sync_messages.txt', '**/events/**']
+    def metadata_files = files("${session_path}/*.json") + behavior_jsons +
+        ['ecephys_clipped', 'ecephys/ecephys_clipped'].collectMany { clipped ->
+            clipped_patterns.collectMany { files("${session_path}/${clipped}/${it}") }
+        }
+    metadata_folder.mkdirs()
+    metadata_files.each { f ->
+        def target = metadata_folder.resolve(session_root.relativize(f).toString())
+        // shortcut: copy only if missing, to keep mtimes stable for -resume; a changed remote file needs a clean workDir
+        if (!target.exists()) { target.parent.mkdirs(); f.copyTo(target) }
+    }
+    // opto/QC locate the behavior JSONs by globbing for the raw.harp folder: stage a placeholder instead of the HARP binaries
+    behavior_jsons*.parent.unique().findAll { it.resolve('raw.harp').exists() }.each { d ->
+        def marker = metadata_folder.resolve(session_root.relativize(d).toString()).resolve('raw.harp/PLACEHOLDER')
+        if (!marker.exists()) { marker.parent.mkdirs(); marker.text = 'HARP data is not staged in streaming mode\n' }
+    }
+    return metadata_folder
+}
+
 workflow {
     // Input channel from ecephys path
     // Value channel so the same params file is reused by every task (File objects are not valid path inputs)
     full_params_ch = Channel.value(file(full_params_file.toString()))
     if (streaming) {
-        // stage a metadata-only copy of the session; the raw data is streamed by every step from the job JSONs
-        def metadata_folder = file("${workDir}/streaming_session")
-        metadata_folder.mkdirs()
-        files("${params.ecephys_path}/*.json").each { f ->
-            def target = metadata_folder.resolve(f.name)
-            // shortcut: copy only if missing, to keep mtimes stable for -resume; a changed remote JSON needs a clean workDir
-            if (!target.exists()) f.copyTo(target)
-        }
+        // the raw data is streamed by every step from the job JSONs: only stage the session metadata
+        def metadata_folder = aind_partial_staging(params.ecephys_path, file("${workDir}/streaming_session"))
         ecephys_ch = Channel.fromPath(metadata_folder.toString() + "/", type: 'any')
     } else {
         ecephys_ch = Channel.fromPath(params.ecephys_path + "/", type: 'any')

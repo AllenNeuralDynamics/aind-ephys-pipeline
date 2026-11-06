@@ -17,7 +17,7 @@
         "min_recording_duration": -1,
         "input": "aind",
         "streaming": false,
-        "pipeline_data_path": null
+        "remote_path": null
     },
     "preprocessing": {
         "job_kwargs": {
@@ -570,10 +570,13 @@
         }
     },
     "results_collector": {
+        "process_name": "sorted",
         "pipeline_data_path": null,
         "pipeline_results_path": null
     },
     "quality_control": {
+        "compute_event_qc": true,
+        "min_duration_to_allow_failure": 300,
         "pipeline_data_path": null
     }
 }
