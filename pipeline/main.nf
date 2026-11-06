@@ -1229,18 +1229,12 @@ workflow {
         full_params_ch
     )
 
-    // Jobs whose preprocessing wrote error.txt: don't launch sorting/postprocessing for them
-    def isFailed = { p -> p.name.startsWith('preprocessed_') && p.resolve('error.txt').exists() }
-    preprocessing_ok = preprocessing_out.results.filter { res -> ![res].flatten().any(isFailed) }
-    failed_recordings = preprocessing_out.results
-        .flatMap { res -> [res].flatten().findAll(isFailed).collect { p -> p.name - 'preprocessed_' } }
-        .collect()
-        .ifEmpty([])
-    failed_recordings.view { "Recordings skipped after preprocessing: ${it}" }
-    jobs_ok = job_dispatch_out.results.flatten()
-        .combine(failed_recordings.map { [it] })
-        .filter { job, failed -> !(new groovy.json.JsonSlurper().parseText(job.text).recording_name in failed) }
-        .map { job, failed -> job }
+    // Streams whose preprocessing wrote error.txt: don't launch sorting/postprocessing for them
+    def isFailed = { files -> files.any { p -> p.name.startsWith('preprocessed_') && p.resolve('error.txt').exists() } }
+    preprocessing_ok = preprocessing_out.results.filter { meta, files -> !isFailed(files) }
+    preprocessing_out.results
+        .filter { meta, files -> isFailed(files) }
+        .view { meta, files -> "Recording skipped after preprocessing: ${meta.id}" }
 
     // Spike sorting based on selected sorter
     // def spikesort
