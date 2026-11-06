@@ -7,7 +7,7 @@
 # Defaults:
 #   --cache   : $NXF_APPTAINER_CACHEDIR or $NXF_SINGULARITY_CACHEDIR
 #   --tag     : contents of pipeline/pipeline_version.txt
-#   --sorter  : kilosort4   (options: kilosort25, kilosort4, spykingcircus2, lupin, none, all)
+#   --sorter  : kilosort4   (options: kilosort25, kilosort4, spykingcircus2, lupin, dartsort, none, all)
 #   --engine  : singularity or apptainer (auto-detected), or docker.
 #               With docker, images are pulled and saved as compressed
 #               archives (<name>.tar.zst) in CACHE_DIR, which can be restored with:
@@ -127,12 +127,14 @@ case "$SORTER" in
     IMAGES+=("$(image_ref ks25)");;
   kilosort4)
     IMAGES+=("$(image_ref ks4)");;
+  dartsort)
+    IMAGES+=("$(image_ref dartsort)");;
   spykingcircus2|lupin|none)
     ;;
   all)
-    IMAGES+=("$(image_ref ks25)" "$(image_ref ks4)");;
+    IMAGES+=("$(image_ref ks25)" "$(image_ref ks4)" "$(image_ref dartsort)");;
   *)
-    echo "ERROR: invalid --sorter value '$SORTER' (valid: kilosort25, kilosort4, spykingcircus2, lupin, none, all)" >&2
+    echo "ERROR: invalid --sorter value '$SORTER' (valid: kilosort25, kilosort4, spykingcircus2, lupin, dartsort, none, all)" >&2
     exit 65;;
 esac
 

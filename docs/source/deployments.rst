@@ -74,7 +74,7 @@ for additional parameters.
    ./scripts/pull_pipeline_images.sh --sorter kilosort4
 
 This will pull and build the necessary Apptainer/Singularity images for the Kilosort4 sorter. Adjust the ``--sorter`` argument as
-needed (e.g., to ``kilosort25`` or ``spykingcircus2`` or ``all``).
+needed (e.g., to ``kilosort25``, ``spykingcircus2``, ``dartsort`` or ``all``).
 Note that this step requires you to set the ``NXF_APPTAINER_CACHEDIR``/``NXF_SINGULARITY_CACHEDIR`` environment variable to a directory with 
 enough space to store the images. Images used by the nextflow script will be cached automatically if not pre-built.
 
