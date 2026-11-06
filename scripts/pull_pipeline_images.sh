@@ -7,7 +7,7 @@
 # Defaults:
 #   --cache   : $NXF_APPTAINER_CACHEDIR or $NXF_SINGULARITY_CACHEDIR
 #   --tag     : contents of pipeline/pipeline_version.txt
-#   --sorter  : kilosort4   (options: kilosort25, kilosort4, dartsort,spykingcircus2, lupin, none, all)
+#   --sorter  : kilosort4   (options: kilosort25, kilosort4, dartsort, spykingcircus2, lupin, none, all)
 #   --engine  : singularity or apptainer (auto-detected), or docker.
 #               With docker, images are pulled and saved as compressed
 #               archives (<name>.tar.zst) in CACHE_DIR, which can be restored with:
