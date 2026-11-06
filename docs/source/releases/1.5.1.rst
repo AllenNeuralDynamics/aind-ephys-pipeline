@@ -13,6 +13,10 @@ Pipeline:
 * Run quality control per stream right after visualization, instead of after the results collector (#152)
 * Fix NWB ecephys chunking/margins for performance (nwb-ecephys PR#31)
 
+Environment:
+
+* Bump up Dartsort to version 0.5.32
+
 CI:
 
 * Add workflow with remote zarr streaming test
@@ -30,3 +34,4 @@ Package versions
 * ``neo`` version: 0.14.6
 * ``pynwb`` version: 4.2.0
 * ``kilosort4`` version: 4.1.7
+* ``dartsort`` version: 0.5.32
