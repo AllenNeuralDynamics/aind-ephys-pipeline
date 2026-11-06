@@ -675,11 +675,11 @@ process spikesort_dartsort {
 
     input:
     val max_duration_minutes
-    path preprocessing_results, stageAs: 'capsule/data/*'
+    tuple val(meta), path(preprocessing_results, stageAs: 'capsule/data/*')
     path params_file, stageAs: 'capsule/params.json'
 
     output:
-    path 'capsule/results/*', emit: results
+    tuple val(meta), path('capsule/results/*', arity: '1..*'), emit: results
 
     script:
     """
