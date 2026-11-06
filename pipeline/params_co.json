@@ -10,7 +10,9 @@
         "debug_duration": 30,
         "skip_timestamps_check": false,
         "multi_session": false,
-        "input": "aind"
+        "min_recording_duration": 300,
+        "input": "aind",
+        "streaming": true
     },
     "preprocessing": {
         "job_kwargs": {
