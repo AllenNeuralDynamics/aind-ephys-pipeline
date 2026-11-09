@@ -279,10 +279,7 @@ Preprocessing Parameters
            "detect_kwargs": {},
            "select_kwargs": {},
            "localize_peaks_kwargs": {},
-           "estimate_motion_kwargs": {
-               "win_step_norm": 0.1,
-               "win_scale_norm": 0.1
-           },
+           "estimate_motion_kwargs": {},
            "interpolate_motion_kwargs": {}
        }
    }
