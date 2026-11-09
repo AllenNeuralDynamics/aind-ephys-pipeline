@@ -88,6 +88,7 @@ else {
     println "Loaded parameters from DEFAULT_PARAMS"
 }
 
+
 // Dotted CLI overrides following the JSON layout, e.g. --preprocessing.filter_type=bandpass
 // (Nextflow turns them into nested maps in `params`); merged before validation so they are checked too
 def step_keys = ['logging', 'job_dispatch', 'preprocessing', 'spikesorting', 'postprocessing', 'curation', 'visualization',
@@ -155,6 +156,14 @@ def parse_capsule_versions() {
 }
 
 versions = parse_capsule_versions()
+
+// AIND-specific OPTO preprocessing option
+if (params.get('aind_opto')?.toString() == 'true') {  // --aind_opto / --aind_opto=true
+    // OPTO keys are optional: fall back to the regular preprocessing ones
+    versions["PREPROCESSING_REPO"] = versions.get("PREPROCESSING_OPTO_REPO", versions["PREPROCESSING_REPO"])
+    versions["PREPROCESSING_VERSION"] = versions.get("PREPROCESSING_OPTO_VERSION", versions["PREPROCESSING_VERSION"])
+    println "Using AIND opto preprocessing settings: ${versions['PREPROCESSING_REPO']} @ ${versions['PREPROCESSING_VERSION']}"
+}
 
 // Allow CLI/config to override individual step repos and commits.
 // Usage: --preprocessing_repo <url> --preprocessing_version <hash>
