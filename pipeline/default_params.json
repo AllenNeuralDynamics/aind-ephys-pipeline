@@ -16,6 +16,7 @@
         "multi_session": false,
         "min_recording_duration": -1,
         "input": "aind",
+        "nwb_files": null,
         "streaming": false,
         "remote_path": null
     },
