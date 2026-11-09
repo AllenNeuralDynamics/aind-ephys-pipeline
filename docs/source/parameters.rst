@@ -181,6 +181,12 @@ Parameter file section (``job_dispatch``):
    ``spikeinterface``. Use ``spikeinterface`` together with ``--spikeinterface-info`` for any
    format supported by SpikeInterface.
 
+``nwb_files``
+   Comma-separated paths of the NWB files to load when ``input`` is ``nwb``. Use it when the
+   files do not end in ``.nwb`` or are not in the input folder. If ``null`` (the default), the
+   ``.nwb`` files in the input folder are loaded. Loading more than one file requires
+   ``multi_session``.
+
 ``spikeinterface_info``
    JSON string containing the information needed to load a recording with SpikeInterface when
    ``input`` is set to ``spikeinterface``. It includes:
