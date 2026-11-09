@@ -22,12 +22,12 @@ CI:
 
 * Add workflow with remote zarr streaming test
 
-
 Parameters
 
 * Added ``min_recording_duration`` parameter to skip recordings shorter than the specified duration (-1 disables this check) (#153)
 * Added ``job_dispatch.nwb_files`` to the parameters schema. The job dispatch step reads it, but the schema rejected it, so ``--job_dispatch_args "--nwb-files ..."`` failed validation from 1.5.0
 * Remove ``preprocessing.motion.extimate_kwargs.win_step_norm/win_scale_norm``
+* Add ``--aind_opto`` CLI parameter to enable AIND-specific opto preprocessing
 
 Package versions
 ----------------
