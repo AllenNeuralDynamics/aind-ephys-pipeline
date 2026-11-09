@@ -87,6 +87,21 @@
                     "default": "aind",
                     "description": "Which loader to use for data ingestion."
                 },
+                "nwb_files": {
+                    "type": ["string", "null"],
+                    "default": null,
+                    "description": "Comma-separated paths of the NWB files to load. Only used if input is 'nwb'. If null, the .nwb files in the input folder are loaded."
+                },
+                "streaming": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Stream the raw data from a remote session (e.g. s3://) instead of staging it. Only session metadata JSONs are staged."
+                },
+                "remote_path": {
+                    "type": ["string", "null"],
+                    "default": null,
+                    "description": "Remote session path to stream from. Filled in by the pipeline from the input path when streaming."
+                },
                 "spikeinterface_info": {
                     "type": ["object", "null"],
                     "default": null,
@@ -439,17 +454,7 @@
                         "estimate_motion_kwargs": {
                             "type": "object",
                             "default": {},
-                            "description": "Additional keyword arguments for motion estimation.",
-                            "properties": {
-                                "win_step_norm": {
-                                    "type": "number",
-                                    "description": "Normalized window step size."
-                                },
-                                "win_scale_norm": {
-                                    "type": "number",
-                                    "description": "Normalized window scale."
-                                }
-                            }
+                            "description": "Additional keyword arguments for motion estimation."
                         },
                         "interpolate_motion_kwargs": {
                             "type": "object",
@@ -1397,6 +1402,11 @@
             "type": "object",
             "description": "Parameters for result collector.",
             "properties": {
+                "process_name": {
+                    "type": "string",
+                    "default": "sorted",
+                    "description": "Name of the process to create derived data_description files."
+                },
                 "pipeline_data_path": {
                     "type": ["string", "null"],
                     "default": null,
@@ -1520,6 +1530,17 @@
             "type": "object",
             "description": "Parameters for quality control.",
             "properties": {
+                "compute_event_qc": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to compute event quality control metrics."
+                },
+                "min_duration_to_allow_failure": {
+                    "type": "number",
+                    "default": 300,
+                    "minimum": 0,
+                    "description": "Minimum duration to allow metric failure in seconds."
+                },
                 "pipeline_data_path": {
                     "type": ["string", "null"],
                     "default": null,

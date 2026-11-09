@@ -1,6 +1,10 @@
 # PRs into dev (and pushes to dev):
 #   version check -> build {V}-dev images -> cache images -> Nextflow tests
 #
+# PRs from forks cannot push to ghcr: they build base + nwb as {V}-dev-tmp
+# locally (not pushed), pass them to the tests through the Actions cache, and
+# skip the ghcr build/cache jobs.
+#
 # Pushes to dev rebuild {V}-dev from the dev HEAD, so that the -dev images
 # always match the dev branch before being promoted to a release (pr-main.yml).
 #
@@ -25,6 +29,8 @@ permissions:
 jobs:
   meta:
     name: Resolve version
+    # Fork PRs cannot push to ghcr: they use fork-images instead of images + cache.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -32,12 +38,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Check PR is not from a fork
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          echo "::error::PRs from forks cannot push the -dev container images to ghcr. Please push your branch to ${{ github.repository }}."
-          exit 1
 
       - name: Read pipeline version
         id: version
@@ -72,27 +72,74 @@ jobs:
     with:
       tag: ${{ needs.meta.outputs.tag }}
 
+  fork-images:
+    name: Build images (fork, not pushed)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.build.outputs.tag }}
+      cache-key: ${{ steps.build.outputs.cache-key }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/share/dotnet /opt/hostedtoolcache
+          docker system prune -af
+          df -h
+
+      # Only the images used by the Nextflow tests (sorter: none); sorter images are not built.
+      - name: Build and save images
+        id: build
+        run: |
+          TAG="$(tr -d '[:space:]' < pipeline/pipeline_version.txt)-dev-tmp"
+          mkdir -p "$RUNNER_TEMP/images"
+          for img in base nwb; do
+            NAME=$(.github/scripts/image_info.sh $img name)
+            docker build --platform linux/amd64 -t "$NAME:$TAG" \
+              -f "environment/$(.github/scripts/image_info.sh $img dockerfile)" environment
+            docker save "$NAME:$TAG" | zstd -T0 -3 -q -f -o "$RUNNER_TEMP/images/${NAME##*/}.tar.zst"
+            docker rmi "$NAME:$TAG"
+          done
+          du -sh "$RUNNER_TEMP"/images/*
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "cache-key=images-$TAG-${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+
+      - name: Save images to cache
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/images
+          key: ${{ steps.build.outputs.cache-key }}
+
   tests:
     name: Nextflow tests
-    needs: [meta, cache]
-    if: ${{ !cancelled() && needs.cache.result == 'success' }}
+    needs: [meta, cache, fork-images]
+    if: ${{ !cancelled() && (needs.cache.result == 'success' || needs.fork-images.result == 'success') }}
     uses: ./.github/workflows/_nextflow-tests.yml
     secrets: inherit
     with:
-      container_tag: ${{ needs.meta.outputs.tag }}
-      cache-key: ${{ needs.cache.outputs.cache-key }}
+      container_tag: ${{ needs.fork-images.outputs.tag || needs.meta.outputs.tag }}
+      cache-key: ${{ needs.fork-images.outputs.cache-key || needs.cache.outputs.cache-key }}
 
   ci-ok:
     name: ci-ok
-    needs: [meta, version, images, cache, tests]
+    needs: [meta, version, images, cache, fork-images, tests]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs
+        env:
+          FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
           echo "meta=${{ needs.meta.result }} version=${{ needs.version.result }} images=${{ needs.images.result }}"
-          echo "cache=${{ needs.cache.result }} tests=${{ needs.tests.result }}"
-          for result in "${{ needs.meta.result }}" "${{ needs.images.result }}" "${{ needs.cache.result }}" "${{ needs.tests.result }}"; do
+          echo "cache=${{ needs.cache.result }} fork-images=${{ needs.fork-images.result }} tests=${{ needs.tests.result }}"
+          [[ "${{ needs.version.result }}" =~ ^(success|skipped)$ ]] || { echo "::error::Version check failed"; exit 1; }
+          if [[ "$FORK" == "true" ]]; then
+            REQUIRED=("${{ needs.fork-images.result }}" "${{ needs.tests.result }}")
+          else
+            REQUIRED=("${{ needs.meta.result }}" "${{ needs.images.result }}" "${{ needs.cache.result }}" "${{ needs.tests.result }}")
+          fi
+          for result in "${REQUIRED[@]}"; do
             [[ "$result" == "success" ]] || { echo "::error::Required job did not succeed"; exit 1; }
           done
-          [[ "${{ needs.version.result }}" =~ ^(success|skipped)$ ]] || { echo "::error::Version check failed"; exit 1; }

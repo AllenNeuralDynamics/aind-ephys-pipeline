@@ -4,10 +4,9 @@
 Electrophysiology analysis pipeline with [SpikeInterface](https://github.com/SpikeInterface/spikeinterface).
 
 
-# News
+# Documentation
 
-[Jul 3rd 2026]: New release 1.3.0 is out! Check out release notes [here](https://aind-ephys-pipeline.readthedocs.io/en/latest/releases/1.3.0.html)
-
+The documentation is available at [ReadTheDocs](https://aind-ephys-pipeline.readthedocs.io/en/latest/).
 
 # Overview
 
@@ -35,9 +34,9 @@ flowchart LR
     subgraph pipeline["📊 <b><a href='https://aind-ephys-pipeline.readthedocs.io/en/latest/architecture.html'>Processing Pipeline</a></b> (11 steps)"]
         direction TB
         prep["1. Job Dispatch<br/>2. Preprocessing"]
-        sort["3. Spike Sorting<br/>(KS2.5/KS4/SC2)"]
-        post["4-6. Postprocessing<br/>Curation<br/>Visualization"]
-        final["7-11. Results Collection<br/>Quality Control<br/>NWB Export"]
+        sort["3. Spike Sorting<br/>(KS2.5/KS4/SC2/Lupin/Dartsort)"]
+        post["4-7. Postprocessing<br/>Curation<br/>Visualization<br/>Quality Control"]
+        final["8-11. Results/QC Collection<br/>NWB Export"]
 
         prep --> sort --> post --> final
     end
@@ -65,17 +64,12 @@ flowchart LR
   - *1*. Job dispatch
   - *2*. Preprocessing
   - *3*. Spike sorting (KS2.5/KS4/SC2)
-  - *4-6*. Postprocessing → Curation → Visualization
-  - *7-11*. Results collection → Quality control → NWB export
+  - *4-7*. Postprocessing → Curation → Visualization → Quality control
+  - *8-11*. Results / QC collection → NWB export
 - **Infrastructure**: 4 container images from [GHCR](https://github.com/orgs/AllenNeuralDynamics/packages) and [UnitRefine ML models](https://huggingface.co/SpikeInterface) from Hugging Face
 - **Parallelization**: Steps run in parallel per probe/shank; version controlled via [`process_versions.env`](pipeline/process_versions.env)
 
 See the [**detailed architecture documentation**](https://aind-ephys-pipeline.readthedocs.io/en/latest/architecture.html) for complete infrastructure details, data flow, and numbered step-by-step breakdown.
-
-
-# Documentation
-
-The documentation is available at [ReadTheDocs](https://aind-ephys-pipeline.readthedocs.io/en/latest/).
 
 
 ## Code Ocean Deployment (AIND)

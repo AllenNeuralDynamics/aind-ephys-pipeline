@@ -73,6 +73,13 @@ jobs:
             results: tests/sample_dataset/spikeinterface_results
             params: params_test_si_concat.json
             check: --num-streams 3 --num-success 2 --num-nwb 3 --num-segments 2 --no-split-segments
+          - name: Test AIND Pipeline streaming
+            # s3fs + wavpack-numcodecs: the check script opens the compressed raw data on S3
+            packages: spikeinterface|pynwb|hdmf-zarr|s3fs|wavpack-numcodecs
+            data: s3://aind-open-data/ecephys_873725_2026-10-07_13-46-07
+            results: tests/sample_dataset/aind_streaming_results
+            params: params_test_streaming.json
+            check: --num-streams 2 --num-success 2 --num-nwb 2
           - name: Test Pipeline Validation Error
             data: tests/sample_dataset/nwb
             results: tests/sample_dataset/nwb/results
@@ -135,7 +142,10 @@ jobs:
       - name: Run Nextflow pipeline
         run: |
           set +e
-          DATA_PATH="$(pwd)/${{ matrix.data }}" RESULTS_PATH="$(pwd)/${{ matrix.results }}" \
+          DATA_PATH="${{ matrix.data }}"
+          # remote data (streaming) is used as is, local data is relative to the repo
+          [[ "$DATA_PATH" == *://* ]] || DATA_PATH="$(pwd)/$DATA_PATH"
+          DATA_PATH="$DATA_PATH" RESULTS_PATH="$(pwd)/${{ matrix.results }}" \
           nextflow -C "$(pwd)/.github/workflows/nextflow_test.config" run pipeline/main.nf \
           --params_file "$(pwd)/.github/workflows/params_files/${{ matrix.params }}"
           STATUS=$?
@@ -148,5 +158,7 @@ jobs:
       - name: Check pipeline results
         if: ${{ !matrix.expect_fail }}
         run: |
+          DATA_PATH="${{ matrix.data }}"
+          [[ "$DATA_PATH" == *://* ]] || DATA_PATH="$(pwd)/$DATA_PATH"
           python "$(pwd)/tests/check_pipeline_results.py" --results-path "$(pwd)/${{ matrix.results }}" \
-          --data-path "$(pwd)/${{ matrix.data }}" ${{ matrix.check }}
+          --data-path "$DATA_PATH" ${{ matrix.check }}
