@@ -427,17 +427,7 @@
                         "estimate_motion_kwargs": {
                             "type": "object",
                             "default": {},
-                            "description": "Additional keyword arguments for motion estimation.",
-                            "properties": {
-                                "win_step_norm": {
-                                    "type": "number",
-                                    "description": "Normalized window step size."
-                                },
-                                "win_scale_norm": {
-                                    "type": "number",
-                                    "description": "Normalized window scale."
-                                }
-                            }
+                            "description": "Additional keyword arguments for motion estimation."
                         },
                         "interpolate_motion_kwargs": {
                             "type": "object",
