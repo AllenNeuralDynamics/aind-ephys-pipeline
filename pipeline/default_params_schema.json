@@ -87,6 +87,11 @@
                     "default": "aind",
                     "description": "Which loader to use for data ingestion."
                 },
+                "nwb_files": {
+                    "type": ["string", "null"],
+                    "default": null,
+                    "description": "Comma-separated paths of the NWB files to load. Only used if input is 'nwb'. If null, the .nwb files in the input folder are loaded."
+                },
                 "streaming": {
                     "type": "boolean",
                     "default": false,
