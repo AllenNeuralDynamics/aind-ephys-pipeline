@@ -242,6 +242,11 @@ def main():
         action="store_true",
         help="Check Device/ElectrodeGroup naming of the exported NWB files against the input NWB file.",
     )
+    parser.add_argument(
+        "--check-artifacts",
+        action="store_true",
+        help="Check that at least one preprocessed recording includes the artifact detection/removal step.",
+    )
     args = parser.parse_args()
 
     results_path = args.results_path
@@ -280,6 +285,7 @@ def main():
             preprocessed_dir.glob("*_recording[0-9]*.json")
         )
         checker.check_count("preprocessed", jsons, num_success)
+        num_with_artifacts = 0
         for json_file in jsons:
             print(f"\t- {json_file.name}")
             try:
@@ -288,6 +294,16 @@ def main():
             except Exception as e:
                 checker.error(f"failed to load preprocessed recording: {json_file} ({e})")
                 raise Exception
+            # walk the preprocessing chain looking for the artifact removal step
+            parent = recording
+            while parent is not None:
+                if type(parent).__name__ == "DetectAndRemoveArtifactsRecording":
+                    num_with_artifacts += 1
+                    print(f"\t\t- artifact removal step found ({len(parent.periods)} periods)")
+                    break
+                parent = parent.get_parent()
+        if args.check_artifacts and num_with_artifacts == 0:
+            checker.error("no preprocessed recording includes the artifact detection/removal step")
 
     # --- spikesorted ------------------------------------------------------
     print("\n[spikesorted]")
