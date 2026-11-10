@@ -1,7 +1,7 @@
 .. _1.5.1:
 
-1.5.1 - TBD
-===========
+1.5.1 - Nov 11th 2026
+=====================
 
 Minor release with bug fixes and performance improvements:
 
