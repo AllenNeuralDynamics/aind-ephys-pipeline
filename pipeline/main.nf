@@ -437,7 +437,6 @@ process job_dispatch {
     echo "[${task.tag}] completed!"
 
     """
-
 }
 
 process preprocessing {
@@ -488,7 +487,6 @@ process preprocessing {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process spikesort_kilosort25 {
@@ -536,7 +534,6 @@ process spikesort_kilosort25 {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process spikesort_kilosort4 {
@@ -582,7 +579,6 @@ process spikesort_kilosort4 {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process spikesort_spykingcircus2 {
@@ -627,7 +623,6 @@ process spikesort_spykingcircus2 {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process spikesort_lupin {
@@ -719,7 +714,6 @@ process spikesort_dartsort {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process postprocessing {
@@ -769,7 +763,6 @@ process postprocessing {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process curation {
@@ -815,7 +808,6 @@ process curation {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process visualization {
@@ -865,7 +857,6 @@ process visualization {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process results_collector {
@@ -921,7 +912,6 @@ process results_collector {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process quality_control {
@@ -972,7 +962,6 @@ process quality_control {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process quality_control_collector {
@@ -1020,7 +1009,6 @@ process quality_control_collector {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 
@@ -1071,7 +1059,6 @@ process nwb_ecephys {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 process nwb_units {
@@ -1125,7 +1112,6 @@ process nwb_units {
 
     echo "[${task.tag}] completed!"
     """
-
 }
 
 // Provenance: record pipeline version, repos + commits and effective parameters
