@@ -63,3 +63,4 @@ NXF_VER=$NXF_VERSION DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
 python "$(dirname "$SCRIPT_PATH")/check_pipeline_results.py" \
 --results-path "$RESULTS_PATH" --data-path "$DATA_PATH" --num-streams 3 --num-success 2 --num-nwb 1 \
 --check-nwb-devices --check-sparse-waveforms
+
