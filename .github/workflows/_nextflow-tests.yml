@@ -26,7 +26,7 @@ env:
 jobs:
   test:
     name: ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # wavpack-numcodecs sdist only ships glibc 2.31/2.35/2.39 libs
     strategy:
       fail-fast: false
       matrix:
@@ -37,7 +37,7 @@ jobs:
             data: tests/sample_dataset/nwb
             results: tests/sample_dataset/nwb_results
             params: params_test_default.json
-            check: --num-streams 3 --num-success 2 --num-nwb 1 --check-nwb-devices
+            check: --num-streams 3 --num-success 2 --num-nwb 1 --check-nwb-devices --check-sparse-waveforms
           - name: Test Pipeline Customization
             packages: spikeinterface|neuroconv|pynwb|hdmf-zarr
             generate: python tests/sample_dataset/create_test_nwb.py
@@ -51,7 +51,7 @@ jobs:
             data: tests/sample_dataset/nwb_multishank
             results: tests/sample_dataset/nwb_multishank_results
             params: params_test_default.json
-            check: --num-streams 5 --num-success 4 --num-nwb 1 --check-nwb-devices
+            check: --num-streams 5 --num-success 4 --num-nwb 1 --check-nwb-devices --check-sparse-waveforms
           - name: Test Pipeline from SpikeInterface - single-segment
             packages: spikeinterface|pynwb|hdmf-zarr
             generate: python tests/sample_dataset/create_test_spikeinterface.py --num-segments 1

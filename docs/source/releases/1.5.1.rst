@@ -13,6 +13,7 @@ Pipeline:
 * Per-stream channels joined on recording name: each stream's postprocessing, curation and visualization start as soon as its own upstream steps finish (#152)
 * Run quality control per stream right after visualization, instead of after the results collector (#152)
 * Fix NWB ecephys chunking/margins for performance (nwb-ecephys PR#31)
+* Write sparse waveform_mean/sd in NWB units (nwb-units PR#37)
 
 Environment:
 
