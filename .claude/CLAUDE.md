@@ -20,7 +20,7 @@ A single Nextflow **DSL2** pipeline (`pipeline/main.nf`) runs on every backend. 
 
 ## Pipeline Steps
 
-Every step repo is in `../../pipeline-steps/ephys/` locally (spike sorters under `spikesorting/`, NWB under `nwb/`).
+Every step repo is in `../../pipeline-steps/ephys/` locally (`$EPHYS_STEPS_PATH`) (spike sorters under `spikesorting/`, NWB under `nwb/`).
 
 | # | Process | Repo | Container | Runs |
 |---|---|---|---|---|
@@ -51,6 +51,20 @@ Every step repo is in `../../pipeline-steps/ephys/` locally (spike sorters under
 - **Run modes:** `--runmode full` (default) or `fast`. `fast` turns off motion correction and LFP writing, and drops the `spike_locations` and `principal_components` extensions.
 - **SLURM time limits** scale with `max_duration_minutes`, a `val` input to every process that job_dispatch derives.
 - **`params_app/`** is a static web app for editing and validating params files against the schema.
+
+## Operations
+
+- **Input:** `--ecephys_url` (a local path or `s3://...`), falling back to the `DATA_PATH` env var. An AIND session holds `ecephys/ecephys_compressed/{experiment}_{stream}.zarr` (older sessions: `ecephys_compressed/` at the top level), `ecephys/ecephys_clipped/` (Open Ephys metadata), and `data_description.json`, whose `name` is the session name. The bucket/session form is `s3://{bucket}/{session_name}/...`.
+- **Streaming** (`job_dispatch.streaming`, default false):
+  - It only applies to remote URLs with `job_dispatch.input == "aind"`. Otherwise `main.nf` prints a WARN and stages the session as usual.
+  - When it's on, `main.nf` sets `job_dispatch.remote_path` to the session URL and stages only metadata (`aind_partial_staging()`: session JSONs, behavior JSONs plus a `raw.harp` placeholder, and the small `ecephys_clipped` files, skipping the GB-sized `continuous/` folders).
+  - job_dispatch lists the zarrs on S3 (anonymously first, then with credentials) and writes their `s3://` paths into the job JSONs. Every later step streams from those paths.
+- **Logging:** `logging.acquisition_name` defaults to `name` from the session's `data_description.json`. If that's missing, a WARN is printed and the value is `"undefined"`.
+- **AWS on Code Ocean:** tasks get credentials from the AWS Batch container role (`AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`, role `aind-codeocean-user`). Don't forward credentials into processes: that was removed in #150 because Nextflow already provides them. To debug a bucket permission error, compare `env | grep AWS` and a boto3 `put_object` test between a working capsule and the process.
+- **Figpack (visualization):** needs `FIGPACK_API_KEY` in the launch environment (a Code Ocean secret). `nextflow.config` sets `FIGPACK_BUCKET=aind-figpack-client` and `FIGPACK_UPLOAD=1` and whitelists all three into the tasks. Without the key, visualization skips figpack.
+- **Provenance:** `save_provenance` writes `provenance.json` (pipeline version, step repos and commits, effective params) to the results.
+- **Analyzer compatibility:** AIND zarr analyzers written before spikeinterface #4881/#4882 contain zarr-v2 object arrays (`pickle`/`json2`: `sorting_provenance`, `recording`, the PCA models). spikeinterface older than #4260 ("Support zarr v3") can't open them with zarr-python 3.
+- **Skills** (the `ephys-pipeline` plugin, repo `aind-ephys-pipeline-skills`): `co-patch-release` for a Code Ocean patch release (CO releases only from `main`; the last CO release lives on `co-release`), and `pipeline-steps-fanout` for changing many step repos at once. The plugin reads `EPHYS_PIPELINE_PATH` (this repo) and `EPHYS_STEPS_PATH` (`pipeline-steps/ephys`).
 
 ## Repository Structure
 
