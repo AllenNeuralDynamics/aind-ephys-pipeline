@@ -137,7 +137,7 @@ jobs:
       - name: Set up Nextflow
         uses: nf-core/setup-nextflow@v1
         with:
-          version: latest-stable
+          version: 26.04.9 # pinned: 26.10.5 fails to start nf-amazon (s3 streaming test)
 
       - name: Run Nextflow pipeline
         run: |
