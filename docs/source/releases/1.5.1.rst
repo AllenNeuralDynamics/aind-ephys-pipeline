@@ -19,6 +19,7 @@ Environment:
 
 * Bump up Dartsort to version 0.5.32
 * Rebuild Dartsort image off base spikeinterface image (spikeinterface/dartsort-base:0.5.32_cuda-12.9.1)
+* Bump up s3fs to 2025.7.0
 
 CI:
 
