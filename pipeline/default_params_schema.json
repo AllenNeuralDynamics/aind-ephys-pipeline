@@ -145,7 +145,7 @@
         "preprocessing": {
             "type": "object",
             "description": "Parameters for the preprocessing step (filtering, denoising, motion correction).",
-            "additionalProperties": false,
+            "additionalProperties": true,
             "properties": {
                 "job_kwargs": {
                     "type": "object",

@@ -77,7 +77,10 @@
             "localize_peaks_kwargs": {},
             "estimate_motion_kwargs": {},
             "interpolate_motion_kwargs": {}
-        }
+        },
+        "artifact_cutout_ms": 2,
+        "artifact_freq_max": 9000,
+        "artifact_detect_threshold": 30
     },
     "postprocessing": {
         "job_kwargs": {
