@@ -20,6 +20,8 @@ COPY package-versions.txt /tmp/package-versions.txt
 RUN pip install --upgrade pip && \
     grep -E '^torch==' /tmp/package-versions.txt | xargs pip install --index-url https://download.pytorch.org/whl/cpu
 
+# pyvips 2.2.1 builds a cffi extension that gcc 14 (trixie) rejects as an error; downgrade to a warning.
+ENV CFLAGS=-Wno-error=incompatible-pointer-types
 RUN grep -E 'log-schema|aind-data-schema|aind-metadata-upgrader|aind-qcportal-schema|zarr|numcodecs|pyvips|sortingview|figpack|figpack-spike-sorting|matplotlib_venn|wavpack-numcodecs|pynwb|hdmf-zarr|hdbscan|s3fs|seaborn|scikit-learn|neo|scipy' \
         /tmp/package-versions.txt | xargs pip install
 
