@@ -1,4 +1,4 @@
-FROM continuumio/miniconda3:23.9.0-0
+FROM python:3.13-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
 
