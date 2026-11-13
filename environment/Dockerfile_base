@@ -1,29 +1,16 @@
-FROM python:3.13-slim-bullseye
+FROM python:3.13-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
-
-# Debian 11 (bullseye) is EOL: packages moved to archive.debian.org
-RUN printf 'deb http://archive.debian.org/debian bullseye main\ndeb http://archive.debian.org/debian-security bullseye-security main\n' \
-        > /etc/apt/sources.list \
-    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive
 
 # 1. Install system dependencies as root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         git \
-        fonts-freefont-ttf=20120503-10 \
+        fonts-freefont-ttf \
+        libvips-dev \
+        libtiff-dev \
     && rm -rf /var/lib/apt/lists/*
-
-# correct mapping to make libvips work
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libffi.so.7
-
-# install libvips
-RUN apt-get update \
-    && apt-get install -y libvips libvips-dev libvips-tools libtiff5-dev
-
-# install default fonts
-RUN apt-get install -y fonts-freefont-ttf
 
 # 2. Install Python packages as root so they land in the system (conda) site-packages,
 #    accessible to any user regardless of UID at runtime.
