@@ -70,10 +70,7 @@
             "detect_kwargs": {},
             "select_kwargs": {},
             "localize_peaks_kwargs": {},
-            "estimate_motion_kwargs": {
-                "win_step_norm": 0.1,
-                "win_scale_norm": 0.1
-            },
+            "estimate_motion_kwargs": {},
             "interpolate_motion_kwargs": {}
         }
     },
@@ -85,7 +82,7 @@
         "use_motion_corrected": false,
         "sparsity": {
             "method": "radius",
-            "radius_um": 100
+            "radius_um": 40
         },
         "duplicate_threshold": 0.9,
         "return_in_uV": true,

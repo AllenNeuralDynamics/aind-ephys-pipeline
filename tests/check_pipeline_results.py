@@ -28,15 +28,21 @@ of the exported NWB files is checked against the input NWB file: the expected de
 manufacturers, descriptions and locations are derived from the input ElectrodeGroups, and each
 exported unit must resolve to electrodes belonging to its own device.
 
+With ``--check-sparse-waveforms``, waveform_mean/sd of the exported units must have fewer channels than
+the electrodes of the unit's device, and each unit's electrodes must match the waveform channels.
+
 Usage:
   check_pipeline_results.py --results-path PATH --data-path PATH \
-      [--num-streams N] [--num-success N] [--num-nwb N] [--check-nwb-devices]
+      [--num-streams N] [--num-success N] [--num-nwb N] [--check-nwb-devices] [--check-sparse-waveforms]
 """
 
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
+
+import numpy as np
 
 import spikeinterface as si
 from spikeinterface.curation.curation_model import Curation
@@ -226,6 +232,42 @@ def check_nwb_devices(nwbfile, nwb_file: Path, expected: dict, checker: Checker)
         )
 
 
+def check_sparse_waveforms(nwbfile, nwb_file: Path, checker: Checker):
+    """Check that waveform_mean/sd are sparse: fewer channels than the electrodes of the unit's device,
+    and each unit's `electrodes` match the waveform channel dimension."""
+    units = nwbfile.units
+    if units is None or "waveform_mean" not in units.colnames or "waveform_sd" not in units.colnames:
+        checker.error(f"{nwb_file.name}: units table has no waveform_mean/waveform_sd")
+        return
+    means_shape = np.asarray(units["waveform_mean"].data).shape
+    sds_shape = np.asarray(units["waveform_sd"].data).shape
+    print(f"\t\t- waveform_mean shape: {means_shape}, waveform_sd shape: {sds_shape}")
+    if means_shape != sds_shape:
+        checker.error(f"{nwb_file.name}: waveform_mean {means_shape} and waveform_sd {sds_shape} shapes differ")
+    num_channels = means_shape[-1]
+
+    electrodes_per_device = Counter(group.device.name for group in nwbfile.electrodes["group"][:])
+    units_df = units.to_dataframe()
+    dense, mismatched = [], []
+    for unit_id, row in units_df.iterrows():
+        unit_electrodes = row["electrodes"]
+        if len(unit_electrodes) != num_channels:
+            mismatched.append((unit_id, len(unit_electrodes)))
+        unit_devices = {group.device.name for group in unit_electrodes["group"]}
+        if any(num_channels >= electrodes_per_device[d] for d in unit_devices):
+            dense.append((unit_id, sorted(unit_devices)))
+    if mismatched:
+        checker.error(
+            f"{nwb_file.name}: {len(mismatched)} unit(s) whose number of electrodes differs from the "
+            f"waveform channels ({num_channels}), e.g. {mismatched[:5]}"
+        )
+    if dense:
+        checker.error(
+            f"{nwb_file.name}: waveforms are not sparse ({num_channels} channels, electrodes per device "
+            f"{dict(electrodes_per_device)}), e.g. {dense[:5]}"
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -241,6 +283,16 @@ def main():
         "--check-nwb-devices",
         action="store_true",
         help="Check Device/ElectrodeGroup naming of the exported NWB files against the input NWB file.",
+    )
+    parser.add_argument(
+        "--check-artifacts",
+        action="store_true",
+        help="Check that at least one preprocessed recording includes the artifact detection/removal step.",
+    )
+    parser.add_argument(
+        "--check-sparse-waveforms",
+        action="store_true",
+        help="Check that waveform_mean/sd in the exported NWB files have fewer channels than the probe electrodes.",
     )
     args = parser.parse_args()
 
@@ -280,6 +332,7 @@ def main():
             preprocessed_dir.glob("*_recording[0-9]*.json")
         )
         checker.check_count("preprocessed", jsons, num_success)
+        num_with_artifacts = 0
         for json_file in jsons:
             print(f"\t- {json_file.name}")
             try:
@@ -288,6 +341,16 @@ def main():
             except Exception as e:
                 checker.error(f"failed to load preprocessed recording: {json_file} ({e})")
                 raise Exception
+            # walk the preprocessing chain looking for the artifact removal step
+            parent = recording
+            while parent is not None:
+                if type(parent).__name__ == "DetectAndRemoveArtifactsRecording":
+                    num_with_artifacts += 1
+                    print(f"\t\t- artifact removal step found ({len(parent.periods)} periods)")
+                    break
+                parent = parent.get_parent()
+        if args.check_artifacts and num_with_artifacts == 0:
+            checker.error("no preprocessed recording includes the artifact detection/removal step")
 
     # --- spikesorted ------------------------------------------------------
     print("\n[spikesorted]")
@@ -381,6 +444,8 @@ def main():
                 continue
             if expected_devices:
                 check_nwb_devices(nwbfile, nwb_file, expected_devices, checker)
+            if args.check_sparse_waveforms:
+                check_sparse_waveforms(nwbfile, nwb_file, checker)
 
     # --- summary ----------------------------------------------------------
     print()

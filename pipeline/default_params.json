@@ -14,7 +14,11 @@
         "debug_duration": 30,
         "skip_timestamps_check": false,
         "multi_session": false,
-        "input": "aind"
+        "min_recording_duration": -1,
+        "input": "aind",
+        "nwb_files": null,
+        "streaming": false,
+        "remote_path": null
     },
     "preprocessing": {
         "job_kwargs": {
@@ -61,6 +65,12 @@
                 "agc_window_length_s": 0.01,
                 "highpass_butter_order": 3,
                 "highpass_butter_wn": 0.01
+            },
+            "detect_and_remove_artifacts": {
+                "recording_to_detect": "pipeline[raw]",
+                "method": "saturation",
+                "method_kwargs": {},
+                "mode": "zeros"
             }
         },
         "custom_preprocessing_pipeline": null,
@@ -71,10 +81,7 @@
             "detect_kwargs": {},
             "select_kwargs": {},
             "localize_peaks_kwargs": {},
-            "estimate_motion_kwargs": {
-                "win_step_norm": 0.1,
-                "win_scale_norm": 0.1
-            },
+            "estimate_motion_kwargs": {},
             "interpolate_motion_kwargs": {}
         }
     },
@@ -567,10 +574,13 @@
         }
     },
     "results_collector": {
+        "process_name": "sorted",
         "pipeline_data_path": null,
         "pipeline_results_path": null
     },
     "quality_control": {
+        "compute_event_qc": true,
+        "min_duration_to_allow_failure": 300,
         "pipeline_data_path": null
     }
 }

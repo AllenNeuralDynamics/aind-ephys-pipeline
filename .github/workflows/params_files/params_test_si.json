@@ -59,6 +59,12 @@
                 "agc_window_length_s": 0.01,
                 "highpass_butter_order": 3,
                 "highpass_butter_wn": 0.01
+            },
+            "detect_and_remove_artifacts": {
+                "recording_to_detect": "pipeline[raw]",
+                "method": "saturation",
+                "method_kwargs": {},
+                "mode": "zeros"
             }
         },
         "custom_preprocessing_pipeline": null,
@@ -69,10 +75,7 @@
             "detect_kwargs": {},
             "select_kwargs": {},
             "localize_peaks_kwargs": {},
-            "estimate_motion_kwargs": {
-                "win_step_norm": 0.1,
-                "win_scale_norm": 0.1
-            },
+            "estimate_motion_kwargs": {},
             "interpolate_motion_kwargs": {}
         }
     },
