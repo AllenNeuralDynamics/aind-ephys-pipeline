@@ -7,6 +7,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         git \
+        procps \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Install Python packages as root so they land in the system (conda) site-packages,

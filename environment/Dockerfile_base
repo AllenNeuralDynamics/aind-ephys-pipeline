@@ -7,6 +7,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         git \
+        procps \
         fonts-freefont-ttf \
         libvips-dev \
         libtiff-dev \
