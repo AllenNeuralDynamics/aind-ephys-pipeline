@@ -22,6 +22,9 @@ RUN pip install --upgrade pip && \
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
 
+# TODO: remove once neuroconv is released
+pip install --force-reinstall --no-deps "neuroconv @ git+https://github.com/catalystneuro/neuroconv.git@zarrv3";
+
 # 3. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 

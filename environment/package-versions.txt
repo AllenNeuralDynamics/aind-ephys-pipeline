@@ -1,4 +1,4 @@
-spikeinterface==0.105.4
+spikeinterface==0.106.0
 neo==0.14.6
 pyvips==2.2.1
 figpack==0.4.1
@@ -9,11 +9,10 @@ pynwb==4.2.0
 pytz==2025.2
 hdbscan==0.8.41
 neuroconv==0.10.2
-zarr==2.18.7
-numcodecs==0.15.1
-wavpack-numcodecs==0.2.2
-hdmf==6.1.0
-hdmf-zarr==0.13.0
+zarr==3.4.2
+wavpack-numcodecs==0.3.2
+hdmf==6.2.0
+hdmf-zarr==0.14.0
 s3fs==2025.7.0
 scipy==1.17.1
 seaborn==0.13.2
