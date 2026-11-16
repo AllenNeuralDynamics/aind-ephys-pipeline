@@ -29,6 +29,9 @@ RUN grep -E 'log-schema|aind-data-schema|aind-metadata-upgrader|aind-qcportal-sc
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full,widgets]==${SPIKEINTERFACE_VERSION}"
 
+# TODO: remove once spikeinterface 0.106.1 is released
+RUN pip install git+https://github.com/alejoe91/spikeinterface.git@3f9478959c178b049e4bf23717e4b3fc5f827a07
+
 # 3. Redirect cache dirs to a writable location (numba, matplotlib, huggingface).
 #    Numba defaults to caching next to the .py source files, which live in the
 #    root-owned conda site-packages and are not writable when the container is
