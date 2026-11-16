@@ -133,7 +133,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install $(grep -E '^(${{ matrix.packages }}|zarr|numcodecs)==' environment/package-versions.txt | sed 's/^spikeinterface==/spikeinterface[full]==/' | tr '\n' ' ')
           # Remove once neuroconv is released
-          pip install git+https://github.com/catalystneuro/neuroconv.git@zarrv3
+          pip install "neuroconv[ecephys_minimal] @ git+https://github.com/catalystneuro/neuroconv.git@zarrv3"
 
       - name: Generate test data
         if: matrix.generate
