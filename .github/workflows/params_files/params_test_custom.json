@@ -3,6 +3,11 @@
     "logging": {
         "package": "logging"
     },
+    "global_job_kwargs": {
+        "chunk_duration": "1s",
+        "progress_bar": false,
+        "mp_context": "forkserver"
+    },
     "job_dispatch": {
         "split_segments": true,
         "split_groups": true,
@@ -13,11 +18,7 @@
         "input": "nwb"
     },
     "preprocessing": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false,
-            "mp_context": "spawn"
-        },
+        "job_kwargs": {},
         "filter_type": "bandpass",
         "remove_out_channels": false,
         "remove_bad_channels": false,
@@ -71,10 +72,7 @@
         }
     },
     "postprocessing": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false
-        },
+        "job_kwargs": {},
         "use_motion_corrected": false,
         "sparsity": {
             "method": "radius",
@@ -103,10 +101,7 @@
         }
     },
     "curation": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false
-        },
+        "job_kwargs": {},
         "qc_thresholds": {
             "rp_contamination": {"less": 0.5},
             "presence_ratio": {"greater": 0.8},
@@ -153,10 +148,7 @@
         }
     },
     "visualization": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false
-        },
+        "job_kwargs": {},
         "timeseries": {
             "n_snippets_per_segment": 2,
             "snippet_duration_s": 0.5
@@ -210,10 +202,7 @@
     "spikesorting": {
         "sorter": "spykingcircus2",
         "spykingcircus2": {
-            "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-            },
+            "job_kwargs": {},
             "sorter": {
                 "general": {"ms_before": 0.5, "ms_after": 1.5, "radius_um": 100.0},
                 "filtering": {"freq_min": 150, "freq_max": 7000, "ftype": "bessel", "filter_order": 2},

@@ -1,0 +1,28 @@
+.. _1.5.2:
+
+1.5.2 - WIP
+===========
+
+Minor release with performance improvements:
+
+Pipeline:
+
+* Add ``global_job_kwargs`` parameter to configure default job arguments for all steps
+  (``chunk_duration="1s"``, ``progress_bar=false``, ``mp_context="forkserver"``). Per-step ``job_kwargs`` now
+  default to ``{}`` and override the global values key by key (see :ref:`global-job-kwargs`).
+* Quality control, NWB ecephys and preprocessing now use ``forkserver`` instead of ``spawn`` by default.
+
+Steps:
+
+* All steps that use job kwargs (preprocessing, preprocessing-opto, spike sorters, postprocessing, curation,
+  visualization, processing-qc, ecephys-nwb) read ``global_job_kwargs`` merged with their own ``job_kwargs``.
+
+Package versions
+----------------
+
+* ``spikeinterface`` version: 0.105.4
+* ``aind-data-schema`` version: 2.9.1
+* ``neo`` version: 0.14.6
+* ``pynwb`` version: 4.2.0
+* ``kilosort4`` version: 4.1.7
+* ``dartsort`` version: 0.5.32
