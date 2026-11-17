@@ -136,7 +136,7 @@ jobs:
           # TODO: remove once spikeinterface 0.106.1 is released
           pip install --force-reinstall --no-deps git+https://github.com/alejoe91/spikeinterface.git@3f9478959c178b049e4bf23717e4b3fc5f827a07
           # Remove once neuroconv is released
-          pip install "neuroconv[ecephys_minimal] @ git+https://github.com/catalystneuro/neuroconv.git@zarrv3"
+          pip install "neuroconv[ecephys_minimal] @ git+https://github.com/catalystneuro/neuroconv.git@b3045337f4ad5a4e76ba4edd54b7a16d418975b0"
 
       - name: Generate test data
         if: matrix.generate

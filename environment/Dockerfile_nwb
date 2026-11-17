@@ -24,7 +24,7 @@ RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt 
 RUN pip install --force-reinstall --no-deps git+https://github.com/alejoe91/spikeinterface.git@3f9478959c178b049e4bf23717e4b3fc5f827a07
 
 # TODO: remove once neuroconv is released
-RUN pip install "neuroconv[ecephys_minimal] @ git+https://github.com/catalystneuro/neuroconv.git@zarrv3"
+RUN pip install "neuroconv[ecephys_minimal] @ git+https://github.com/catalystneuro/neuroconv.git@b3045337f4ad5a4e76ba4edd54b7a16d418975b0"
 
 # 3. Redirect numba's JIT cache to a writable location (see Dockerfile_base for context).
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
