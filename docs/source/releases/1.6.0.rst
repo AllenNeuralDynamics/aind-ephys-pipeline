@@ -1,0 +1,22 @@
+.. _1.6.0:
+
+1.6.0 WIP
+=========
+
+Major release with support for Zarr v3
+
+
+Environment:
+
+* Bump up to spikeinterface 0.106.0, with Zarrv3 support
+
+
+Package versions
+----------------
+
+* ``spikeinterface`` version: 0.106.0
+* ``aind-data-schema`` version: 2.9.1
+* ``neo`` version: 0.14.6
+* ``pynwb`` version: 4.2.0
+* ``kilosort4`` version: 4.1.7
+* ``dartsort`` version: 0.5.32
