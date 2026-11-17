@@ -135,6 +135,39 @@ The same overrides can be packed into a single string with ``--extra_params`` (u
 Real dotted CLI parameters take precedence over ``--extra_params``.
 
 
+.. _global-job-kwargs:
+
+Global Job Kwargs
+~~~~~~~~~~~~~~~~~
+
+**Parameter file section (``global_job_kwargs``):**
+
+.. code-block:: json
+
+   {
+       "chunk_duration": "1s",
+       "progress_bar": false,
+       "mp_context": "forkserver"
+   }
+
+These SpikeInterface job arguments are used by every step that does chunked or parallel processing
+(preprocessing, spike sorting, postprocessing, curation, visualization, quality control and NWB ecephys).
+Each of these steps (except quality control and NWB ecephys) also has its own ``job_kwargs`` (default ``{}``).
+Any key set there overrides the global value for that step only. For example,
+``--postprocessing.job_kwargs.chunk_duration=2s`` changes only the postprocessing chunk size.
+``n_jobs`` is not set here: it comes from ``--n_jobs`` (local) or the available CPUs.
+
+``chunk_duration``
+   Size of each processing chunk, e.g. ``"1s"``. Larger chunks reduce overhead but require more
+   memory.
+
+``progress_bar``
+   Show a progress bar during chunk-based processing.
+
+``mp_context``
+   Multiprocessing start method: ``"forkserver"`` (default), ``"spawn"`` or ``"fork"``.
+
+
 Job Dispatch Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -229,10 +262,7 @@ Preprocessing Parameters
 .. code-block:: json
 
    {
-       "job_kwargs": {
-           "chunk_duration": "1s",
-           "progress_bar": false
-       },
+       "job_kwargs": {},
        "min_preprocessing_duration": 120,
        "custom_preprocessing_pipeline": null,
        "denoising_strategy": "cmr",
@@ -284,12 +314,8 @@ Preprocessing Parameters
        }
    }
 
-``job_kwargs.chunk_duration``
-   Size of each processing chunk, e.g. ``"1s"``. Larger chunks reduce overhead but require more
-   memory.
-
-``job_kwargs.progress_bar``
-   Show a progress bar during chunk-based processing.
+``job_kwargs``
+   Overrides of the :ref:`global job kwargs <global-job-kwargs>` for this step only.
 
 ``min_preprocessing_duration``
    Minimum recording duration in seconds required to run preprocessing. Recordings shorter than
@@ -423,10 +449,7 @@ Parameter file section (``spikesorting``):
    {
        "sorter": null,
        "{sorter_name}": {
-             "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-             },
+             "job_kwargs": {},
              "skip_motion_correction": false,
              "min_drift_channels": 6,
              "raise_if_fails": true,
@@ -448,7 +471,7 @@ Parameter file section (``spikesorting``):
    argument.
 
 ``{sorter}.job_kwargs``
-   Parallel processing chunk settings for the spike sorting step (same format as other steps).
+   Overrides of the :ref:`global job kwargs <global-job-kwargs>` for the spike sorting step only.
 
 ``{sorter}.skip_motion_correction``
    If ``true``, disables the sorter's built-in motion correction (useful when motion has already
