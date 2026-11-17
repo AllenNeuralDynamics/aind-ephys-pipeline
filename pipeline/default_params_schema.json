@@ -1533,12 +1533,12 @@
             "type": "object",
             "description": "Parameters for quality control.",
             "properties": {
-                "compute_event_qc": {
+                "compute_event_metrics": {
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to compute event quality control metrics."
                 },
-                "min_duration_to_allow_failure": {
+                "min_duration_allow_failed": {
                     "type": "number",
                     "default": 300,
                     "minimum": 0,

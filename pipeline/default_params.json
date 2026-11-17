@@ -556,8 +556,8 @@
         "pipeline_results_path": null
     },
     "quality_control": {
-        "compute_event_qc": true,
-        "min_duration_to_allow_failure": 300,
+        "compute_event_metrics": true,
+        "min_duration_allow_failed": 300,
         "pipeline_data_path": null
     }
 }
