@@ -13,18 +13,21 @@ Pipeline:
 * Quality control, NWB ecephys and preprocessing now use ``forkserver`` instead of ``spawn`` by default.
 * Params files without ``global_job_kwargs`` (from earlier releases) still work: the pipeline fills it in from
   ``default_params.json`` and prints a warning. Their per-step ``job_kwargs`` keep applying on top.
+* Fix ``dartsort`` external motion
+* Add warning when extra params are present in the params file
 
 Steps:
 
 * All steps that use job kwargs (preprocessing, preprocessing-opto, spike sorters, postprocessing, curation,
   visualization, processing-qc, ecephys-nwb) read ``global_job_kwargs`` merged with their own ``job_kwargs``.
 
+
 Package versions
 ----------------
 
-* ``spikeinterface`` version: 0.105.4
+* ``spikeinterface`` version: 0.105.5
 * ``aind-data-schema`` version: 2.9.1
 * ``neo`` version: 0.14.6
 * ``pynwb`` version: 4.2.0
 * ``kilosort4`` version: 4.1.7
-* ``dartsort`` version: 0.5.32
+* ``dartsort`` version: 0.5.33

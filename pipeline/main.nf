@@ -47,6 +47,25 @@ def deepMerge(Map base, Map over) {
     return out
 }
 
+// Warn about keys the schema does not declare where it allows extra keys (e.g. a typo under `preprocessing`).
+// Strict objects (additionalProperties: false) are left to validation; free-form objects (no properties) are skipped.
+def warnUnknownKeys(value, Map node, Map root, String path = '') {
+    if (node?.get('$ref')) {
+        node = node['$ref'].replaceFirst('^#/', '').split('/').inject(root) { n, k -> n[k] }
+    }
+    if (!(value instanceof Map) || !node?.properties) return
+    value.each { k, v ->
+        def key_path = path ? "${path}.${k}" : "${k}"
+        if (node.properties.containsKey(k)) {
+            warnUnknownKeys(v, node.properties[k], root, key_path)
+        } else if (node.additionalProperties instanceof Map) {
+            warnUnknownKeys(v, node.additionalProperties, root, key_path)
+        } else if (node.additionalProperties != false) {
+            println "WARN: unknown parameter '${key_path}' is not in the schema and may be ignored (known: ${node.properties.keySet()})"
+        }
+    }
+}
+
 // Coerce a CLI value (Nextflow guesses int/float/boolean from the text) to the type the schema expects.
 // Values already matching an allowed type, or that cannot be converted, are left for validation to report.
 def coerceToSchema(value, Map node, Map root) {
@@ -124,6 +143,8 @@ if (cli_overrides) {
 }
 
 // Validate the parameters file against the schema before any process runs
+def params_schema = new groovy.json.JsonSlurper().parseText(new File("${projectDir}/default_params_schema.json").text)
+warnUnknownKeys(json_params, params_schema, params_schema)
 def params_file_name = params.params_file ?: "default_params.json"
 def params_errors = validate(json_params, "${projectDir}/default_params_schema.json", exitOnError: false)
 if (params_errors) {
