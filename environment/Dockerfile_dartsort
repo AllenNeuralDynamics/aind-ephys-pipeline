@@ -8,7 +8,7 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 # 1. Install Python packages as root so they land in the system site-packages,
 #    accessible to any user regardless of UID at runtime.
 COPY package-versions.txt /tmp/package-versions.txt
-RUN grep -E 'log-schema|aind-data-schema|scipy|probeinterface' /tmp/package-versions.txt | xargs pip install
+RUN grep -E 'log-schema|aind-data-schema|scipy' /tmp/package-versions.txt | xargs pip install
 
 RUN SPIKEINTERFACE_VERSION=$(grep '^spikeinterface==' /tmp/package-versions.txt | cut -d'=' -f3) && \
     pip install "spikeinterface[full]==${SPIKEINTERFACE_VERSION}"
