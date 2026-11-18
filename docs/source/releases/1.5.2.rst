@@ -11,6 +11,8 @@ Pipeline:
   (``chunk_duration="1s"``, ``progress_bar=false``, ``mp_context="forkserver"``). Per-step ``job_kwargs`` now
   default to ``{}`` and override the global values key by key (see :ref:`global-job-kwargs`).
 * Quality control, NWB ecephys and preprocessing now use ``forkserver`` instead of ``spawn`` by default.
+* Params files without ``global_job_kwargs`` (from earlier releases) still work: the pipeline fills it in from
+  ``default_params.json`` and prints a warning. Their per-step ``job_kwargs`` keep applying on top.
 
 Steps:
 

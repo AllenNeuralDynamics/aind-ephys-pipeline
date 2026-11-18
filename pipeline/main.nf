@@ -87,6 +87,11 @@ else {
     json_params = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text)
     println "Loaded parameters from DEFAULT_PARAMS"
 }
+// Params files from before 1.5.2 have no global_job_kwargs: use the defaults (steps without their own job_kwargs rely on them)
+if (!json_params.containsKey('global_job_kwargs')) {
+    json_params.global_job_kwargs = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text).global_job_kwargs
+    println "WARN: params file has no global_job_kwargs, using the defaults: ${json_params.global_job_kwargs}"
+}
 
 
 // Dotted CLI overrides following the JSON layout, e.g. --preprocessing.filter_type=bandpass
