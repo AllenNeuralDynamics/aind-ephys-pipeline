@@ -83,6 +83,9 @@ def generate_drift():
         ),
         seed=SEED,
     )
+    # the drifting generator sets no gains: downstream steps (e.g. QC plot_traces) need scaled traces
+    recording.set_channel_gains(1)
+    recording.set_channel_offsets(0)
     recording.save(folder=output_folder / "sample_recording_drift.zarr", format="zarr", overwrite=True)
 
 
