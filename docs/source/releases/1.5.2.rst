@@ -13,7 +13,7 @@ Pipeline:
 * Quality control, NWB ecephys and preprocessing now use ``forkserver`` instead of ``spawn`` by default.
 * Params files without ``global_job_kwargs`` (from earlier releases) still work: the pipeline fills it in from
   ``default_params.json`` and prints a warning. Their per-step ``job_kwargs`` keep applying on top.
-* Fix ``dartsort`` external motion
+* Fix ``dartsort`` external motion and motion handling across preprocessing and postprocessing
 * Add warning when extra params are present in the params file
 
 Steps:

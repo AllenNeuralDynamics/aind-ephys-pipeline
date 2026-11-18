@@ -482,6 +482,7 @@
             "job_kwargs": {},
             "sorter": {
                 "do_motion_estimation": true,
+                "use_preprocessing_motion": true,
                 "already_preprocessed": "assume_yes_if_float",
                 "preprocessing": "standardize",
                 "preprocessing_dtype": "float32",

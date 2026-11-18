@@ -59,6 +59,13 @@ jobs:
             results: tests/sample_dataset/spikeinterface_results
             params: params_test_si.json
             check: --num-streams 3 --num-success 2 --num-nwb 3 --check-artifacts
+          - name: Test Pipeline from SpikeInterface - motion correction
+            packages: spikeinterface|pynwb|hdmf-zarr
+            generate: python tests/sample_dataset/create_test_spikeinterface.py --drift
+            data: tests/sample_dataset/spikeinterface_drift
+            results: tests/sample_dataset/spikeinterface_drift_results
+            params: params_test_si_motion.json
+            check: --num-streams 1 --num-success 1 --num-nwb 1 --check-motion
           - name: Test Pipeline from SpikeInterface - multi-segment
             packages: spikeinterface|pynwb|hdmf-zarr
             generate: python tests/sample_dataset/create_test_spikeinterface.py --num-segments 2

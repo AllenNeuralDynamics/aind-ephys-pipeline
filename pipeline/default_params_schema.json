@@ -2616,6 +2616,11 @@
                             "default": true,
                             "description": "Whether to estimate motion (drift) before sorting."
                         },
+                        "use_preprocessing_motion": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Whether to use the motion estimated by the preprocessing step."
+                        },
                         "already_preprocessed": {
                             "type": "string",
                             "default": "assume_yes_if_float",

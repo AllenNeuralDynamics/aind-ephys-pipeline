@@ -294,6 +294,11 @@ def main():
         action="store_true",
         help="Check that waveform_mean/sd in the exported NWB files have fewer channels than the probe electrodes.",
     )
+    parser.add_argument(
+        "--check-motion",
+        action="store_true",
+        help="Check that all preprocessed recordings include the motion interpolation step.",
+    )
     args = parser.parse_args()
 
     results_path = args.results_path
@@ -333,6 +338,7 @@ def main():
         )
         checker.check_count("preprocessed", jsons, num_success)
         num_with_artifacts = 0
+        num_with_motion = 0
         for json_file in jsons:
             print(f"\t- {json_file.name}")
             try:
@@ -347,8 +353,11 @@ def main():
                 if type(parent).__name__ == "DetectAndRemoveArtifactsRecording":
                     num_with_artifacts += 1
                     print(f"\t\t- artifact removal step found ({len(parent.periods)} periods)")
-                    break
+                if type(parent).__name__ == "InterpolateMotionRecording":
+                    num_with_motion += 1
                 parent = parent.get_parent()
+        if args.check_motion and num_with_motion != num_success:
+            checker.error(f"motion interpolation found in {num_with_motion}/{num_success} preprocessed recordings")
         if args.check_artifacts and num_with_artifacts == 0:
             checker.error("no preprocessed recording includes the artifact detection/removal step")
 
