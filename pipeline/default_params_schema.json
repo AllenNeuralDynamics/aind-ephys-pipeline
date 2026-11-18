@@ -1638,7 +1638,7 @@
                 },
                 "min_drift_channels": {
                     "type": "integer",
-                    "default": 96,
+                    "default": 64,
                     "minimum": 1,
                     "description": "Minimum number of channels required to enable drift correction."
                 },
@@ -1919,7 +1919,7 @@
                 },
                 "min_drift_channels": {
                     "type": "integer",
-                    "default": 96,
+                    "default": 64,
                     "minimum": 1,
                     "description": "Minimum number of channels required to enable drift correction."
                 },
@@ -2075,6 +2075,22 @@
             "properties": {
                 "job_kwargs": {
                     "$ref": "#/$defs/job_kwargs"
+                },
+                "skip_motion_correction": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip the sorter's internal motion correction."
+                },
+                "min_drift_channels": {
+                    "type": "integer",
+                    "default": 64,
+                    "minimum": 1,
+                    "description": "Minimum number of channels required to enable drift correction."
+                },
+                "raise_if_fails": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to raise an error if spike sorting fails."
                 },
                 "sorter": {
                     "type": "object",
@@ -2272,6 +2288,22 @@
             "properties": {
                 "job_kwargs": {
                     "$ref": "#/$defs/job_kwargs"
+                },
+                "skip_motion_correction": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip the sorter's internal motion correction."
+                },
+                "min_drift_channels": {
+                    "type": "integer",
+                    "default": 64,
+                    "minimum": 1,
+                    "description": "Minimum number of channels required to enable drift correction."
+                },
+                "raise_if_fails": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to raise an error if spike sorting fails."
                 },
                 "sorter": {
                     "type": "object",
@@ -2605,6 +2637,27 @@
             "properties": {
                 "job_kwargs": {
                     "$ref": "#/$defs/job_kwargs"
+                },
+                "skip_motion_correction": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip the sorter's internal motion correction."
+                },
+                "min_drift_channels": {
+                    "type": "integer",
+                    "default": 64,
+                    "minimum": 1,
+                    "description": "Minimum number of channels required to enable drift correction."
+                },
+                "raise_if_fails": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to raise an error if spike sorting fails."
+                },
+                "use_preprocessing_motion": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to use the motion estimated by the preprocessing step."
                 },
                 "sorter": {
                     "type": "object",

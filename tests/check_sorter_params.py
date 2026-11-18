@@ -26,7 +26,6 @@ SORTER_MAP = {
     "spykingcircus2": "spykingcircus2",
     "lupin": "lupin",
 }
-
 here = Path(__file__).parent.parent / "pipeline"
 
 

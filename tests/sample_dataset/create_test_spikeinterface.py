@@ -65,9 +65,34 @@ def generate_spikeinterface(num_segments=1):
     for recording_name, recording in zip(["main", "short", "unsigned"], [recording_main, recording_short, recording_unsigned]):
         recording.save(folder=output_folder / f"sample_recording_{recording_name}.zarr", format="zarr", overwrite=True)
 
+def generate_drift():
+    """Drifting recording, to check that motion correction is applied."""
+    from spikeinterface.generation import generate_drifting_recording
+
+    output_folder = this_folder / "spikeinterface_drift"
+    output_folder.mkdir(exist_ok=True)
+    _, recording, _ = generate_drifting_recording(
+        num_units=20,
+        duration=180.0,
+        probe_name="Neuropixels1-128",
+        generate_displacement_vector_kwargs=dict(
+            displacement_sampling_frequency=5.0,
+            drift_start_um=[0, 20],
+            drift_stop_um=[0, -20],
+            motion_list=[dict(drift_mode="zigzag", non_rigid_gradient=None, t_start_drift=20.0, t_end_drift=None, period_s=80)],
+        ),
+        seed=SEED,
+    )
+    # the drifting generator sets no gains: downstream steps (e.g. QC plot_traces) need scaled traces
+    recording.set_channel_gains(1)
+    recording.set_channel_offsets(0)
+    recording.save(folder=output_folder / "sample_recording_drift.zarr", format="zarr", overwrite=True)
+
+
 parser = ArgumentParser()
 parser.add_argument("--num-segments", type=int, default=1, help="Number of segments to generate for the recordings.")
+parser.add_argument("--drift", action="store_true", help="Generate a drifting recording instead.")
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    generate_spikeinterface(num_segments=args.num_segments)
+    generate_drift() if args.drift else generate_spikeinterface(num_segments=args.num_segments)

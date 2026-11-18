@@ -328,7 +328,7 @@
         "kilosort4": {
             "job_kwargs": {},
             "skip_motion_correction": false,
-            "min_drift_channels": 96,
+            "min_drift_channels": 64,
             "raise_if_fails": true,
             "clear_cache": false,
             "sorter": {
@@ -380,7 +380,7 @@
         "kilosort25": {
             "job_kwargs": {},
             "skip_motion_correction": false,
-            "min_drift_channels": 96,
+            "min_drift_channels": 64,
             "raise_if_fails": true,
             "sorter": {
                 "detect_threshold": 6,
@@ -410,6 +410,9 @@
         },
         "spykingcircus2": {
             "job_kwargs": {},
+            "skip_motion_correction": false,
+            "min_drift_channels": 64,
+            "raise_if_fails": true,
             "sorter": {
                 "general": {"ms_before": 0.5, "ms_after": 1.5, "radius_um": 100.0},
                 "filtering": {"freq_min": 150, "freq_max": 7000, "ftype": "bessel", "filter_order": 2},
@@ -443,6 +446,9 @@
         },
         "lupin": {
             "job_kwargs": {},
+            "skip_motion_correction": false,
+            "min_drift_channels": 64,
+            "raise_if_fails": true,
             "sorter": {
                 "apply_preprocessing": true,
                 "preprocessing_dict": {},
@@ -480,6 +486,10 @@
         },
         "dartsort": {
             "job_kwargs": {},
+            "skip_motion_correction": false,
+            "min_drift_channels": 64,
+            "raise_if_fails": true,
+            "use_preprocessing_motion": true,
             "sorter": {
                 "do_motion_estimation": true,
                 "already_preprocessed": "assume_yes_if_float",
