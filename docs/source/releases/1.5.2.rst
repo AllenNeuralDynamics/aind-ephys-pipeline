@@ -15,6 +15,7 @@ Pipeline:
   ``default_params.json`` and prints a warning. Their per-step ``job_kwargs`` keep applying on top.
 * Fix ``dartsort`` external motion and motion handling across preprocessing and postprocessing
 * Add warning when extra params are present in the params file
+* Add missing descriptions for electrodes and units in NWB conversion
 
 Steps:
 
