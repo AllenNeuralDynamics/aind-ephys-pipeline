@@ -1322,7 +1322,7 @@ workflow {
     // Quality control: per stream, right after visualization, staging only the step outputs QC reads.
     // remainder: streams that failed preprocessing still get raw-data QC
     def qcNames = { id -> ["preprocessed_${id}.json", "motion_${id}", "data_process_preprocessing_${id}.json", "spikesortedmotion_${id}",
-                           "postprocessed_${id}.zarr", "curation_${id}.json", "visualization_${id}.json"]*.toString() }
+                           "postprocessed_${id}.zarr", "curation_${id}.json", "unit_labels_${id}.csv", "visualization_${id}.json"]*.toString() }
     qc_inputs = streams
         .join(preprocessing_out.results, failOnMismatch: true)
         .join(spikesort_out.results, remainder: true)

@@ -16,6 +16,8 @@ Pipeline:
 * Fix ``dartsort`` external motion and motion handling across preprocessing and postprocessing
 * Add warning when extra params are present in the params file
 * Add missing descriptions for electrodes and units in NWB conversion
+* Fix missing curation labels in the QC auto-curation summary: QC now reads them from the curation output
+  (``unit_labels_*.csv``), since it runs before the results collector adds them to the analyzer
 
 Steps:
 
