@@ -7,6 +7,11 @@
             "format": "%(message)s"
         }
     },
+    "global_job_kwargs": {
+        "chunk_duration": "1s",
+        "progress_bar": false,
+        "mp_context": "forkserver"
+    },
     "job_dispatch": {
         "split_segments": true,
         "split_groups": true,
@@ -21,11 +26,7 @@
         "remote_path": null
     },
     "preprocessing": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false,
-            "mp_context": "spawn"
-        },
+        "job_kwargs": {},
         "filter_type": "highpass",
         "remove_out_channels": true,
         "remove_bad_channels": true,
@@ -86,10 +87,7 @@
         }
     },
     "postprocessing": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false
-        },
+        "job_kwargs": {},
         "use_motion_corrected": false,
         "sparsity": {
             "method": "radius",
@@ -227,10 +225,7 @@
         }
     },
     "curation": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false
-        },
+        "job_kwargs": {},
         "qc_thresholds": {
             "rp_contamination": {"less": 0.5},
             "presence_ratio": {"greater": 0.8},
@@ -277,10 +272,7 @@
         }
     },
     "visualization": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false
-        },
+        "job_kwargs": {},
         "timeseries": {
             "n_snippets_per_segment": 2,
             "snippet_duration_s": 0.5
@@ -334,12 +326,9 @@
     "spikesorting": {
         "sorter": null,
         "kilosort4": {
-            "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-            },
+            "job_kwargs": {},
             "skip_motion_correction": false,
-            "min_drift_channels": 96,
+            "min_drift_channels": 64,
             "raise_if_fails": true,
             "clear_cache": false,
             "sorter": {
@@ -389,12 +378,9 @@
             }
         },
         "kilosort25": {
-            "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-            },
+            "job_kwargs": {},
             "skip_motion_correction": false,
-            "min_drift_channels": 96,
+            "min_drift_channels": 64,
             "raise_if_fails": true,
             "sorter": {
                 "detect_threshold": 6,
@@ -423,10 +409,10 @@
             }
         },
         "spykingcircus2": {
-            "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-            },
+            "job_kwargs": {},
+            "skip_motion_correction": false,
+            "min_drift_channels": 64,
+            "raise_if_fails": true,
             "sorter": {
                 "general": {"ms_before": 0.5, "ms_after": 1.5, "radius_um": 100.0},
                 "filtering": {"freq_min": 150, "freq_max": 7000, "ftype": "bessel", "filter_order": 2},
@@ -459,10 +445,10 @@
             }
         },
         "lupin": {
-            "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-            },
+            "job_kwargs": {},
+            "skip_motion_correction": false,
+            "min_drift_channels": 64,
+            "raise_if_fails": true,
             "sorter": {
                 "apply_preprocessing": true,
                 "preprocessing_dict": {},
@@ -499,10 +485,11 @@
             }
         },
         "dartsort": {
-            "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-            },
+            "job_kwargs": {},
+            "skip_motion_correction": false,
+            "min_drift_channels": 64,
+            "raise_if_fails": true,
+            "use_preprocessing_motion": true,
             "sorter": {
                 "do_motion_estimation": true,
                 "already_preprocessed": "assume_yes_if_float",
@@ -579,8 +566,8 @@
         "pipeline_results_path": null
     },
     "quality_control": {
-        "compute_event_qc": true,
-        "min_duration_to_allow_failure": 300,
+        "compute_event_metrics": true,
+        "min_duration_allow_failed": 300,
         "pipeline_data_path": null
     }
 }

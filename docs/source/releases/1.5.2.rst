@@ -1,0 +1,38 @@
+.. _1.5.2:
+
+1.5.2 - Nov 20th 2026
+=====================
+
+Minor release with performance improvements:
+
+Pipeline:
+
+* Add ``global_job_kwargs`` parameter to configure default job arguments for all steps
+  (``chunk_duration="1s"``, ``progress_bar=false``, ``mp_context="forkserver"``). Per-step ``job_kwargs`` now
+  default to ``{}`` and override the global values key by key (see :ref:`global-job-kwargs`).
+* Quality control, NWB ecephys and preprocessing now use ``forkserver`` instead of ``spawn`` by default.
+* Params files without ``global_job_kwargs`` (from earlier releases) still work: the pipeline fills it in from
+  ``default_params.json`` and prints a warning. Their per-step ``job_kwargs`` keep applying on top.
+* Fix ``dartsort`` external motion and motion handling across preprocessing and postprocessing
+* Add warning when extra params are present in the params file
+* Add missing descriptions for electrodes and units in NWB conversion
+* Fix missing curation labels in the QC auto-curation summary: QC now reads them from the curation output
+  (``unit_labels_*.csv``), since it runs before the results collector adds them to the analyzer
+* Cap ``OMP_NUM_THREADS``, ``MKL_NUM_THREADS`` and ``OPENBLAS_NUM_THREADS`` to the allocated CPUs in all processes,
+  so OpenMP/BLAS pools (faiss, torch, numpy) don't size to all host cores and oversubscribe shared instances
+
+Steps:
+
+* All steps that use job kwargs (preprocessing, preprocessing-opto, spike sorters, postprocessing, curation,
+  visualization, processing-qc, ecephys-nwb) read ``global_job_kwargs`` merged with their own ``job_kwargs``.
+
+
+Package versions
+----------------
+
+* ``spikeinterface`` version: 0.105.5
+* ``aind-data-schema`` version: 2.9.1
+* ``neo`` version: 0.14.6
+* ``pynwb`` version: 4.2.0
+* ``kilosort4`` version: 4.1.7
+* ``dartsort`` version: 0.5.34

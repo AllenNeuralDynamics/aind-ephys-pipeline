@@ -47,6 +47,25 @@ def deepMerge(Map base, Map over) {
     return out
 }
 
+// Warn about keys the schema does not declare where it allows extra keys (e.g. a typo under `preprocessing`).
+// Strict objects (additionalProperties: false) are left to validation; free-form objects (no properties) are skipped.
+def warnUnknownKeys(value, Map node, Map root, String path = '') {
+    if (node?.get('$ref')) {
+        node = node['$ref'].replaceFirst('^#/', '').split('/').inject(root) { n, k -> n[k] }
+    }
+    if (!(value instanceof Map) || !node?.properties) return
+    value.each { k, v ->
+        def key_path = path ? "${path}.${k}" : "${k}"
+        if (node.properties.containsKey(k)) {
+            warnUnknownKeys(v, node.properties[k], root, key_path)
+        } else if (node.additionalProperties instanceof Map) {
+            warnUnknownKeys(v, node.additionalProperties, root, key_path)
+        } else if (node.additionalProperties != false) {
+            println "WARN: unknown parameter '${key_path}' is not in the schema and may be ignored (known: ${node.properties.keySet()})"
+        }
+    }
+}
+
 // Coerce a CLI value (Nextflow guesses int/float/boolean from the text) to the type the schema expects.
 // Values already matching an allowed type, or that cannot be converted, are left for validation to report.
 def coerceToSchema(value, Map node, Map root) {
@@ -87,6 +106,11 @@ else {
     json_params = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text)
     println "Loaded parameters from DEFAULT_PARAMS"
 }
+// Params files from before 1.5.2 have no global_job_kwargs: use the defaults (steps without their own job_kwargs rely on them)
+if (!json_params.containsKey('global_job_kwargs')) {
+    json_params.global_job_kwargs = new groovy.json.JsonSlurper().parseText(new File("${baseDir}/default_params.json").text).global_job_kwargs
+    println "WARN: params file has no global_job_kwargs, using the defaults: ${json_params.global_job_kwargs}"
+}
 
 
 // Dotted CLI overrides following the JSON layout, e.g. --preprocessing.filter_type=bandpass
@@ -119,6 +143,8 @@ if (cli_overrides) {
 }
 
 // Validate the parameters file against the schema before any process runs
+def params_schema = new groovy.json.JsonSlurper().parseText(new File("${projectDir}/default_params_schema.json").text)
+warnUnknownKeys(json_params, params_schema, params_schema)
 def params_file_name = params.params_file ?: "default_params.json"
 def params_errors = validate(json_params, "${projectDir}/default_params_schema.json", exitOnError: false)
 if (params_errors) {
@@ -417,6 +443,10 @@ process job_dispatch {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     TASK_DIR=\$(pwd)
 
@@ -475,6 +505,10 @@ process preprocessing {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -522,6 +556,10 @@ process spikesort_kilosort25 {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -567,6 +605,10 @@ process spikesort_kilosort4 {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -611,6 +653,10 @@ process spikesort_spykingcircus2 {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -657,6 +703,10 @@ process spikesort_lupin {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -702,6 +752,10 @@ process spikesort_dartsort {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -751,6 +805,10 @@ process postprocessing {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -796,6 +854,10 @@ process curation {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -845,6 +907,10 @@ process visualization {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -897,6 +963,10 @@ process results_collector {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     export PIPELINE_VERSION=${pipelineVersion}
     export PIPELINE_URL=${pipelineUrl}
@@ -950,6 +1020,10 @@ process quality_control {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -997,6 +1071,10 @@ process quality_control_collector {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -1047,6 +1125,10 @@ process nwb_ecephys {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -1104,6 +1186,10 @@ process nwb_units {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
@@ -1296,7 +1382,7 @@ workflow {
     // Quality control: per stream, right after visualization, staging only the step outputs QC reads.
     // remainder: streams that failed preprocessing still get raw-data QC
     def qcNames = { id -> ["preprocessed_${id}.json", "motion_${id}", "data_process_preprocessing_${id}.json", "spikesortedmotion_${id}",
-                           "postprocessed_${id}.zarr", "curation_${id}.json", "visualization_${id}.json"]*.toString() }
+                           "postprocessed_${id}.zarr", "curation_${id}.json", "unit_labels_${id}.csv", "visualization_${id}.json"]*.toString() }
     qc_inputs = streams
         .join(preprocessing_out.results, failOnMismatch: true)
         .join(spikesort_out.results, remainder: true)

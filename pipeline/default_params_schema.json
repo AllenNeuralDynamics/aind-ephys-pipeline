@@ -39,6 +39,30 @@
                 }
             }
         },
+        "global_job_kwargs": {
+            "type": "object",
+            "description": "SpikeInterface job keyword arguments used by every step. A step's own job_kwargs override these key by key.",
+            "additionalProperties": true,
+            "properties": {
+                "chunk_duration": {
+                    "type": "string",
+                    "default": "1s",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?s$",
+                    "description": "Duration of each processing chunk (e.g., '1s')."
+                },
+                "progress_bar": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to display a progress bar."
+                },
+                "mp_context": {
+                    "type": "string",
+                    "enum": ["spawn", "fork", "forkserver"],
+                    "default": "forkserver",
+                    "description": "Multiprocessing context to use for parallel processing."
+                }
+            }
+        },
         "job_dispatch": {
             "type": "object",
             "description": "Parameters for the job dispatch step, which generates JSON job files for parallel processing.",
@@ -148,28 +172,7 @@
             "additionalProperties": true,
             "properties": {
                 "job_kwargs": {
-                    "type": "object",
-                    "description": "SpikeInterface job keyword arguments for parallel processing.",
-                    "additionalProperties": false,
-                    "properties": {
-                        "chunk_duration": {
-                            "type": "string",
-                            "default": "1s",
-                            "pattern": "^[0-9]+(\\.[0-9]+)?s$",
-                            "description": "Duration of each processing chunk (e.g., '1s')."
-                        },
-                        "progress_bar": {
-                            "type": "boolean",
-                            "default": false,
-                            "description": "Whether to display a progress bar."
-                        },
-                        "mp_context": {
-                            "type": "string",
-                            "enum": ["spawn", "fork", "forkserver"],
-                            "default": "spawn",
-                            "description": "Multiprocessing context to use for parallel processing."
-                        }
-                    }
+                    "$ref": "#/$defs/job_kwargs"
                 },
                 "min_preprocessing_duration": {
                     "type": "number",
@@ -1530,12 +1533,12 @@
             "type": "object",
             "description": "Parameters for quality control.",
             "properties": {
-                "compute_event_qc": {
+                "compute_event_metrics": {
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to compute event quality control metrics."
                 },
-                "min_duration_to_allow_failure": {
+                "min_duration_allow_failed": {
                     "type": "number",
                     "default": 300,
                     "minimum": 0,
@@ -1585,19 +1588,22 @@
     "$defs": {
         "job_kwargs": {
             "type": "object",
-            "description": "SpikeInterface job keyword arguments for parallel processing.",
+            "description": "Per-step SpikeInterface job keyword arguments. Keys set here override global_job_kwargs; leave empty to inherit them.",
             "additionalProperties": false,
             "properties": {
                 "chunk_duration": {
                     "type": "string",
-                    "default": "1s",
                     "pattern": "^[0-9]+(\\.[0-9]+)?s$",
                     "description": "Duration of each processing chunk (e.g., '1s')."
                 },
                 "progress_bar": {
                     "type": "boolean",
-                    "default": false,
                     "description": "Whether to display a progress bar."
+                },
+                "mp_context": {
+                    "type": "string",
+                    "enum": ["spawn", "fork", "forkserver"],
+                    "description": "Multiprocessing context to use for parallel processing."
                 }
             }
         },
@@ -1632,7 +1638,7 @@
                 },
                 "min_drift_channels": {
                     "type": "integer",
-                    "default": 96,
+                    "default": 64,
                     "minimum": 1,
                     "description": "Minimum number of channels required to enable drift correction."
                 },
@@ -1913,7 +1919,7 @@
                 },
                 "min_drift_channels": {
                     "type": "integer",
-                    "default": 96,
+                    "default": 64,
                     "minimum": 1,
                     "description": "Minimum number of channels required to enable drift correction."
                 },
@@ -2069,6 +2075,22 @@
             "properties": {
                 "job_kwargs": {
                     "$ref": "#/$defs/job_kwargs"
+                },
+                "skip_motion_correction": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip the sorter's internal motion correction."
+                },
+                "min_drift_channels": {
+                    "type": "integer",
+                    "default": 64,
+                    "minimum": 1,
+                    "description": "Minimum number of channels required to enable drift correction."
+                },
+                "raise_if_fails": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to raise an error if spike sorting fails."
                 },
                 "sorter": {
                     "type": "object",
@@ -2266,6 +2288,22 @@
             "properties": {
                 "job_kwargs": {
                     "$ref": "#/$defs/job_kwargs"
+                },
+                "skip_motion_correction": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip the sorter's internal motion correction."
+                },
+                "min_drift_channels": {
+                    "type": "integer",
+                    "default": 64,
+                    "minimum": 1,
+                    "description": "Minimum number of channels required to enable drift correction."
+                },
+                "raise_if_fails": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to raise an error if spike sorting fails."
                 },
                 "sorter": {
                     "type": "object",
@@ -2599,6 +2637,27 @@
             "properties": {
                 "job_kwargs": {
                     "$ref": "#/$defs/job_kwargs"
+                },
+                "skip_motion_correction": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to skip the sorter's internal motion correction."
+                },
+                "min_drift_channels": {
+                    "type": "integer",
+                    "default": 64,
+                    "minimum": 1,
+                    "description": "Minimum number of channels required to enable drift correction."
+                },
+                "raise_if_fails": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to raise an error if spike sorting fails."
+                },
+                "use_preprocessing_motion": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to use the motion estimated by the preprocessing step."
                 },
                 "sorter": {
                     "type": "object",

@@ -3,6 +3,11 @@
     "logging": {
         "package": "logging"
     },
+    "global_job_kwargs": {
+        "chunk_duration": "1s",
+        "progress_bar": false,
+        "mp_context": "forkserver"
+    },
     "job_dispatch": {
         "split_segments": false,
         "split_groups": true,
@@ -16,11 +21,7 @@
         }
     },
     "preprocessing": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false,
-            "mp_context": "spawn"
-        },
+        "job_kwargs": {},
         "filter_type": "highpass",
         "remove_out_channels": false,
         "remove_bad_channels": false,
@@ -74,10 +75,7 @@
         }
     },
     "postprocessing": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false
-        },
+        "job_kwargs": {},
         "use_motion_corrected": false,
         "sparsity": {
             "method": "radius",
@@ -213,10 +211,7 @@
         }
     },
     "curation": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false
-        },
+        "job_kwargs": {},
         "qc_thresholds": {
             "rp_contamination": {"less": 0.5},
             "presence_ratio": {"greater": 0.8},
@@ -263,10 +258,7 @@
         }
     },
     "visualization": {
-        "job_kwargs": {
-            "chunk_duration": "1s",
-            "progress_bar": false
-        },
+        "job_kwargs": {},
         "timeseries": {
             "n_snippets_per_segment": 2,
             "snippet_duration_s": 0.5
@@ -320,10 +312,7 @@
     "spikesorting": {
         "sorter": "lupin",
         "lupin": {
-            "job_kwargs": {
-                "chunk_duration": "1s",
-                "progress_bar": false
-            },
+            "job_kwargs": {},
             "sorter": {
                 "apply_preprocessing": true,
                 "preprocessing_dict": {},

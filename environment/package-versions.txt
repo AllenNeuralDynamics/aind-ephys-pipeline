@@ -1,4 +1,4 @@
-spikeinterface==0.105.4
+spikeinterface==0.105.5
 neo==0.14.6
 pyvips==2.2.1
 figpack==0.4.1

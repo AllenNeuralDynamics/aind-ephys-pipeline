@@ -1,4 +1,5 @@
-FROM spikeinterface/dartsort-base:0.5.32_cuda-12.9.2
+FROM spikeinterface/dartsort-base:0.5.34_cuda-12.9.2
+
 
 ARG DEBIAN_FRONTEND=noninteractive
 
