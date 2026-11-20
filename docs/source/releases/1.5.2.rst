@@ -18,6 +18,8 @@ Pipeline:
 * Add missing descriptions for electrodes and units in NWB conversion
 * Fix missing curation labels in the QC auto-curation summary: QC now reads them from the curation output
   (``unit_labels_*.csv``), since it runs before the results collector adds them to the analyzer
+* Cap ``OMP_NUM_THREADS``, ``MKL_NUM_THREADS`` and ``OPENBLAS_NUM_THREADS`` to the allocated CPUs in all processes,
+  so OpenMP/BLAS pools (faiss, torch, numpy) don't size to all host cores and oversubscribe shared instances
 
 Steps:
 

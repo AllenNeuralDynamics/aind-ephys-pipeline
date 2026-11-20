@@ -443,6 +443,10 @@ process job_dispatch {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     TASK_DIR=\$(pwd)
 
@@ -501,6 +505,10 @@ process preprocessing {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -548,6 +556,10 @@ process spikesort_kilosort25 {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -593,6 +605,10 @@ process spikesort_kilosort4 {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -637,6 +653,10 @@ process spikesort_spykingcircus2 {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -683,6 +703,10 @@ process spikesort_lupin {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -728,6 +752,10 @@ process spikesort_dartsort {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -777,6 +805,10 @@ process postprocessing {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -822,6 +854,10 @@ process curation {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -871,6 +907,10 @@ process visualization {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -923,6 +963,10 @@ process results_collector {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     export PIPELINE_VERSION=${pipelineVersion}
     export PIPELINE_URL=${pipelineUrl}
@@ -976,6 +1020,10 @@ process quality_control {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -1023,6 +1071,10 @@ process quality_control_collector {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -1073,6 +1125,10 @@ process nwb_ecephys {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] cloning git repo..."
     ${gitCloneFunction}
@@ -1130,6 +1186,10 @@ process nwb_units {
     fi
     # Make sure N_JOBS matches allocated CPUs
     export N_JOBS_EXT=${params.get('n_jobs') ?: task.cpus}
+    # Cap OpenMP/BLAS pools (faiss, torch, numpy) to allocated CPUs: by default they size to all host cores, which oversubscribes shared instances
+    export OMP_NUM_THREADS=${task.cpus}
+    export MKL_NUM_THREADS=${task.cpus}
+    export OPENBLAS_NUM_THREADS=${task.cpus}
 
     echo "[${task.tag}] running capsule..."
     cd capsule/code
