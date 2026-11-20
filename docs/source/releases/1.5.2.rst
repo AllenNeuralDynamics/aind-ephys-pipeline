@@ -33,4 +33,4 @@ Package versions
 * ``neo`` version: 0.14.6
 * ``pynwb`` version: 4.2.0
 * ``kilosort4`` version: 4.1.7
-* ``dartsort`` version: 0.5.33
+* ``dartsort`` version: 0.5.34
